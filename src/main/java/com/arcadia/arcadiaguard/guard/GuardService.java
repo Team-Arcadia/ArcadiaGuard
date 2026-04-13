@@ -1,5 +1,6 @@
 package com.arcadia.arcadiaguard.guard;
 
+import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
 import com.arcadia.arcadiaguard.logging.ArcadiaGuardAuditLogger;
 import com.arcadia.arcadiaguard.util.ReflectionHelper;
@@ -32,7 +33,7 @@ public final class GuardService {
     }
 
     public GuardResult blockIfProtected(ServerPlayer player, BlockPos pos, String actionName, String featureKey, String message) {
-        ProfilerFiller profiler = player.server.getProfiler();
+        ProfilerFiller profiler = player.getServer().getProfiler();
         profiler.push("arcadiaguard");
         try {
             if (shouldBypass(player)) return new GuardResult(false, "");
