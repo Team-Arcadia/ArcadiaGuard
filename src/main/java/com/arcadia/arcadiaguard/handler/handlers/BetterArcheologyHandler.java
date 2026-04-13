@@ -61,6 +61,16 @@ public final class BetterArcheologyHandler implements BlockBreakHandler {
             ReflectionHelper.intMethod(pos, "getY") - 1,
             ReflectionHelper.intMethod(pos, "getZ")
         );
+
+        // Si le bloc primaire est lui-même en zone protégée, on annule silencieusement :
+        // YAWP ou InternalZoneProvider envoie déjà le message pour pos.
+        // Sans ce check, BetterArcheology casse quand même below malgré la protection.
+        if (isProtected(player, pos)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // Si le bloc du dessous est protégé, on annule avec message.
         if (this.guardService.blockIfProtected(
             player,
             below,
@@ -70,5 +80,11 @@ public final class BetterArcheologyHandler implements BlockBreakHandler {
         ).blocked()) {
             event.setCanceled(true);
         }
+    }
+
+    private boolean isProtected(ServerPlayer player, BlockPos pos) {
+        if (this.guardService.shouldBypass(player)) return false;
+        if (this.guardService.zoneManager().isExceptionAllowed(player, pos, "betterarcheology")) return false;
+        return this.guardService.zoneManager().check(player, pos).blocked();
     }
 }
