@@ -64,7 +64,8 @@ public final class ApotheosisHandler implements BlockBreakHandler, RightClickBlo
     }
 
     // Affix "Enlightened" — pose une torche via RightClickBlock en échange de durabilité.
-    // On bloque le clic si la position ciblée est en zone protégée.
+    // L'outil en main est n'importe quel item avec un affix Apotheosis (pioche vanilla, etc.)
+    // → on vérifie la présence du data component "apotheosis:affixes", pas le namespace de l'item.
     @Override
     public void handle(PlayerInteractEvent.RightClickBlock event) {
         if (!ArcadiaGuardConfig.ENABLE_APOTHEOSIS_ENCHANTS.get()) return;
@@ -74,8 +75,9 @@ public final class ApotheosisHandler implements BlockBreakHandler, RightClickBlo
 
         ItemStack tool = player.getMainHandItem();
         if (tool.isEmpty()) return;
-        ResourceLocation key = tool.getItemHolder().unwrapKey().map(k -> k.location()).orElse(null);
-        if (key == null || !"apotheosis".equals(key.getNamespace())) return;
+
+        // Vérifie si l'item a des affixes Apotheosis via le data component "apotheosis:affixes"
+        if (!hasApotheosisAffixes(tool)) return;
 
         Object hitResult = ReflectionHelper.invoke(event, "getHitVec", new Class<?>[0]).orElse(null);
         Object blockPos = hitResult == null ? null : ReflectionHelper.invoke(hitResult, "getBlockPos", new Class<?>[0]).orElse(null);
@@ -84,6 +86,18 @@ public final class ApotheosisHandler implements BlockBreakHandler, RightClickBlo
         if (this.guardService.blockIfProtected(player, pos, "apotheosis:enlightened", "apotheosis", ArcadiaGuardConfig.MESSAGE_APOTHEOSIS.get()).blocked()) {
             event.setCanceled(true);
         }
+    }
+
+    private boolean hasApotheosisAffixes(ItemStack stack) {
+        // AffixHelper.hasAffixes(ItemStack) — retourne true si l'item a des affixes Apotheosis.
+        // L'outil peut être n'importe quel item (pioche vanilla, etc.) avec un data component Apotheosis.
+        Object result = ReflectionHelper.invokeStatic(
+            "dev.shadowsoffire.apotheosis.affix.AffixHelper",
+            "hasAffixes",
+            new Class<?>[] { ItemStack.class },
+            stack
+        ).orElse(Boolean.FALSE);
+        return Boolean.TRUE.equals(result);
     }
 
     private Object radialData(ItemStack tool) {
