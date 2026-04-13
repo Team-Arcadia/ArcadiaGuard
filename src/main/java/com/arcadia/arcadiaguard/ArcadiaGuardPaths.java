@@ -7,13 +7,13 @@ import java.nio.file.StandardCopyOption;
 
 public final class ArcadiaGuardPaths {
 
-    private static final Path CONFIG_ROOT = Path.of("config").resolve("arcadia").resolve("arcadiaguard");
-    private static final Path LOG_ROOT = Path.of("logs").resolve("arcadia").resolve("arcadiaguard");
+    private static final Path CONFIG_ROOT = Path.of("config").resolve("arcadia").resolve("ArcadiaGuard");
+    private static final Path LOG_ROOT = Path.of("logs").resolve("arcadia").resolve("ArcadiaGuard");
 
     private ArcadiaGuardPaths() {}
 
     public static String commonConfigSpecPath() {
-        return "arcadia/arcadiaguard/arcadiaguard-common.toml";
+        return "arcadia/ArcadiaGuard/arcadiaguard-common.toml";
     }
 
     public static Path configRoot() {
@@ -33,9 +33,15 @@ public final class ArcadiaGuardPaths {
     }
 
     public static void migrateLegacyFiles() {
+        // Depuis la racine config/ (très ancienne version)
         migrate(Path.of("config").resolve("arcadiaguard-common.toml"), CONFIG_ROOT.resolve("arcadiaguard-common.toml"));
         migrate(Path.of("config").resolve("arcadiaguard-zones.json"), zonesFile());
         migrate(Path.of("config").resolve("arcadiaguard-exceptions.json"), exceptionsFile());
+        // Depuis config/arcadia/arcadiaguard/ (sous-dossier minuscule)
+        Path legacyRoot = Path.of("config").resolve("arcadia").resolve("arcadiaguard");
+        migrate(legacyRoot.resolve("arcadiaguard-common.toml"), CONFIG_ROOT.resolve("arcadiaguard-common.toml"));
+        migrate(legacyRoot.resolve("arcadiaguard-zones.json"), zonesFile());
+        migrate(legacyRoot.resolve("arcadiaguard-exceptions.json"), exceptionsFile());
     }
 
     private static void migrate(Path legacy, Path target) {

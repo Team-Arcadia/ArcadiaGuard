@@ -83,7 +83,7 @@ Recharge les zones depuis le fichier JSON sans redémarrer le serveur.
 
 ## Configuration
 
-Le fichier de configuration est généré dans `config/arcadiaguard-common.toml`.
+Le fichier de configuration est généré dans `config/arcadia/ArcadiaGuard/arcadiaguard-common.toml`.
 
 ```toml
 [general]
@@ -120,13 +120,13 @@ Le fichier de configuration est généré dans `config/arcadiaguard-common.toml`
 Quand `log_to_file = true`, ArcadiaGuard écrit chaque action bloquée dans :
 
 ```
-logs/arcadiaguard/arcadiaguard-audit.log
+logs/arcadia/ArcadiaGuard/arcadiaguard-audit.log
 ```
 
 Les logs sont **rotatés automatiquement** chaque jour. Les archives sont nommées :
 
 ```
-logs/arcadiaguard/arcadiaguard-audit-2025-01-15.log
+logs/arcadia/ArcadiaGuard/arcadiaguard-audit-2025-01-15.log
 ```
 
 Format d'une ligne de log :
@@ -142,7 +142,7 @@ Format d'une ligne de log :
 Les zones sont sauvegardées dans :
 
 ```
-config/arcadiaguard/zones.json
+config/arcadia/ArcadiaGuard/arcadiaguard-zones.json
 ```
 
 Le fichier est géré automatiquement par les commandes. Il peut être édité manuellement puis rechargé avec `/arcadiaguard reload`.
