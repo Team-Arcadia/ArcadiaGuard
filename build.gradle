@@ -97,6 +97,17 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 }
 
+// Workaround NeoGradle 7.1.21 : neoFormRecompile échoue silencieusement pour certaines
+// classes Minecraft (Entity, IEntityExtension). On ajoute les deux jars manquants au classpath.
+afterEvaluate {
+    def renameJar = tasks.named('neoFormRename').get().outputs.files.find { it.name == 'outputs.jar' }
+    def universalJar = file("${gradle.gradleUserHomeDir}/caches/modules-2/files-2.1/net.neoforged/neoforge/${neo_version}").listFiles()
+        ?.collectMany { it.listFiles()?.toList() ?: [] }
+        ?.find { it.name == "neoforge-${neo_version}-universal.jar" }
+    if (renameJar) compileJava.classpath += files(renameJar)
+    if (universalJar) compileJava.classpath += files(universalJar)
+}
+
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 // When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
