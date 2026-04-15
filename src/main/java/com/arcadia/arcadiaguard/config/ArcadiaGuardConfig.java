@@ -16,6 +16,7 @@ public final class ArcadiaGuardConfig {
     public static final ModConfigSpec.BooleanValue ENABLE_APOTHEOSIS_ENCHANTS;
     public static final ModConfigSpec.BooleanValue ENABLE_BETTERARCHEOLOGY;
     public static final ModConfigSpec.BooleanValue ENABLE_SPAWN_BOOK_PROTECTION;
+    public static final ModConfigSpec.ConfigValue<String> SPAWN_BOOK_DIMENSION;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_IRONSSPELLBOOKS;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_ARS_NOUVEAU;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_SIMPLYSWORDS;
@@ -43,6 +44,7 @@ public final class ArcadiaGuardConfig {
         ENABLE_APOTHEOSIS_ENCHANTS = builder.define("enable_apotheosis_enchants", true);
         ENABLE_BETTERARCHEOLOGY = builder.define("enable_betterarcheology", true);
         ENABLE_SPAWN_BOOK_PROTECTION = builder.define("enable_spawn_book_protection", true);
+        SPAWN_BOOK_DIMENSION = builder.define("spawn_book_dimension", "arcadia:spawn");
         builder.pop();
 
         builder.push("messages");
