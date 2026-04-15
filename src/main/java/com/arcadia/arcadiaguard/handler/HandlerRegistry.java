@@ -5,6 +5,7 @@ import com.arcadia.arcadiaguard.handler.handlers.ArsNouveauHandler;
 import com.arcadia.arcadiaguard.handler.handlers.ApotheosisHandler;
 import com.arcadia.arcadiaguard.handler.handlers.BetterArcheologyHandler;
 import com.arcadia.arcadiaguard.handler.handlers.SpawnBookHandler;
+import com.arcadia.arcadiaguard.handler.handlers.ZoneItemHandler;
 import com.arcadia.arcadiaguard.handler.handlers.IronsSpellbooksHandler;
 import com.arcadia.arcadiaguard.handler.handlers.OccultismHandler;
 import com.arcadia.arcadiaguard.handler.handlers.SimplySwordsHandler;
@@ -31,7 +32,8 @@ public final class HandlerRegistry {
             new SupplementariesHandler(guardService),
             new ApotheosisHandler(guardService),
             new BetterArcheologyHandler(guardService),
-            new SpawnBookHandler(guardService)
+            new SpawnBookHandler(guardService),
+            new ZoneItemHandler(guardService)
         );
     }
 

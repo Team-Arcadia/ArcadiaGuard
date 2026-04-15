@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:lead",
+    "apothic_enchanting:flimsy_ender_lead",
+    "apothic_enchanting:ender_lead",
+    "apothic_enchanting:occult_ender_lead"
+  ]
+}
