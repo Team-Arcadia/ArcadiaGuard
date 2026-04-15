@@ -28,6 +28,10 @@ public final class ArcadiaGuardPaths {
         return CONFIG_ROOT.resolve("arcadiaguard-exceptions.json");
     }
 
+    public static Path blockedItemsFile() {
+        return CONFIG_ROOT.resolve("arcadiaguard-blocked-items.json");
+    }
+
     public static Path logsRoot() {
         return LOG_ROOT;
     }

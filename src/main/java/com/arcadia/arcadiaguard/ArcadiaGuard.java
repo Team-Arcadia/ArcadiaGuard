@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.command.ArcadiaGuardCommands;
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry;
+import com.arcadia.arcadiaguard.item.DynamicItemBlockList;
 import com.arcadia.arcadiaguard.logging.ArcadiaGuardAuditLogger;
 import com.arcadia.arcadiaguard.zone.ZoneManager;
 import com.mojang.logging.LogUtils;
@@ -27,6 +28,7 @@ public final class ArcadiaGuard {
     private static GuardService guardService;
     private static ArcadiaGuardAuditLogger auditLogger;
     private static HandlerRegistry handlerRegistry;
+    private static DynamicItemBlockList dynamicItemBlockList;
 
     public ArcadiaGuard(IEventBus modBus, ModContainer modContainer) {
         ArcadiaGuardPaths.migrateLegacyFiles();
@@ -35,7 +37,8 @@ public final class ArcadiaGuard {
         auditLogger = new ArcadiaGuardAuditLogger();
         zoneManager = new ZoneManager();
         guardService = new GuardService(zoneManager, auditLogger);
-        handlerRegistry = new HandlerRegistry(guardService);
+        dynamicItemBlockList = new DynamicItemBlockList(ArcadiaGuardPaths.blockedItemsFile());
+        handlerRegistry = new HandlerRegistry(guardService, dynamicItemBlockList);
 
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
@@ -49,6 +52,7 @@ public final class ArcadiaGuard {
 
     private void onServerStarting(ServerStartingEvent event) {
         zoneManager.reload(event.getServer());
+        dynamicItemBlockList.load();
         auditLogger.onServerStarted(event.getServer());
     }
 
@@ -62,5 +66,9 @@ public final class ArcadiaGuard {
 
     public static GuardService guardService() {
         return guardService;
+    }
+
+    public static DynamicItemBlockList dynamicItemBlockList() {
+        return dynamicItemBlockList;
     }
 }

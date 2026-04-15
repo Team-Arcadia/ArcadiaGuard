@@ -15,9 +15,13 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class ArcadiaGuardCommands {
@@ -30,6 +34,16 @@ public final class ArcadiaGuardCommands {
         dispatcher.register(literal("arcadiaguard")
             .requires(src -> src.hasPermission(2))
             .then(literal("reload").executes(ArcadiaGuardCommands::reload))
+            .then(literal("item")
+                .then(literal("block")
+                    .then(argument("item", ResourceLocationArgument.id())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggestResource(BuiltInRegistries.ITEM.keySet(), builder))
+                        .executes(ArcadiaGuardCommands::itemBlock)))
+                .then(literal("unblock")
+                    .then(argument("item", ResourceLocationArgument.id())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggestResource(ArcadiaGuard.dynamicItemBlockList().list(), builder))
+                        .executes(ArcadiaGuardCommands::itemUnblock)))
+                .then(literal("list").executes(ArcadiaGuardCommands::itemList)))
             .then(literal("zone")
                 .then(literal("add")
                     .then(argument("name", StringArgumentType.word())
@@ -69,8 +83,42 @@ public final class ArcadiaGuardCommands {
                         .then(argument("feature", StringArgumentType.word()).suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(FEATURES, builder)).executes(ArcadiaGuardCommands::denyExceptionFeature))))));
     }
 
+    private static int itemBlock(CommandContext<CommandSourceStack> ctx) {
+        ResourceLocation id = ResourceLocationArgument.getId(ctx, "item");
+        if (!BuiltInRegistries.ITEM.containsKey(id)) {
+            ctx.getSource().sendFailure(Component.literal("Item inconnu: " + id));
+            return 0;
+        }
+        boolean added = ArcadiaGuard.dynamicItemBlockList().add(id);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            added ? "Item bloque en zone protegee: " + id : "Deja bloque: " + id), true);
+        return added ? 1 : 0;
+    }
+
+    private static int itemUnblock(CommandContext<CommandSourceStack> ctx) {
+        ResourceLocation id = ResourceLocationArgument.getId(ctx, "item");
+        boolean removed = ArcadiaGuard.dynamicItemBlockList().remove(id);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            removed ? "Item debloque: " + id : "Non trouve dans la liste: " + id), true);
+        return removed ? 1 : 0;
+    }
+
+    private static int itemList(CommandContext<CommandSourceStack> ctx) {
+        List<ResourceLocation> items = ArcadiaGuard.dynamicItemBlockList().list();
+        if (items.isEmpty()) {
+            ctx.getSource().sendSuccess(() -> Component.literal("Aucun item bloque dynamiquement."), false);
+        } else {
+            ctx.getSource().sendSuccess(() -> Component.literal("Items bloques (" + items.size() + "):"), false);
+            for (ResourceLocation id : items) {
+                ctx.getSource().sendSuccess(() -> Component.literal("  - " + id), false);
+            }
+        }
+        return 1;
+    }
+
     private static int reload(CommandContext<CommandSourceStack> ctx) {
         ArcadiaGuard.zoneManager().reload(ctx.getSource().getServer());
+        ArcadiaGuard.dynamicItemBlockList().load();
         ctx.getSource().sendSuccess(() -> Component.literal("ArcadiaGuard recharge."), true);
         return 1;
     }
