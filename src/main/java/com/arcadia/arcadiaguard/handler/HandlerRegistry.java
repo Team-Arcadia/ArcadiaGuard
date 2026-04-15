@@ -31,7 +31,7 @@ public final class HandlerRegistry {
             new SupplementariesHandler(guardService),
             new ApotheosisHandler(guardService),
             new BetterArcheologyHandler(guardService),
-            new SpawnBookHandler()
+            new SpawnBookHandler(guardService)
         );
     }
 
