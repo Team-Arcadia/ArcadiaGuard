@@ -15,6 +15,7 @@ public final class ArcadiaGuardConfig {
     public static final ModConfigSpec.BooleanValue ENABLE_SUPPLEMENTARIES;
     public static final ModConfigSpec.BooleanValue ENABLE_APOTHEOSIS_ENCHANTS;
     public static final ModConfigSpec.BooleanValue ENABLE_BETTERARCHEOLOGY;
+    public static final ModConfigSpec.BooleanValue ENABLE_SPAWN_BOOK_PROTECTION;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_IRONSSPELLBOOKS;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_ARS_NOUVEAU;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_SIMPLYSWORDS;
@@ -22,6 +23,7 @@ public final class ArcadiaGuardConfig {
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_SUPPLEMENTARIES;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_APOTHEOSIS;
     public static final ModConfigSpec.ConfigValue<String> MESSAGE_BETTERARCHEOLOGY;
+    public static final ModConfigSpec.ConfigValue<String> MESSAGE_SPAWN_BOOK;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -40,6 +42,7 @@ public final class ArcadiaGuardConfig {
         ENABLE_SUPPLEMENTARIES = builder.define("enable_supplementaries", true);
         ENABLE_APOTHEOSIS_ENCHANTS = builder.define("enable_apotheosis_enchants", true);
         ENABLE_BETTERARCHEOLOGY = builder.define("enable_betterarcheology", true);
+        ENABLE_SPAWN_BOOK_PROTECTION = builder.define("enable_spawn_book_protection", true);
         builder.pop();
 
         builder.push("messages");
@@ -50,6 +53,7 @@ public final class ArcadiaGuardConfig {
         MESSAGE_SUPPLEMENTARIES = builder.define("message_supplementaries", "Vous ne pouvez pas lancer cet objet ici.");
         MESSAGE_APOTHEOSIS = builder.define("message_apotheosis", "Vous ne pouvez pas casser ces blocs ici.");
         MESSAGE_BETTERARCHEOLOGY = builder.define("message_betterarcheology", "Vous ne pouvez pas utiliser Tunneling ici.");
+        MESSAGE_SPAWN_BOOK = builder.define("message_spawn_book", " Vous ne pouvez pas placer de livres en zone spawn ! | You cannot place books in the spawn area!");
         builder.pop();
 
         SPEC = builder.build();
