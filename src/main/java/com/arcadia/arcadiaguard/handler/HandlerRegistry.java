@@ -1,6 +1,7 @@
 package com.arcadia.arcadiaguard.handler;
 
 import com.arcadia.arcadiaguard.guard.GuardService;
+import com.arcadia.arcadiaguard.item.DynamicItemBlockList;
 import com.arcadia.arcadiaguard.handler.handlers.ArsNouveauHandler;
 import com.arcadia.arcadiaguard.handler.handlers.ApotheosisHandler;
 import com.arcadia.arcadiaguard.handler.handlers.BetterArcheologyHandler;
@@ -23,7 +24,7 @@ public final class HandlerRegistry {
 
     private final List<Object> handlers;
 
-    public HandlerRegistry(GuardService guardService) {
+    public HandlerRegistry(GuardService guardService, DynamicItemBlockList dynamicItemBlockList) {
         this.handlers = List.of(
             new IronsSpellbooksHandler(guardService),
             new ArsNouveauHandler(guardService),
@@ -33,7 +34,7 @@ public final class HandlerRegistry {
             new ApotheosisHandler(guardService),
             new BetterArcheologyHandler(guardService),
             new SpawnBookHandler(guardService),
-            new ZoneItemHandler(guardService)
+            new ZoneItemHandler(guardService, dynamicItemBlockList)
         );
     }
 
