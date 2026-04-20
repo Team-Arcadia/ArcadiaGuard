@@ -158,7 +158,13 @@ public final class InternalZoneProvider implements ZoneProvider {
         Map<String, ProtectedZone> zones = this.zonesByDimension.computeIfAbsent(dimKey, ignored -> new ConcurrentHashMap<>());
         if (zones.containsKey(zone.name().toLowerCase())) return false;
         zones.put(zone.name().toLowerCase(), zone);
-        indexZone(dimKey, zone);
+        try {
+            indexZone(dimKey, zone);
+        } catch (Exception e) {
+            zones.remove(zone.name().toLowerCase());
+            ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to index zone '{}', rolling back", zone.name(), e);
+            return false;
+        }
         scheduleWrite(zone);
         FlagMixinHelper.invalidateHasZoneCache(dimKey);
         NeoForge.EVENT_BUS.post(new ZoneCreatedEvent(zone));

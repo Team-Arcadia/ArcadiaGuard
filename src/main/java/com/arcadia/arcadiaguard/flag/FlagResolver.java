@@ -86,7 +86,10 @@ public final class FlagResolver {
                 Object dimVal = dimFlags.get(flag.id());
                 if (dimVal != null) {
                     try { return Optional.of((T) dimVal); }
-                    catch (ClassCastException ignored) {}
+                    catch (ClassCastException e) {
+                        ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Type mismatch for dim flag '{}' in '{}', ignoring",
+                            flag.id(), zone.dimension());
+                    }
                 }
             }
         }
