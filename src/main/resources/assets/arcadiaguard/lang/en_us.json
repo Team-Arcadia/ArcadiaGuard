@@ -45,6 +45,13 @@
   "arcadiaguard.message.attack_animal": "You cannot attack animals here.",
   "arcadiaguard.message.attack_monster": "You cannot attack monsters here.",
   "arcadiaguard.message.attack": "You cannot attack here.",
+  "arcadiaguard.message.farmland_trample": "You cannot trample farmland here.",
+  "arcadiaguard.message.parcool_actions": "Parkour actions are disabled in this zone.",
+  "arcadiaguard.message.emote_use": "Emotes are disabled in this zone.",
+  "arcadiaguard.message.charm_use": "Apotheosis charms are disabled in this zone.",
+  "arcadiaguard.message.waystone_use": "You cannot use waystones here.",
+  "arcadiaguard.message.rechiseled_use": "You cannot use Rechiseled blocks here.",
+  "arcadiaguard.message.ars_additions_scroll": "You cannot use this scroll here.",
 
   "arcadiaguard.gui.zone_list.title": "ArcadiaGuard — Zones",
   "arcadiaguard.gui.zone_list.search_placeholder": "Search…",
