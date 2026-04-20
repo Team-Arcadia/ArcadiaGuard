@@ -7,7 +7,7 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public final class ClientDimFlagCache {
 
-    private static DimFlagsPayload cached;
+    private static volatile DimFlagsPayload cached;
 
     private ClientDimFlagCache() {}
 

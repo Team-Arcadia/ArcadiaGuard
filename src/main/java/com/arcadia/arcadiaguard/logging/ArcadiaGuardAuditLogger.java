@@ -159,6 +159,7 @@ public final class ArcadiaGuardAuditLogger {
                     dir.resolve(LOG_FILE_NAME), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             }
+            if (openWriter == null) return;
             openWriter.write(payload);
             openWriter.flush();
         } catch (IOException e) {
