@@ -199,7 +199,7 @@ Les listes d'items sont pilotees par des tags overridables sans recompilation :
 - **Environnement** : Client + Serveur (NeoForge 1.21.1)
 - **Java** : 21
 - **Mod ID** : `arcadiaguard`
-- **Licence** : All Rights Reserved
+- **Licence** : [MIT](LICENSE)
 
 ---
 
