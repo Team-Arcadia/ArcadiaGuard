@@ -11,10 +11,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import org.slf4j.LoggerFactory;
 
 public final class BetterArcheologyHandler implements BlockBreakHandler {
+
+    private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(BetterArcheologyHandler.class);
+    /** M10: warn at most once if the reflection chain fails (mod API may have changed). */
+    private final AtomicBoolean warnedReflection = new AtomicBoolean(false);
 
     private static final String ENCHANTMENT_HELPER_CLASS = "net.minecraft.world.item.enchantment.EnchantmentHelper";
     private static final ResourceKey<Enchantment> TUNNELING = ResourceKey.create(
@@ -44,9 +50,17 @@ public final class BetterArcheologyHandler implements BlockBreakHandler {
         if (!(toolObj instanceof ItemStack tool) || tool.isEmpty() || !tool.isEnchanted()) return;
 
         Object levelObj = ReflectionHelper.invoke(playerObj, "serverLevel", new Class<?>[0]).orElse(null);
-        if (levelObj == null) return;
+        if (levelObj == null) {
+            if (warnedReflection.compareAndSet(false, true))
+                LOG.warn("[ArcadiaGuard] BetterArchaeology reflection failed: could not get serverLevel (mod API may have changed)");
+            return;
+        }
         Object registryAccess = ReflectionHelper.invoke(levelObj, "registryAccess", new Class<?>[0]).orElse(null);
-        if (registryAccess == null) return;
+        if (registryAccess == null) {
+            if (warnedReflection.compareAndSet(false, true))
+                LOG.warn("[ArcadiaGuard] BetterArchaeology reflection failed: could not get registryAccess (mod API may have changed)");
+            return;
+        }
         Object enchantmentLookup = ReflectionHelper.invoke(registryAccess, "lookupOrThrow", new Class<?>[] { ResourceKey.class }, Registries.ENCHANTMENT).orElse(null);
         if (enchantmentLookup == null) return;
         Object tunneling = ReflectionHelper.invoke(enchantmentLookup, "get", new Class<?>[] { ResourceKey.class }, TUNNELING).orElse(null);
@@ -84,7 +98,6 @@ public final class BetterArcheologyHandler implements BlockBreakHandler {
 
     private boolean isProtected(ServerPlayer player, BlockPos pos) {
         if (this.guardService.shouldBypass(player)) return false;
-        if (this.guardService.zoneManager().isExceptionAllowed(player, pos, "betterarcheology")) return false;
         return this.guardService.zoneManager().check(player, pos).blocked();
     }
 }
