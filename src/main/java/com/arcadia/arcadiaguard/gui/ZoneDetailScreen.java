@@ -387,7 +387,7 @@ public final class ZoneDetailScreen extends Screen {
         if (nameLabel.length() < detail.name().length()) nameLabel += "…";
         g.drawString(font, nameLabel, gx + 30, gy + 8, Colors.ACCENT_HI, false);
         String sub = detail.dim()
-            + (detail.parentName() != null ? "  ·  sous-zone de " + detail.parentName() : "");
+            + (detail.parentName() != null ? Component.translatable("arcadiaguard.gui.zonedetail.subzone_of", detail.parentName()).getString() : "");
         String subLabel = font.plainSubstrByWidth(sub, nameMaxW);
         g.drawString(font, subLabel, gx + 30, gy + 18, Colors.TEXT_MUTE, false);
 
@@ -399,7 +399,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(enabledBtnX, gy + 25, enabledBtnX + enabledBtnW, gy + 26, enColor);
         g.fill(enabledBtnX, gy + 6, enabledBtnX + 1, gy + 26, enColor);
         g.fill(enabledBtnX + enabledBtnW - 1, gy + 6, enabledBtnX + enabledBtnW, gy + 26, enColor);
-        g.drawCenteredString(font, isEnabled ? "● Zone : ON" : "○ Zone : OFF",
+        g.drawCenteredString(font, isEnabled ? Component.translatable("arcadiaguard.gui.zonedetail.zone_on").getString() : Component.translatable("arcadiaguard.gui.zonedetail.zone_off").getString(),
             enabledBtnX + enabledBtnW / 2, gy + 13, enColor);
 
         int eyeColor = viewZone ? Colors.GOOD : Colors.TEXT_MUTE;
@@ -409,7 +409,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(eyeBtnX, gy + 25, eyeBtnX + eyeBtnW, gy + 26, eyeColor);
         g.fill(eyeBtnX, gy + 6, eyeBtnX + 1, gy + 26, eyeColor);
         g.fill(eyeBtnX + eyeBtnW - 1, gy + 6, eyeBtnX + eyeBtnW, gy + 26, eyeColor);
-        g.drawCenteredString(font, viewZone ? "Voir : ON" : "Voir : OFF",
+        g.drawCenteredString(font, viewZone ? Component.translatable("arcadiaguard.gui.zonedetail.view_on").getString() : Component.translatable("arcadiaguard.gui.zonedetail.view_off").getString(),
             eyeBtnX + eyeBtnW / 2, gy + 13, eyeColor);
 
         g.fill(logsBtnX, gy + 6, logsBtnX + logsBtnW, gy + 26, Colors.BG_2);
@@ -418,7 +418,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(logsBtnX, gy + 6, logsBtnX + 1, gy + 26, Colors.ACCENT_LO);
         g.fill(logsBtnX + logsBtnW - 1, gy + 6, logsBtnX + logsBtnW, gy + 26, Colors.ACCENT_LO);
         GuiTextures.icon(g, GuiTextures.ICO_CLOCK, logsBtnX + 4, gy + 8);
-        g.drawCenteredString(font, "Logs", logsBtnX + logsBtnW / 2 + 8, gy + 13, Colors.ACCENT);
+        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.logs_btn").getString(), logsBtnX + logsBtnW / 2 + 8, gy + 13, Colors.ACCENT);
 
         GuiTextures.dividerH(g, gx + 8, gy + HEADER_H, GUI_W - 16);
 
@@ -462,7 +462,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(ebx,           eby + btnH - 1, ebx + ebw, eby + btnH,    Colors.ACCENT_LO);
         g.fill(ebx,           eby,            ebx + 1,   eby + btnH,    Colors.ACCENT_LO);
         g.fill(ebx + ebw - 1, eby,            ebx + ebw, eby + btnH,    Colors.ACCENT_LO);
-        String label = canEdit ? "✎ Redéfinir (wand)" : "✎ Sélection wand requise";
+        String label = canEdit ? Component.translatable("arcadiaguard.gui.zonedetail.redefine_wand").getString() : Component.translatable("arcadiaguard.gui.zonedetail.need_wand_selection").getString();
         g.drawCenteredString(font, label, ebx + ebw / 2, eby + 3,
             !canEdit ? Colors.TEXT_MUTE : (hov ? Colors.ACCENT_HI : Colors.ACCENT));
         if (canEdit) {
@@ -485,7 +485,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(ecbx,            ecby + btnH - 1, ecbx + ecbw, ecby + btnH,    Colors.ACCENT_LO);
         g.fill(ecbx,            ecby,            ecbx + 1,    ecby + btnH,    Colors.ACCENT_LO);
         g.fill(ecbx + ecbw - 1, ecby,            ecbx + ecbw, ecby + btnH,    Colors.ACCENT_LO);
-        g.drawCenteredString(font, "✎ Éditer manuellement", ecbx + ecbw / 2, ecby + 3,
+        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.edit_manually").getString(), ecbx + ecbw / 2, ecby + 3,
             hov2 ? Colors.ACCENT_HI : Colors.ACCENT);
         hit(ecbx, ecby, ecbw, btnH, this::openCoordsEditor);
         cy += btnH + 6;
@@ -510,8 +510,8 @@ public final class ZoneDetailScreen extends Screen {
 
         g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.section_hierarchy").getString(), cx, cy, Colors.ACCENT, false); cy += 14;
         String parentLabel = detail.parentName() != null
-            ? "Parent : " + detail.parentName()
-            : "Zone racine (aucun parent)";
+            ? Component.translatable("arcadiaguard.gui.zonedetail.parent_label_value", detail.parentName()).getString()
+            : Component.translatable("arcadiaguard.gui.zonedetail.root_zone").getString();
         int col1TextW = COL1_W - 22;
         String parentLabelTrunc = font.plainSubstrByWidth(parentLabel, col1TextW);
         g.drawString(font, parentLabelTrunc, cx, cy, Colors.TEXT_MUTE, false); cy += 14;
@@ -521,8 +521,8 @@ public final class ZoneDetailScreen extends Screen {
         int inhColor = inh ? Colors.VERDIGRIS : Colors.TEXT_MUTE;
         boolean inhHov = mx >= cx && mx < cx + col1TextW && my >= cy - 1 && my < cy + 11;
         if (inhHov) g.fill(cx, cy - 1, cx + col1TextW, cy + 11, Colors.accentTint(0x0E));
-        g.drawString(font, "Flags dim :", cx, cy, Colors.TEXT_MUTE, false);
-        String inhBadge = inh ? "Héritée" : "Propre";
+        g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.dim_flags_label").getString(), cx, cy, Colors.TEXT_MUTE, false);
+        String inhBadge = inh ? Component.translatable("arcadiaguard.gui.zonedetail.inherited").getString() : Component.translatable("arcadiaguard.gui.zonedetail.own").getString();
         g.drawString(font, inhBadge, cx + col1TextW - font.width(inhBadge), cy, inhColor, false);
         hit(cx, inheritToggleY - 1, col1TextW, 12, () ->
             PacketDistributor.sendToServer(
@@ -566,8 +566,8 @@ public final class ZoneDetailScreen extends Screen {
         hit(addBtnX, cy, 18, 14, this::openPicker);
 
         String parentInfo = detail.parentName() != null
-            ? "Hérite de " + detail.parentName()
-            : "Aucun parent — flags autonomes";
+            ? Component.translatable("arcadiaguard.gui.zonedetail.inherits_from", detail.parentName()).getString()
+            : Component.translatable("arcadiaguard.gui.zonedetail.no_parent_flags").getString();
         g.drawString(font, parentInfo, cx, cy + 12, Colors.TEXT_MUTE, false);
         cy += 26;
         GuiTextures.dividerH(g, cx - 2, cy, cw); cy += 2;
@@ -910,12 +910,12 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(px - 2, py - 2, px + pw + 2, py + ph + 2, Colors.DANGER & 0xFFFFFF | 0xFF000000);
         g.fill(px, py, px + pw, py + ph, Colors.BG_1);
 
-        g.drawCenteredString(font, "Supprimer « " + detail.name() + " » ?", px + pw / 2, py + 10, Colors.TEXT);
-        g.drawCenteredString(font, "Cette action est irréversible.", px + pw / 2, py + 22, Colors.TEXT_MUTE);
-        g.drawCenteredString(font, "Tous les membres seront retirés.", px + pw / 2, py + 33, Colors.TEXT_MUTE);
+        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_title", detail.name()).getString(), px + pw / 2, py + 10, Colors.TEXT);
+        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_warn1").getString(), px + pw / 2, py + 22, Colors.TEXT_MUTE);
+        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_warn2").getString(), px + pw / 2, py + 33, Colors.TEXT_MUTE);
 
-        drawBtn(g, mx, my, px + 10,       py + 54, 100, 22, "Annuler",     Colors.TEXT_DIM, Colors.BG_2);
-        drawBtn(g, mx, my, px + pw - 110, py + 54, 100, 22, "Supprimer !", Colors.DANGER,   Colors.BG_2);
+        drawBtn(g, mx, my, px + 10,       py + 54, 100, 22, Component.translatable("arcadiaguard.gui.common.cancel").getString(),     Colors.TEXT_DIM, Colors.BG_2);
+        drawBtn(g, mx, my, px + pw - 110, py + 54, 100, 22, Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_btn").getString(), Colors.DANGER,   Colors.BG_2);
     }
 
     // ── Popup + Hitbox handlers ───────────────────────────────────────────────────
