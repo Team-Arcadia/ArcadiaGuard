@@ -14,16 +14,16 @@ Server-side protection mod for spell and mod mechanics in admin-defined protecte
 [[dependencies.${mod_id}]]
 modId="neoforge"
 type="required"
-versionRange="${loader_version_range}"
+versionRange="[21.1.221,)"
 ordering="NONE"
-side="SERVER"
+side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
 versionRange="${minecraft_version_range}"
 ordering="NONE"
-side="SERVER"
+side="BOTH"
 
 [[mixins]]
 config="arcadiaguard.mixins.json"
