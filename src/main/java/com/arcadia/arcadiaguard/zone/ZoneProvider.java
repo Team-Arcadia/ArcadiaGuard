@@ -1,5 +1,6 @@
 package com.arcadia.arcadiaguard.zone;
 
+import com.arcadia.arcadiaguard.api.zone.ZoneCheckResult;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
