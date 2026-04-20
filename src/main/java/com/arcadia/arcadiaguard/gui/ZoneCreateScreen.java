@@ -143,8 +143,8 @@ public final class ZoneCreateScreen extends Screen {
             cx, cy, Colors.TEXT_MUTE, false);
         cy += 11;
 
-        renderCornerBox(g, cx,             cy, "COIN A", pos1);
-        renderCornerBox(g, cx + (GUI_W - 28) / 2 + 4, cy, "COIN B", pos2);
+        renderCornerBox(g, cx,             cy, Component.translatable("arcadiaguard.gui.zonecreate.corner_a").getString(), pos1);
+        renderCornerBox(g, cx + (GUI_W - 28) / 2 + 4, cy, Component.translatable("arcadiaguard.gui.zonecreate.corner_b").getString(), pos2);
         cy += 46;
 
         // Stats de la zone
@@ -157,12 +157,12 @@ public final class ZoneCreateScreen extends Screen {
             GuiTextures.dividerH(g, cx - 2, cy, GUI_W - 24); cy += 8;
 
             int statsCol2 = cx + (GUI_W - 28) / 2;
-            g.drawString(font, "Surface : " + dx + "×" + dz, cx, cy, Colors.TEXT_DIM, false);
-            g.drawString(font, "Volume : " + fmtVol(vol), statsCol2, cy, Colors.TEXT_DIM, false);
+            g.drawString(font, Component.translatable("arcadiaguard.gui.zonecreate.stat_surface", dx + "×" + dz).getString(), cx, cy, Colors.TEXT_DIM, false);
+            g.drawString(font, Component.translatable("arcadiaguard.gui.zonecreate.stat_volume", fmtVol(vol)).getString(), statsCol2, cy, Colors.TEXT_DIM, false);
             cy += 12;
-            g.drawString(font, "Hauteur : " + dy + " blocs", cx, cy, Colors.TEXT_DIM, false);
+            g.drawString(font, Component.translatable("arcadiaguard.gui.zonecreate.stat_height", dy).getString(), cx, cy, Colors.TEXT_DIM, false);
             int chunks = ((dx + 15) / 16) * ((dz + 15) / 16);
-            g.drawString(font, "Chunks : " + chunks, statsCol2, cy, Colors.TEXT_DIM, false);
+            g.drawString(font, Component.translatable("arcadiaguard.gui.zonecreate.stat_chunks_label", chunks).getString(), statsCol2, cy, Colors.TEXT_DIM, false);
             cy += 16;
 
             // Validation visuelle
