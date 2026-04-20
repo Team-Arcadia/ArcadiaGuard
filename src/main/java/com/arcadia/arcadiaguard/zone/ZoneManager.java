@@ -88,10 +88,13 @@ public final class ZoneManager implements IZoneManager {
                 type = FlagEntry.TYPE_LIST;
                 @SuppressWarnings("unchecked")
                 List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
-                strVal = String.join(",", v);
+                String joined = String.join(",", v);
+                strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
             } else { continue; }
+            String desc = flag.description();
+            if (desc != null && desc.length() > 1024) desc = desc.substring(0, 1021) + "…";
             flags.add(new FlagEntry(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
-                boolVal, inherited, flag.description(), type, strVal));
+                boolVal, inherited, desc != null ? desc : "", type, strVal));
         }
         List<MemberEntry> members = new ArrayList<>();
         for (UUID uuid : zone.whitelistedPlayers()) {
