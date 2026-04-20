@@ -1,5 +1,24 @@
 package com.arcadia.arcadiaguard.zone;
 
+import com.arcadia.arcadiaguard.ArcadiaGuard;
+import com.arcadia.arcadiaguard.api.IZoneManager;
+import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
+import com.arcadia.arcadiaguard.api.flag.Flag;
+import com.arcadia.arcadiaguard.api.flag.IntFlag;
+import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.zone.IZone;
+import com.arcadia.arcadiaguard.api.zone.ZoneCheckResult;
+import com.arcadia.arcadiaguard.event.ZoneLifecycleEvent;
+import com.arcadia.arcadiaguard.flag.FlagRegistryImpl;
+import com.arcadia.arcadiaguard.flag.FlagResolver;
+import com.arcadia.arcadiaguard.item.WandItem;
+import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
+import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload;
+import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload.Detail;
+import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload.FlagEntry;
+import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload.MemberEntry;
+import com.arcadia.arcadiaguard.persist.AsyncZoneWriter;
+import com.mojang.authlib.GameProfile;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -9,37 +28,142 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 
-public final class ZoneManager {
+public final class ZoneManager implements IZoneManager {
 
-    private final YawpZoneProvider yawp = new YawpZoneProvider();
-    private final InternalZoneProvider internal = new InternalZoneProvider();
-    private final ExceptionZoneManager exceptions = new ExceptionZoneManager();
+    private static final int PAGE_SIZE = 50;
+
+    private final InternalZoneProvider internal;
+    private final FlagRegistryImpl flagRegistry;
+
+    public ZoneManager(FlagRegistryImpl flagRegistry, AsyncZoneWriter asyncZoneWriter) {
+        this.flagRegistry = flagRegistry;
+        this.internal = new InternalZoneProvider(flagRegistry, asyncZoneWriter);
+    }
+
+    // ── Client response helpers ──────────────────────────────────────────────────
+
+    public void sendDetailToPlayer(ServerPlayer player, String zoneName) {
+        Level level = player.serverLevel();
+        @SuppressWarnings("unchecked")
+        Optional<ProtectedZone> opt = (Optional<ProtectedZone>)(Optional<?>) this.internal.get(level, zoneName);
+        if (opt.isEmpty()) {
+            player.sendSystemMessage(
+                net.minecraft.network.chat.Component.translatable(
+                    "arcadiaguard.gui.action.zone_not_found", zoneName)
+                .withStyle(net.minecraft.ChatFormatting.RED));
+            return;
+        }
+        ProtectedZone zone = opt.get();
+        MinecraftServer server = player.getServer();
+        List<FlagEntry> flags = new ArrayList<>();
+        for (Flag<?> flag : this.flagRegistry.all()) {
+            Object raw = zone.flagValues().get(flag.id());
+            boolean inherited = (raw == null);
+            byte type;
+            boolean boolVal = false;
+            String strVal;
+            if (flag instanceof BooleanFlag bf) {
+                type = FlagEntry.TYPE_BOOL;
+                if (raw instanceof Boolean b) { boolVal = b; }
+                else {
+                    @SuppressWarnings("unchecked")
+                    java.util.function.Function<String, Optional<ProtectedZone>> lookup =
+                        n -> (Optional<ProtectedZone>)(Optional<?>) this.internal.get(level, n);
+                    boolVal = FlagResolver.resolve(zone, bf, lookup);
+                }
+                strVal = Boolean.toString(boolVal);
+            } else if (flag instanceof IntFlag intF) {
+                type = FlagEntry.TYPE_INT;
+                int v = raw instanceof Integer i ? i : intF.defaultValue();
+                strVal = Integer.toString(v);
+            } else if (flag instanceof ListFlag) {
+                type = FlagEntry.TYPE_LIST;
+                @SuppressWarnings("unchecked")
+                List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
+                strVal = String.join(",", v);
+            } else { continue; }
+            flags.add(new FlagEntry(flag.id(), formatFlagLabel(flag.id()),
+                boolVal, inherited, flag.description(), type, strVal));
+        }
+        List<MemberEntry> members = new ArrayList<>();
+        for (UUID uuid : zone.whitelistedPlayers()) {
+            String name = server.getProfileCache().get(uuid)
+                .map(GameProfile::getName)
+                .orElse(uuid.toString().substring(0, 8) + "…");
+            members.add(new MemberEntry(uuid.toString(), name));
+        }
+        Detail detail = new Detail(zone.name(), zone.dimension(),
+            zone.minX(), zone.minY(), zone.minZ(),
+            zone.maxX(), zone.maxY(), zone.maxZ(),
+            zone.parent(), flags, members, zone.enabled(), zone.inheritDimFlags());
+        PacketDistributor.sendToPlayer(player, new ZoneDetailPayload(detail));
+    }
+
+    public void sendRefreshedList(ServerPlayer player) {
+        sendRefreshedList(player, 1);
+    }
+
+    public void sendRefreshedList(ServerPlayer player, int page) {
+        @SuppressWarnings("unchecked")
+        Collection<ProtectedZone> zones = (Collection<ProtectedZone>)(Collection<?>) this.internal.zones(player.serverLevel());
+        List<OpenGuiPayload.ZoneEntry> all = zones.stream()
+            .map(z -> new OpenGuiPayload.ZoneEntry(
+                z.name(), z.dimension(),
+                z.minX(), z.minY(), z.minZ(),
+                z.maxX(), z.maxY(), z.maxZ(),
+                z.whitelistedPlayers().size(),
+                z.parent() != null,
+                (int) z.flagValues().values().stream().filter(v -> v instanceof Boolean).count(),
+                z.enabled()))
+            .sorted(java.util.Comparator.comparing(OpenGuiPayload.ZoneEntry::name))
+            .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        int total = all.size();
+        int pages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
+        int p = Math.min(Math.max(page, 1), pages);
+        List<OpenGuiPayload.ZoneEntry> pageEntries = all.subList((p - 1) * PAGE_SIZE, Math.min(p * PAGE_SIZE, total));
+
+        BlockPos p1 = WandItem.getPos1(player.getUUID());
+        BlockPos p2 = WandItem.getPos2(player.getUUID());
+        long lp1 = p1 != null ? p1.asLong() : OpenGuiPayload.NO_POS;
+        long lp2 = p2 != null ? p2.asLong() : OpenGuiPayload.NO_POS;
+        boolean debugMode = ArcadiaGuard.guardService().isDebugMode(player.getUUID());
+
+        PacketDistributor.sendToPlayer(player,
+            new OpenGuiPayload(pageEntries, lp1, lp2, debugMode, p, PAGE_SIZE, pages));
+    }
+
+    private static String formatFlagLabel(String id) {
+        String[] parts = id.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!sb.isEmpty()) sb.append(' ');
+            sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return sb.toString();
+    }
 
     public void reload(MinecraftServer server) {
-        this.yawp.reload(server);
         this.internal.reload(server);
-        this.exceptions.reload(server);
     }
 
     public ZoneCheckResult check(ServerPlayer player, BlockPos pos) {
-        if (this.yawp.isAvailable()) {
-            ZoneCheckResult yawpResult = this.yawp.check(player, pos);
-            if (yawpResult.blocked()) return yawpResult;
-        }
         return this.internal.check(player, pos);
     }
 
-    public Collection<ProtectedZone> zones(Level level) {
-        List<ProtectedZone> zones = new ArrayList<>();
-        zones.addAll(this.yawp.zones(level));
-        zones.addAll(this.internal.zones(level));
-        return zones;
+    @Override
+    @SuppressWarnings("unchecked")
+    public Collection<IZone> zones(Level level) {
+        return (Collection<IZone>)(Collection<?>) this.internal.zones(level);
     }
 
-    public Optional<ProtectedZone> get(Level level, String name) {
-        Optional<ProtectedZone> yawpZone = this.yawp.get(level, name);
-        return yawpZone.isPresent() ? yawpZone : this.internal.get(level, name);
+    @Override
+    public Optional<IZone> get(Level level, String name) {
+        return this.internal.get(level, name).map(IZone.class::cast);
     }
 
     public boolean add(Level level, ProtectedZone zone) { return this.internal.add(level, zone); }
@@ -47,40 +171,96 @@ public final class ZoneManager {
     public boolean remove(Level level, String name) { return this.internal.remove(level, name); }
 
     public boolean whitelistAdd(Level level, String name, UUID playerId, String playerName) {
-        return this.yawp.isAvailable() && this.yawp.whitelistAdd(level, name, playerId, playerName)
-            || this.internal.whitelistAdd(level, name, playerId, playerName);
+        return this.internal.whitelistAdd(level, name, playerId, playerName);
     }
 
     public boolean whitelistRemove(Level level, String name, UUID playerId, String playerName) {
-        return this.yawp.isAvailable() && this.yawp.whitelistRemove(level, name, playerId, playerName)
-            || this.internal.whitelistRemove(level, name, playerId, playerName);
+        return this.internal.whitelistRemove(level, name, playerId, playerName);
     }
 
-    public boolean isExceptionAllowed(ServerPlayer player, BlockPos pos, String featureKey) {
-        return this.exceptions.isAllowed(player, pos, featureKey);
+    /** Assigns a role to a player in the named zone (also whitelists them). */
+    public boolean setMemberRole(Level level, String zoneName, UUID playerId, ZoneRole role) {
+        return this.internal.setMemberRole(level, zoneName, playerId, role);
     }
 
-    public Collection<ExceptionZone> exceptionZones(Level level) {
-        return this.exceptions.zones(level);
+    @Override
+    public Optional<IZone> findZoneContaining(Level level, BlockPos pos) {
+        return this.internal.findContaining(level, pos).map(IZone.class::cast);
     }
 
-    public Optional<ExceptionZone> getException(Level level, String name) {
-        return this.exceptions.get(level, name);
+    /** Single-pass equivalent of {@code check()} + {@code findZoneContaining()} for flag-aware checks. */
+    public Optional<ProtectedZone> checkZone(ServerPlayer player, BlockPos pos) {
+        return this.internal.checkZone(player, pos);
     }
 
-    public boolean addException(Level level, ExceptionZone zone) {
-        return this.exceptions.add(level, zone);
+    public boolean setEnabled(Level level, String zoneName, boolean enabled) {
+        return this.internal.setEnabled(level, zoneName, enabled);
     }
 
-    public boolean removeException(Level level, String name) {
-        return this.exceptions.remove(level, name);
+    public boolean setInheritDimFlags(Level level, String zoneName, boolean inherit) {
+        return this.internal.setInheritDimFlags(level, zoneName, inherit);
     }
 
-    public boolean allowExceptionFeature(Level level, String name, String featureKey) {
-        return this.exceptions.allow(level, name, featureKey);
+    public boolean setFlag(Level level, String zoneName, String flagId, Object value) {
+        return this.internal.setFlag(level, zoneName, flagId, value);
     }
 
-    public boolean denyExceptionFeature(Level level, String name, String featureKey) {
-        return this.exceptions.deny(level, name, featureKey);
+    public boolean resetFlag(Level level, String zoneName, String flagId) {
+        return this.internal.resetFlag(level, zoneName, flagId);
+    }
+
+    public boolean setParent(Level level, String zoneName, @Nullable String parentName) {
+        return this.internal.setParent(level, zoneName, parentName);
+    }
+
+    public boolean setBounds(Level level, String zoneName, BlockPos a, BlockPos b) {
+        return this.internal.setBounds(level, zoneName, a, b);
+    }
+
+    // ── ZoneLifecycleEvent subscribers ───────────────────────────────────────────
+
+    @SubscribeEvent
+    public void onCreateZone(ZoneLifecycleEvent.CreateZone event) {
+        ProtectedZone zone = new ProtectedZone(
+            event.name(), event.dimension(), event.pos1(), event.pos2());
+        event.setSuccess(this.internal.add(event.level(), zone));
+    }
+
+    @SubscribeEvent
+    public void onDeleteZone(ZoneLifecycleEvent.DeleteZone event) {
+        event.setSuccess(this.internal.remove(event.level(), event.zoneName()));
+    }
+
+    @SubscribeEvent
+    public void onSetFlag(ZoneLifecycleEvent.SetFlag event) {
+        boolean ok = event.isReset()
+            ? this.internal.resetFlag(event.level(), event.zoneName(), event.flagId())
+            : this.internal.setFlag(event.level(), event.zoneName(), event.flagId(), event.value());
+        event.setSuccess(ok);
+    }
+
+    @SubscribeEvent
+    public void onModifyZone(ZoneLifecycleEvent.ModifyZone event) {
+        boolean ok = switch (event.kind()) {
+            case WHITELIST_ADD ->
+                this.internal.whitelistAdd(event.level(), event.zoneName(),
+                    (UUID) event.arg1(), (String) event.arg2());
+            case WHITELIST_REMOVE ->
+                this.internal.whitelistRemove(event.level(), event.zoneName(),
+                    (UUID) event.arg1(), (String) event.arg2());
+            case SET_PARENT ->
+                this.internal.setParent(event.level(), event.zoneName(),
+                    (String) event.arg1());
+            case TOGGLE_ENABLED ->
+                this.internal.setEnabled(event.level(), event.zoneName(),
+                    (Boolean) event.arg1());
+            case TOGGLE_INHERIT ->
+                this.internal.setInheritDimFlags(event.level(), event.zoneName(),
+                    (Boolean) event.arg1());
+            case SET_BOUNDS ->
+                this.internal.setBounds(event.level(), event.zoneName(),
+                    (BlockPos) event.arg1(), (BlockPos) event.arg2());
+        };
+        event.setSuccess(ok);
     }
 }
