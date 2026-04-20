@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -73,6 +74,9 @@ public final class GuiActionHandler {
         // C1: Rate-limit packets C→S before enqueuing work on main thread.
         if (context.player() instanceof ServerPlayer sp) {
             UUID uuid = sp.getUUID();
+            if (RATE_LIMITERS.size() > 500) {
+                RATE_LIMITERS.clear();
+            }
             if (!RATE_LIMITERS.computeIfAbsent(uuid, k -> new RateLimiter(20, 20)).tryConsume()) {
                 ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] rate limited packet from {}", uuid);
                 return;
@@ -261,7 +265,10 @@ public final class GuiActionHandler {
                 ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] ProfileCache lookup failed for '{}': {}", targetName, e.toString());
                 return Optional.<GameProfile>empty();
             }
-        }, ForkJoinPool.commonPool()).thenAcceptAsync(optProfile -> {
+        }, ForkJoinPool.commonPool()).orTimeout(5, TimeUnit.SECONDS).exceptionally(ex -> {
+            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] ProfileCache lookup timed out for '{}'", targetName);
+            return Optional.<GameProfile>empty();
+        }).thenAcceptAsync(optProfile -> {
             if (optProfile == null || optProfile.isEmpty()) {
                 player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
                 return;
@@ -275,6 +282,10 @@ public final class GuiActionHandler {
 
     private static void setParent(ServerPlayer player, GuiActionPayload p) {
         String parentName = p.arg1().trim();
+        if (!parentName.isEmpty() && ArcadiaGuard.zoneManager().get(player.serverLevel(), parentName).isEmpty()) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", parentName).withStyle(ChatFormatting.RED));
+            return;
+        }
         postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
             parentName.isEmpty() ? null : parentName, null);
     }
@@ -285,6 +296,12 @@ public final class GuiActionHandler {
         if (!validCoords(p.x1(), p.y1(), p.z1(), minY, maxY)
                 || !validCoords(p.x2(), p.y2(), p.z2(), minY, maxY)) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.coords_out_of_bounds").withStyle(ChatFormatting.RED));
+            return;
+        }
+        long dx = Math.abs((long) p.x2() - p.x1()) + 1;
+        long dz = Math.abs((long) p.z2() - p.z1()) + 1;
+        if (dx * dz > 10_000_000) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_too_large").withStyle(ChatFormatting.RED));
             return;
         }
         postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_BOUNDS,
