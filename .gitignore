@@ -20,9 +20,27 @@ out/
 # macOS
 .DS_Store
 
-# Tmp sources (other mods, dev only)
-.tmp-sources/
-
 # Run configs
 run/
 runs/
+
+# Tmp sources (dev only)
+.tmp-*
+Dump.java
+
+# Crash reports
+crash-*.txt
+
+# Logs
+logs/
+
+# BMad workflow artifacts
+_bmad/
+_bmad-output/
+
+# Claude Code
+.claude/
+
+# Dev tools & misc
+toolstexture_model/
+description.md
