@@ -386,10 +386,13 @@ public final class GuiActionHandler {
                 type = FlagInfo.TYPE_LIST;
                 @SuppressWarnings("unchecked")
                 List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
-                strVal = String.join(",", v);
+                String joined = String.join(",", v);
+                strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
             } else { continue; }
+            String desc = flag.description();
+            if (desc != null && desc.length() > 1024) desc = desc.substring(0, 1021) + "…";
             flags.add(new FlagInfo(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
-                boolVal, configured, flag.description(), type, strVal));
+                boolVal, configured, desc != null ? desc : "", type, strVal));
         }
         PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags));
     }
