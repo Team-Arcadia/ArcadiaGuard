@@ -91,9 +91,11 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
         boolean castAllowed = guardService.isFlagAllowedOrUnset(zone, castFlag, player.serverLevel());
         if (!castAllowed) {
             if (whitelistFlag != null) {
-                @SuppressWarnings("unchecked")
-                List<String> whitelist = (List<String>) zone.flagValues().getOrDefault(whitelistFlag.id(), List.of());
-                if (whitelist.contains(spellId)) return;
+                Object rawWl = zone.flagValues().getOrDefault(whitelistFlag.id(), List.of());
+                if (rawWl instanceof List<?> wlList) {
+                    List<String> whitelist = wlList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+                    if (whitelist.contains(spellId)) return;
+                }
             }
             player.sendSystemMessage(Component.literal("\u00a7c" + castMessage.get()));
             cancel(event);
@@ -101,11 +103,13 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
         }
 
         if (blacklistFlag != null) {
-            @SuppressWarnings("unchecked")
-            List<String> blacklist = (List<String>) zone.flagValues().getOrDefault(blacklistFlag.id(), List.of());
-            if (blacklist.contains(spellId)) {
-                player.sendSystemMessage(Component.literal("\u00a7c" + castMessage.get()));
-                cancel(event);
+            Object rawBl = zone.flagValues().getOrDefault(blacklistFlag.id(), List.of());
+            if (rawBl instanceof List<?> blList) {
+                List<String> blacklist = blList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+                if (blacklist.contains(spellId)) {
+                    player.sendSystemMessage(Component.literal("\u00a7c" + castMessage.get()));
+                    cancel(event);
+                }
             }
         }
     }
