@@ -4,9 +4,14 @@ import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.item.DynamicItemBlockList;
 import com.arcadia.arcadiaguard.handler.handlers.ArsNouveauHandler;
+import com.arcadia.arcadiaguard.handler.handlers.ApotheosisCharmHandler;
 import com.arcadia.arcadiaguard.handler.handlers.ApotheosisHandler;
 import com.arcadia.arcadiaguard.handler.handlers.BetterArcheologyHandler;
+import com.arcadia.arcadiaguard.handler.handlers.EmotecraftHandler;
+import com.arcadia.arcadiaguard.handler.handlers.MutantMonstersHandler;
+import com.arcadia.arcadiaguard.handler.handlers.ParcoolHandler;
 import com.arcadia.arcadiaguard.handler.handlers.SpawnBookHandler;
+import com.arcadia.arcadiaguard.handler.handlers.TwilightForestHandler;
 import com.arcadia.arcadiaguard.handler.handlers.ZoneItemHandler;
 import com.arcadia.arcadiaguard.handler.handlers.IronsSpellbooksHandler;
 import com.arcadia.arcadiaguard.handler.handlers.OccultismHandler;
@@ -18,7 +23,9 @@ import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
@@ -31,15 +38,19 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.level.block.CropGrowEvent;
+import net.neoforged.neoforge.event.level.BlockGrowFeatureEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 public final class HandlerRegistry {
 
+    private final GuardService guardService;
     private final BlockEventHandler blockEventHandler;
     private final EntityEventHandler entityEventHandler;
     private final PlayerEventHandler playerEventHandler;
     private final FlagEventHandler flagEventHandler;
+    private final MutantMonstersHandler mutantMonstersHandler;
+    private final TwilightForestHandler twilightForestHandler;
     private final List<Object> handlers;
 
     // H-P8: pre-typed arrays for O(1) dispatch without instanceof on every event
@@ -49,10 +60,14 @@ public final class HandlerRegistry {
     private BlockBreakHandler[] blockBreakHandlers;
 
     public HandlerRegistry(GuardService guardService, DynamicItemBlockList dynamicItemBlockList) {
+        this.guardService = guardService;
         this.blockEventHandler = new BlockEventHandler(guardService);
         this.entityEventHandler = new EntityEventHandler(guardService);
-        this.playerEventHandler = new PlayerEventHandler(guardService);
         this.flagEventHandler = new FlagEventHandler(guardService);
+        this.mutantMonstersHandler = new MutantMonstersHandler(guardService);
+        this.twilightForestHandler = new TwilightForestHandler(guardService);
+        ApotheosisCharmHandler charmHandler = new ApotheosisCharmHandler(guardService);
+        this.playerEventHandler = new PlayerEventHandler(guardService, charmHandler);
         this.handlers = List.of(
             this.playerEventHandler,
             new IronsSpellbooksHandler(guardService),
@@ -63,7 +78,9 @@ public final class HandlerRegistry {
             new ApotheosisHandler(guardService),
             new BetterArcheologyHandler(guardService),
             new SpawnBookHandler(guardService),
-            new ZoneItemHandler(guardService, dynamicItemBlockList)
+            new ZoneItemHandler(guardService, dynamicItemBlockList),
+            new ParcoolHandler(guardService),
+            charmHandler
         );
         // H-P8: build typed arrays so dispatch loops cast once at boot, not on every event
         this.rightClickItemHandlers = this.handlers.stream()
@@ -83,6 +100,8 @@ public final class HandlerRegistry {
     public void register(IEventBus ignored) {
         // H-P7: register static event listeners for cache invalidation
         IronsSpellbooksHandler.registerEventListeners();
+        // Mod integrations that register their own listeners
+        EmotecraftHandler.register(guardService);
 
         for (Object handler : this.handlers) {
             if (handler instanceof DynamicEventHandler dynamic) {
@@ -114,8 +133,13 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTeleportEvent.EnderPearl.class, flagEventHandler::onEnderPearlTeleport);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTeleportEvent.ChorusFruit.class, flagEventHandler::onChorusFruitTeleport);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, CropGrowEvent.Pre.class, flagEventHandler::onCropGrow);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockGrowFeatureEvent.class, flagEventHandler::onTreeGrow);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.FarmlandTrampleEvent.class, flagEventHandler::onFarmlandTrample);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.FluidPlaceBlockEvent.class, flagEventHandler::onFluidPlaceBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.EntityPlaceEvent.class, flagEventHandler::onBlockEntityPlace);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, EntityJoinLevelEvent.class, flagEventHandler::onVehicleJoin);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityJoinLevelEvent.class, mutantMonstersHandler::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ProjectileImpactEvent.class, twilightForestHandler::onProjectileImpact);
     }
 
     public void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
