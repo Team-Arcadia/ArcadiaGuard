@@ -3,6 +3,7 @@ package com.arcadia.arcadiaguard.handler;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.flag.FlagResolver;
 import com.arcadia.arcadiaguard.guard.GuardService;
+import com.arcadia.arcadiaguard.handler.handlers.ApotheosisCharmHandler;
 import com.arcadia.arcadiaguard.item.ModItems;
 import com.arcadia.arcadiaguard.item.WandItem;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
@@ -16,6 +17,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -26,6 +29,7 @@ public final class PlayerEventHandler
     private static final int ZONE_CHECK_INTERVAL = 10; // ticks between zone boundary checks
 
     private final GuardService guard;
+    private final ApotheosisCharmHandler charmHandler;
     /**
      * H-P4: Object2IntOpenHashMap avoids Integer boxing on every tick merge.
      * Only accessed from the server main thread (onPlayerTick, onPlayerLogout) so
@@ -35,8 +39,9 @@ public final class PlayerEventHandler
     private final Map<UUID, String> playerCurrentZone = new ConcurrentHashMap<>();
     private final Map<UUID, BlockPos> lastSafePos = new ConcurrentHashMap<>();
 
-    public PlayerEventHandler(GuardService guard) {
+    public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
+        this.charmHandler = charmHandler;
     }
 
     /** Left-click block with ZONE_EDITOR → set pos1. */
@@ -86,6 +91,7 @@ public final class PlayerEventHandler
         guard.invalidateBypass(id);
         // H-P6: invalidate LuckPerms permData cache for this player
         com.arcadia.arcadiaguard.compat.luckperms.LuckPermsCompat.invalidatePlayer(id);
+        if (event.getEntity() instanceof ServerPlayer sp) charmHandler.onPlayerLogout(sp);
     }
 
     /**
@@ -127,6 +133,14 @@ public final class PlayerEventHandler
                         return; // don't update zone tracking
                     }
                 }
+                // Suppress Apotheosis charms if CHARM_USE=deny (skip for bypass/members)
+                if (!guard.shouldBypass(player) && !guard.isZoneMember(player, zone)) {
+                    if (!guard.isZoneDenying(zone, BuiltinFlags.CHARM_USE, player.serverLevel())) {
+                        charmHandler.restoreCharms(player);
+                    } else {
+                        charmHandler.suppressCharms(player);
+                    }
+                }
             } else if (newZoneName == null && oldZoneName != null) {
                 // Exiting a zone → check EXIT flag (player already outside, just message)
                 @SuppressWarnings("unchecked")
@@ -135,11 +149,11 @@ public final class PlayerEventHandler
                         && !guard.isZoneMember(player, prevZone.get())) {
                     boolean exitAllowed = guard.isFlagAllowedOrUnset(prevZone.get(), BuiltinFlags.EXIT, player.serverLevel());
                     if (!exitAllowed) {
-                        // Teleport back inside the zone (center)
+                        // Teleport back inside the zone (center, safe Y)
                         ProtectedZone z = prevZone.get();
                         double cx = (z.minX() + z.maxX()) / 2.0 + 0.5;
-                        double cy = z.minY();
                         double cz = (z.minZ() + z.maxZ()) / 2.0 + 0.5;
+                        double cy = findSafeY(player.serverLevel(), (int) Math.floor(cx), z.minY(), z.maxY(), (int) Math.floor(cz));
                         player.teleportTo(player.serverLevel(), cx, cy, cz,
                             player.getYRot(), player.getXRot());
                         player.displayClientMessage(
@@ -147,6 +161,8 @@ public final class PlayerEventHandler
                         return;
                     }
                 }
+                // Leaving a zone → restore charms if they were suppressed
+                charmHandler.restoreCharms(player);
             }
             if (newZoneName != null) playerCurrentZone.put(id, newZoneName);
             else playerCurrentZone.remove(id);
@@ -174,6 +190,21 @@ public final class PlayerEventHandler
                 player.getFoodData().eat(feed, 0.5f);
             }
         }
+    }
+
+    /** Finds the lowest Y inside [minY, maxY] where two consecutive non-solid blocks sit above a solid one. */
+    private static double findSafeY(ServerLevel level, int x, int minY, int maxY, int z) {
+        int start = Math.max(minY, level.getMinBuildHeight());
+        int end = Math.min(maxY - 1, level.getMaxBuildHeight() - 2);
+        for (int y = start; y < end; y++) {
+            BlockState floor = level.getBlockState(new BlockPos(x, y, z));
+            BlockState feet  = level.getBlockState(new BlockPos(x, y + 1, z));
+            BlockState head  = level.getBlockState(new BlockPos(x, y + 2, z));
+            if (floor.isSolid() && !feet.isSolid() && !head.isSolid()) {
+                return y + 1;
+            }
+        }
+        return start + 1;
     }
 
     private static void sendPosMessage(ServerPlayer player, int num, BlockPos pos) {
