@@ -1,31 +1,31 @@
 package com.arcadia.arcadiaguard.handler.handlers;
 
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
+import com.arcadia.arcadiaguard.flag.BuiltinFlags;
+import com.arcadia.arcadiaguard.flag.FlagResolver;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.EntityInteractHandler;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.RightClickBlockHandler;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.RightClickItemHandler;
 import com.arcadia.arcadiaguard.item.DynamicItemBlockList;
 import com.arcadia.arcadiaguard.tag.ArcadiaGuardTags;
+import com.arcadia.arcadiaguard.zone.ProtectedZone;
+import java.util.Optional;
+import java.util.function.Function;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * Blocks leads, spawn eggs, and dynamically registered items in protected zones.
- *
- * Spawn eggs: detected via instanceof SpawnEggItem (covers vanilla + modded) or
- *             the arcadiaguard:banned_spawn_eggs tag (fallback for non-standard eggs).
- *             Both the clicked block AND the face block are checked, since the mob
- *             actually spawns on the face of the clicked block.
- *
- * Leads: arcadiaguard:banned_leads tag (vanilla + Apothic Enchanting ender leads).
- *        Intercepted on fence-post click (RightClickBlock) and mob leashing (EntityInteract).
- *
- * Dynamic items: managed via /arcadiaguard item block|unblock|list.
+ * Blocks leads, spawn eggs, mob buckets, dynamic items, and NPC interactions
+ * in protected zones.
  */
 public final class ZoneItemHandler implements RightClickItemHandler, RightClickBlockHandler, EntityInteractHandler {
 
@@ -37,8 +37,6 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         this.dynamicList = dynamicList;
     }
 
-    // RightClickItem fires when using an item in the air (no block hit).
-    // Spawn eggs don't do anything in air in vanilla, but we block just in case.
     @Override
     public void handle(PlayerInteractEvent.RightClickItem event) {
         Player player = event.getEntity();
@@ -54,28 +52,34 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             }
         }
 
+        // MOB_BUCKET: block releasing fish/axolotl/tadpole buckets
+        if (isMobBucket(stack) && checkFlagDenied(sp, pos, BuiltinFlags.MOB_BUCKET)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"));
+            event.setCanceled(true);
+            return;
+        }
+
         if (dynamicList.contains(stack)) {
-            if (guardService.blockIfProtected(sp, pos, "item_use:" + itemId(stack), "dynamic_item",
+            // H6: defer "item_use:" + itemId concat until we know it will be used (blockIfProtected checks zone inside)
+            String actionName = "item_use:" + itemId(stack);
+            if (guardService.blockIfProtected(sp, pos, actionName, "dynamic_item",
                     ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
                 event.setCanceled(true);
             }
         }
     }
 
-    // RightClickBlock: spawn eggs, leads on fence post, dynamic items.
-    // For spawn eggs, the mob spawns either at the clicked block (if passable)
-    // or on the clicked face — we check BOTH positions.
     @Override
     public void handle(PlayerInteractEvent.RightClickBlock event) {
         Player player = event.getEntity();
         if (!(player instanceof ServerPlayer sp)) return;
         ItemStack stack = event.getItemStack();
         BlockPos clicked = event.getPos();
-        BlockPos spawnPos = clicked.relative(event.getFace()); // actual mob spawn position
+        BlockPos spawnPos = clicked.relative(event.getFace());
 
         if (ArcadiaGuardConfig.ENABLE_SPAWN_EGG_PROTECTION.get() && isSpawnEgg(stack)) {
-            boolean blockedAtClick  = guardService.blockIfProtected(sp, clicked,  "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
-            boolean blockedAtSpawn  = !blockedAtClick && guardService.blockIfProtected(sp, spawnPos, "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
+            boolean blockedAtClick = guardService.blockIfProtected(sp, clicked, "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
+            boolean blockedAtSpawn = !blockedAtClick && guardService.blockIfProtected(sp, spawnPos, "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
             if (blockedAtClick || blockedAtSpawn) {
                 event.setCanceled(true);
                 return;
@@ -90,41 +94,91 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             }
         }
 
+        // MOB_BUCKET on block (e.g. click water surface)
+        if (isMobBucket(stack) && checkFlagDenied(sp, clicked, BuiltinFlags.MOB_BUCKET)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"));
+            event.setCanceled(true);
+            return;
+        }
+
         if (dynamicList.contains(stack)) {
-            if (guardService.blockIfProtected(sp, clicked, "item_use:" + itemId(stack), "dynamic_item",
+            String actionName = "item_use:" + itemId(stack);
+            if (guardService.blockIfProtected(sp, clicked, actionName, "dynamic_item",
                     ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
                 event.setCanceled(true);
             }
         }
     }
 
-    // Leads used on a mob (right-click entity to leash)
     @Override
     public void handle(PlayerInteractEvent.EntityInteract event) {
-        if (!ArcadiaGuardConfig.ENABLE_LEAD_PROTECTION.get()) return;
         Player player = event.getEntity();
         if (!(player instanceof ServerPlayer sp)) return;
 
+        Entity target = event.getTarget();
+        BlockPos pos = target.blockPosition();
+
+        // NPC_INTERACT: block right-clicking on NPCs (easy_npc mod entities)
+        if (isNpc(target) && checkFlagDenied(sp, pos, BuiltinFlags.NPC_INTERACT)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.npc_interact"));
+            event.setCanceled(true);
+            return;
+        }
+
+        // Lead on mob
+        if (!ArcadiaGuardConfig.ENABLE_LEAD_PROTECTION.get()) return;
         ItemStack stack = sp.getMainHandItem().isEmpty() ? sp.getOffhandItem() : sp.getMainHandItem();
         if (!stack.is(ArcadiaGuardTags.BANNED_LEADS)) return;
 
-        BlockPos pos = event.getTarget().blockPosition();
         if (guardService.blockIfProtected(sp, pos, "lead_use", "lead_protection",
                 ArcadiaGuardConfig.MESSAGE_LEAD.get()).blocked()) {
             event.setCanceled(true);
         }
     }
 
-    /**
-     * True for vanilla spawn eggs (SpawnEggItem subclass) and any item in the
-     * arcadiaguard:banned_spawn_eggs tag (fallback for non-standard modded eggs).
-     */
+    /** Returns true if the item is a mob-releasing bucket (fish, axolotl, tadpole, etc.). */
+    private static boolean isMobBucket(ItemStack stack) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (id == null) return false;
+        String path = id.getPath();
+        return path.endsWith("_bucket") && !path.equals("bucket") && !path.equals("water_bucket")
+            && !path.equals("lava_bucket") && !path.equals("milk_bucket") && !path.equals("powder_snow_bucket");
+    }
+
+    /** M2: cached NPC verdict per EntityType to avoid repeated registry lookup + string ops. */
+    private static final java.util.Map<net.minecraft.world.entity.EntityType<?>, Boolean> NPC_CACHE =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** Returns true if the entity is an NPC (easy_npc mod or similar). */
+    private static boolean isNpc(Entity entity) {
+        return NPC_CACHE.computeIfAbsent(entity.getType(), t -> {
+            var key = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(t);
+            if (key == null) return false;
+            // H-E6: Locale.ROOT for consistent lowercasing across JVM locales
+            // M-E2: check path segments precisely to avoid false positives like "zombie_npc_xyz"
+            String id = key.toString().toLowerCase(java.util.Locale.ROOT);
+            String path = key.getPath().toLowerCase(java.util.Locale.ROOT);
+            return id.contains("easy_npc")
+                || path.equals("npc")
+                || path.endsWith("_npc")
+                || path.startsWith("npc_");
+        });
+    }
+
+    private boolean checkFlagDenied(ServerPlayer player, BlockPos pos,
+            com.arcadia.arcadiaguard.api.flag.BooleanFlag flag) {
+        if (guardService.shouldBypass(player)) return false;
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, pos);
+        if (zoneOpt.isEmpty()) return false;
+        return !guardService.isFlagAllowedOrUnset(zoneOpt.get(), flag, player.serverLevel());
+    }
+
     private static boolean isSpawnEgg(ItemStack stack) {
         return stack.getItem() instanceof SpawnEggItem || stack.is(ArcadiaGuardTags.BANNED_SPAWN_EGGS);
     }
 
     private static String itemId(ItemStack stack) {
-        var key = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        var key = BuiltInRegistries.ITEM.getKey(stack.getItem());
         return key != null ? key.toString() : "unknown";
     }
 }

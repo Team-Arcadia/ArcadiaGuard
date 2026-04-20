@@ -1,0 +1,412 @@
+package com.arcadia.arcadiaguard.handler;
+
+import com.arcadia.arcadiaguard.ArcadiaGuard;
+import com.arcadia.arcadiaguard.ArcadiaGuardPaths;
+import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
+import com.arcadia.arcadiaguard.api.flag.Flag;
+import com.arcadia.arcadiaguard.command.ZonePermission;
+import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
+import com.arcadia.arcadiaguard.event.ZoneLifecycleEvent;
+import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload;
+import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload.FlagInfo;
+import com.arcadia.arcadiaguard.network.gui.GuiActionPayload;
+import com.arcadia.arcadiaguard.network.gui.ZoneLogsPayload;
+import com.arcadia.arcadiaguard.persist.DimFlagSerializer;
+import com.arcadia.arcadiaguard.zone.ZoneRole;
+import com.mojang.authlib.GameProfile;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+/** Traite toutes les actions C→S émises depuis le GUI de gestion des zones. */
+public final class GuiActionHandler {
+
+    private GuiActionHandler() {}
+
+    // C1: Token-bucket rate-limiter per player UUID (capacity=20, refill=20/s).
+    // TODO v2: add LRU eviction (currently unbounded, safe for ~50 concurrent players).
+    private static final ConcurrentHashMap<UUID, RateLimiter> RATE_LIMITERS = new ConcurrentHashMap<>();
+
+    /** Simple token-bucket rate-limiter. Thread-safe. */
+    private static final class RateLimiter {
+        private final int capacity;
+        private final int refillPerSecond;
+        private long lastRefill;
+        private int tokens;
+
+        RateLimiter(int capacity, int refillPerSecond) {
+            this.capacity = capacity;
+            this.refillPerSecond = refillPerSecond;
+            this.lastRefill = System.nanoTime();
+            this.tokens = capacity;
+        }
+
+        synchronized boolean tryConsume() {
+            long now = System.nanoTime();
+            long elapsed = now - lastRefill;
+            int refilled = (int) (elapsed / 1_000_000_000L * refillPerSecond);
+            if (refilled > 0) {
+                tokens = Math.min(capacity, tokens + refilled);
+                lastRefill = now;
+            }
+            if (tokens <= 0) return false;
+            tokens--;
+            return true;
+        }
+    }
+
+    public static void handle(GuiActionPayload payload, IPayloadContext context) {
+        // C1: Rate-limit packets C→S before enqueuing work on main thread.
+        if (context.player() instanceof ServerPlayer sp) {
+            UUID uuid = sp.getUUID();
+            if (!RATE_LIMITERS.computeIfAbsent(uuid, k -> new RateLimiter(20, 20)).tryConsume()) {
+                ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] rate limited packet from {}", uuid);
+                return;
+            }
+        }
+        context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayer player)) return;
+
+            switch (payload.action()) {
+                case REQUEST_DETAIL -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    ArcadiaGuard.zoneManager().sendDetailToPlayer(player, payload.zoneName());
+                }
+                case CREATE_ZONE -> {
+                    if (!isOp(player)) return;
+                    createZone(player, payload);
+                }
+                case DELETE_ZONE -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    deleteZone(player, payload.zoneName());
+                }
+                case SET_FLAG -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    postSetFlag(player, payload.zoneName(), payload.arg1(), payload.boolVal(), false);
+                }
+                case WHITELIST_ADD -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MODERATOR)) return;
+                    whitelistAction(player, payload, true);
+                }
+                case WHITELIST_REMOVE -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MODERATOR)) return;
+                    whitelistAction(player, payload, false);
+                }
+                case TELEPORT -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    teleport(player, payload.zoneName());
+                }
+                case TOGGLE_DEBUG -> {
+                    if (!isOp(player)) return;
+                    toggleDebug(player);
+                }
+                case SET_PARENT -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    setParent(player, payload);
+                }
+                case TOGGLE_ZONE_ENABLED -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    postModify(player, payload.zoneName(),
+                        ZoneLifecycleEvent.ModifyZone.Kind.TOGGLE_ENABLED, payload.boolVal(), null);
+                }
+                case TOGGLE_INHERIT_DIM_FLAGS -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    postModify(player, payload.zoneName(),
+                        ZoneLifecycleEvent.ModifyZone.Kind.TOGGLE_INHERIT, payload.boolVal(), null);
+                }
+                case SET_DIM_FLAG -> {
+                    if (!isOp(player)) return;
+                    setDimFlag(player, payload);
+                }
+                case RESET_DIM_FLAG -> {
+                    if (!isOp(player)) return;
+                    resetDimFlag(player, payload);
+                }
+                case REQUEST_DIM_DETAIL -> {
+                    if (!isOp(player)) return;
+                    sendDimDetail(player, payload.zoneName());
+                }
+                case RESET_FLAG -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    postSetFlag(player, payload.zoneName(), payload.arg1(), false, true);
+                }
+                case SET_FLAG_STR -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    setFlagStr(player, payload);
+                }
+                case SET_DIM_FLAG_STR -> {
+                    if (!isOp(player)) return;
+                    setDimFlagStr(player, payload);
+                }
+                case SET_ZONE_BOUNDS -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    setZoneBounds(player, payload);
+                }
+                case REQUEST_ZONE_LOGS -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    sendZoneLogs(player, payload);
+                }
+                case REQUEST_PAGE -> {
+                    if (!isOp(player)) return;
+                    ArcadiaGuard.zoneManager().sendRefreshedList(player, payload.x1());
+                }
+            }
+        });
+    }
+
+    private static void sendZoneLogs(ServerPlayer player, GuiActionPayload p) {
+        var entries = ArcadiaGuard.auditLogger().tail(p.zoneName(), p.arg1(), p.arg2(), 200);
+        List<ZoneLogsPayload.LogLine> lines = new ArrayList<>(entries.size());
+        for (var e : entries) {
+            lines.add(new ZoneLogsPayload.LogLine(e.timestamp(), e.player(), e.action(), e.pos()));
+        }
+        PacketDistributor.sendToPlayer(player, new ZoneLogsPayload(p.zoneName(), lines));
+    }
+
+    private static boolean isOp(ServerPlayer player) {
+        return player.hasPermissions(ArcadiaGuardConfig.BYPASS_OP_LEVEL.get());
+    }
+
+    private static boolean canAccessZone(ServerPlayer player, String zoneName, ZoneRole minRole) {
+        if (zoneName == null || zoneName.isEmpty()) return false;
+        return ZonePermission.hasAccess(player.createCommandSourceStack(), zoneName, minRole);
+    }
+
+    // ── Event-driven zone write operations ────────────────────────────────────────
+
+    private static void createZone(ServerPlayer player, GuiActionPayload p) {
+        String name = p.zoneName().trim();
+        if (!ArcadiaGuardPaths.isValidZoneName(name)) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_name_invalid").withStyle(ChatFormatting.RED));
+            return;
+        }
+        Level level = player.serverLevel();
+        int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight() - 1;
+        if (!validCoords(p.x1(), p.y1(), p.z1(), minY, maxY)
+                || !validCoords(p.x2(), p.y2(), p.z2(), minY, maxY)) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.coords_out_of_bounds").withStyle(ChatFormatting.RED));
+            return;
+        }
+        String dim = level.dimension().location().toString();
+        var event = new ZoneLifecycleEvent.CreateZone(player, level, name, dim,
+            new BlockPos(p.x1(), p.y1(), p.z1()), new BlockPos(p.x2(), p.y2(), p.z2()));
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isSuccess()) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_created", name).withStyle(ChatFormatting.GREEN));
+            ArcadiaGuard.zoneManager().sendRefreshedList(player);
+        } else {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_exists").withStyle(ChatFormatting.RED));
+        }
+    }
+
+    private static void deleteZone(ServerPlayer player, String zoneName) {
+        var event = new ZoneLifecycleEvent.DeleteZone(player, player.serverLevel(), zoneName);
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isSuccess()) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_deleted", zoneName).withStyle(ChatFormatting.GREEN));
+            ArcadiaGuard.zoneManager().sendRefreshedList(player);
+        } else {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
+        }
+    }
+
+    private static void postSetFlag(ServerPlayer player, String zoneName,
+            String flagId, Object value, boolean reset) {
+        var event = new ZoneLifecycleEvent.SetFlag(player, player.serverLevel(), zoneName, flagId, value, reset);
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isSuccess()) ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+        else player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
+    }
+
+    private static void setFlagStr(ServerPlayer player, GuiActionPayload p) {
+        Object value = parseFlagValue(p.arg1(), p.arg2());
+        if (value == null) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.invalid_value", p.arg1()).withStyle(ChatFormatting.RED));
+            return;
+        }
+        postSetFlag(player, p.zoneName(), p.arg1(), value, false);
+    }
+
+    private static void postModify(ServerPlayer player, String zoneName,
+            ZoneLifecycleEvent.ModifyZone.Kind kind, Object arg1, Object arg2) {
+        var event = new ZoneLifecycleEvent.ModifyZone(player, player.serverLevel(), zoneName, kind, arg1, arg2);
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isSuccess()) ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+        else player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
+    }
+
+    private static void whitelistAction(ServerPlayer player, GuiActionPayload p, boolean add) {
+        String targetName = p.arg1();
+        MinecraftServer server = player.getServer();
+        // C2: ProfileCache.get(name) may block on a network lookup (HTTP miss).
+        // Dispatch to background thread, then re-enter main thread for zone mutation.
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return server.getProfileCache().get(targetName);
+            } catch (Exception e) {
+                ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] ProfileCache lookup failed for '{}': {}", targetName, e.toString());
+                return Optional.<GameProfile>empty();
+            }
+        }, ForkJoinPool.commonPool()).thenAcceptAsync(optProfile -> {
+            if (optProfile == null || optProfile.isEmpty()) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
+                return;
+            }
+            GameProfile profile = optProfile.get();
+            var kind = add ? ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_ADD
+                           : ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_REMOVE;
+            postModify(player, p.zoneName(), kind, profile.getId(), profile.getName());
+        }, server);
+    }
+
+    private static void setParent(ServerPlayer player, GuiActionPayload p) {
+        String parentName = p.arg1().trim();
+        postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
+            parentName.isEmpty() ? null : parentName, null);
+    }
+
+    private static void setZoneBounds(ServerPlayer player, GuiActionPayload p) {
+        Level level = player.serverLevel();
+        int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight() - 1;
+        if (!validCoords(p.x1(), p.y1(), p.z1(), minY, maxY)
+                || !validCoords(p.x2(), p.y2(), p.z2(), minY, maxY)) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.coords_out_of_bounds").withStyle(ChatFormatting.RED));
+            return;
+        }
+        postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_BOUNDS,
+            new BlockPos(p.x1(), p.y1(), p.z1()), new BlockPos(p.x2(), p.y2(), p.z2()));
+        ArcadiaGuard.zoneManager().sendRefreshedList(player);
+    }
+
+    private static boolean validCoords(int x, int y, int z, int minY, int maxY) {
+        if (y < minY || y > maxY) return false;
+        return x > Integer.MIN_VALUE && z > Integer.MIN_VALUE
+            && Math.abs((long) x) <= 30_000_000L && Math.abs((long) z) <= 30_000_000L;
+    }
+
+    // ── Teleport / Debug ─────────────────────────────────────────────────────────
+
+    private static void teleport(ServerPlayer player, String zoneName) {
+        ArcadiaGuard.zoneManager().get(player.serverLevel(), zoneName).ifPresent(zone -> {
+            double cx = (zone.minX() + zone.maxX()) / 2.0 + 0.5;
+            double cz = (zone.minZ() + zone.maxZ()) / 2.0 + 0.5;
+            double cy = zone.maxY() + 1;
+            player.teleportTo(player.serverLevel(), cx, cy, cz, player.getYRot(), player.getXRot());
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.teleported", zoneName).withStyle(ChatFormatting.GREEN));
+        });
+    }
+
+    private static void toggleDebug(ServerPlayer player) {
+        boolean enabled = ArcadiaGuard.guardService().toggleDebug(player.getUUID());
+        String msg = enabled
+            ? "\u00a7e[ArcadiaGuard] Mode debug \u00a7aACTIVÉ\u00a7e — la protection s'applique même en OP."
+            : "\u00a7e[ArcadiaGuard] Mode debug \u00a7cDÉSACTIVÉ\u00a7e.";
+        player.sendSystemMessage(Component.literal(msg));
+        ArcadiaGuard.zoneManager().sendRefreshedList(player);
+    }
+
+    // ── Dimension flags ──────────────────────────────────────────────────────────
+
+    private static void setDimFlag(ServerPlayer player, GuiActionPayload p) {
+        ArcadiaGuard.dimFlagStore().setFlag(p.zoneName(), p.arg1(), p.boolVal());
+        saveDimFlags();
+        sendDimDetail(player, p.zoneName());
+    }
+
+    private static void resetDimFlag(ServerPlayer player, GuiActionPayload p) {
+        ArcadiaGuard.dimFlagStore().resetFlag(p.zoneName(), p.arg1());
+        saveDimFlags();
+        sendDimDetail(player, p.zoneName());
+    }
+
+    private static void setDimFlagStr(ServerPlayer player, GuiActionPayload p) {
+        Object value = parseFlagValue(p.arg1(), p.arg2());
+        if (value == null) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.invalid_value", p.arg1()).withStyle(ChatFormatting.RED));
+            return;
+        }
+        ArcadiaGuard.dimFlagStore().setFlag(p.zoneName(), p.arg1(), value);
+        saveDimFlags();
+        sendDimDetail(player, p.zoneName());
+    }
+
+    public static void sendDimDetail(ServerPlayer player, String dimKey) {
+        java.util.Map<String, Object> dimFlagValues = ArcadiaGuard.dimFlagStore().flags(dimKey);
+        List<FlagInfo> flags = new ArrayList<>();
+        for (Flag<?> flag : ArcadiaGuard.flagRegistry().all()) {
+            Object raw = dimFlagValues.get(flag.id());
+            boolean configured = raw != null;
+            byte type;
+            boolean boolVal = false;
+            String strVal;
+            if (flag instanceof BooleanFlag bf) {
+                type = FlagInfo.TYPE_BOOL;
+                boolVal = raw instanceof Boolean b ? b : bf.defaultValue();
+                strVal = Boolean.toString(boolVal);
+            } else if (flag instanceof com.arcadia.arcadiaguard.api.flag.IntFlag intF) {
+                type = FlagInfo.TYPE_INT;
+                int v = raw instanceof Integer i ? i : intF.defaultValue();
+                strVal = Integer.toString(v);
+            } else if (flag instanceof com.arcadia.arcadiaguard.api.flag.ListFlag) {
+                type = FlagInfo.TYPE_LIST;
+                @SuppressWarnings("unchecked")
+                List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
+                strVal = String.join(",", v);
+            } else { continue; }
+            flags.add(new FlagInfo(flag.id(), formatFlagLabel(flag.id()),
+                boolVal, configured, flag.description(), type, strVal));
+        }
+        PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags));
+    }
+
+    private static void saveDimFlags() {
+        try { DimFlagSerializer.write(ArcadiaGuard.dimFlagStore(), ArcadiaGuardPaths.dimFlagsFile()); }
+        catch (IOException e) { ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to save dimension flags", e); }
+    }
+
+    private static Object parseFlagValue(String flagId, String raw) {
+        Optional<Flag<?>> opt = ArcadiaGuard.flagRegistry().get(flagId);
+        if (opt.isEmpty()) return null;
+        Flag<?> flag = opt.get();
+        try {
+            if (flag instanceof com.arcadia.arcadiaguard.api.flag.IntFlag) return Integer.parseInt(raw.trim());
+            if (flag instanceof com.arcadia.arcadiaguard.api.flag.ListFlag) {
+                if (raw.isBlank()) return new ArrayList<String>();
+                ArrayList<String> out = new ArrayList<>();
+                for (String s : raw.split(",")) { String t = s.trim(); if (!t.isEmpty()) out.add(t); }
+                return out;
+            }
+            if (flag instanceof BooleanFlag) return Boolean.parseBoolean(raw);
+        } catch (NumberFormatException ignored) {}
+        return null;
+    }
+
+    private static String formatFlagLabel(String id) {
+        String[] parts = id.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!sb.isEmpty()) sb.append(' ');
+            sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return sb.toString();
+    }
+
+    /** Backward-compat delegate for ArcadiaGuardCommands and other callers. */
+    public static void sendRefreshedList(ServerPlayer player) {
+        ArcadiaGuard.zoneManager().sendRefreshedList(player);
+    }
+}
