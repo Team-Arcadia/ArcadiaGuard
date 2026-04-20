@@ -116,6 +116,10 @@ public final class FlagCommands {
     @SuppressWarnings("unchecked")
     private static int listAdd(CommandContext<CommandSourceStack> ctx) {
         String name = StringArgumentType.getString(ctx, "name");
+        if (!ZonePermission.hasAccess(ctx.getSource(), name, ZoneRole.OWNER)) {
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.perm.denied_owner", name));
+            return 0;
+        }
         String flagId = StringArgumentType.getString(ctx, "flag");
         String entry = StringArgumentType.getString(ctx, "entry");
         Flag<?> flag = ArcadiaGuard.flagRegistry().get(flagId).orElse(null);
@@ -140,6 +144,10 @@ public final class FlagCommands {
     @SuppressWarnings("unchecked")
     private static int listRemove(CommandContext<CommandSourceStack> ctx) {
         String name = StringArgumentType.getString(ctx, "name");
+        if (!ZonePermission.hasAccess(ctx.getSource(), name, ZoneRole.OWNER)) {
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.perm.denied_owner", name));
+            return 0;
+        }
         String flagId = StringArgumentType.getString(ctx, "flag");
         String entry = StringArgumentType.getString(ctx, "entry");
         Flag<?> flag = ArcadiaGuard.flagRegistry().get(flagId).orElse(null);
