@@ -82,6 +82,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         // Environment
         register(BuiltinFlags.CROP_GROWTH);
         register(BuiltinFlags.TREE_GROWTH);
+        register(BuiltinFlags.FARMLAND_TRAMPLE);
         register(BuiltinFlags.GRASS_SPREAD);
         register(BuiltinFlags.VINE_GROWTH);
         register(BuiltinFlags.SCULK_SPREAD);
@@ -108,6 +109,16 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.NPC_INTERACT);
         register(BuiltinFlags.MOB_BUCKET);
         register(BuiltinFlags.ANIMAL_INVINCIBLE);
+        register(BuiltinFlags.OCCULTISM_USE);
+        register(BuiltinFlags.SUPPLEMENTARIES_THROW);
+        register(BuiltinFlags.PARCOOL_ACTIONS);
+        register(BuiltinFlags.EMOTE_USE);
+        register(BuiltinFlags.MUTANT_MOB_SPAWN);
+        register(BuiltinFlags.TF_PROJECTILE);
+        register(BuiltinFlags.CHARM_USE);
+        register(BuiltinFlags.WAYSTONE_USE);
+        register(BuiltinFlags.RECHISELED_USE);
+        register(BuiltinFlags.ARS_ADDITIONS_SCROLL);
         // Zone configuration
         register(BuiltinFlags.HEAL_AMOUNT);
         register(BuiltinFlags.FEED_AMOUNT);

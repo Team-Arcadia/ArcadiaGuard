@@ -58,6 +58,7 @@ public final class BuiltinFlags {
     // --- Environment ---
     public static final BooleanFlag CROP_GROWTH        = new BooleanFlag("crop-growth",        false, "Autorise/refuse la pousse des cultures (blé, carottes…).");
     public static final BooleanFlag TREE_GROWTH        = new BooleanFlag("tree-growth",        false, "Autorise/refuse la pousse des arbres depuis des plants.");
+    public static final BooleanFlag FARMLAND_TRAMPLE   = new BooleanFlag("farmland-trample",   false, "Autorise/refuse le piétinement des terres cultivées.");
     public static final BooleanFlag GRASS_SPREAD       = new BooleanFlag("grass-spread",       false, "Autorise/refuse la propagation de l'herbe sur la terre.");
     public static final BooleanFlag VINE_GROWTH        = new BooleanFlag("vine-growth",        false, "Autorise/refuse la propagation des lianes.");
     public static final BooleanFlag SCULK_SPREAD       = new BooleanFlag("sculk-spread",       false, "Autorise/refuse la propagation des blocs Sculk.");
@@ -88,6 +89,16 @@ public final class BuiltinFlags {
     public static final BooleanFlag NPC_INTERACT        = new BooleanFlag("npc-interact",       false, "Autorise/refuse l'interaction avec les PNJ personnalisés.");
     public static final BooleanFlag MOB_BUCKET          = new BooleanFlag("mob-bucket",         false, "Autorise/refuse la capture de mobs aquatiques dans des seaux.");
     public static final BooleanFlag ANIMAL_INVINCIBLE   = new BooleanFlag("animal-invincible",  false, "Rend les animaux passifs invulnérables dans la zone.");
+    public static final BooleanFlag OCCULTISM_USE       = new BooleanFlag("occultism-use",      false, "[Occultism] Autorise/refuse l'utilisation des rituels et gemmes d'âme dans la zone.",       "occultism");
+    public static final BooleanFlag SUPPLEMENTARIES_THROW = new BooleanFlag("supplementaries-throw", false, "[Supplementaries] Autorise/refuse le lancer de briques dans la zone.",                "supplementaries");
+    public static final BooleanFlag PARCOOL_ACTIONS     = new BooleanFlag("parcool-actions",    false, "[ParCool] Autorise/refuse les actions parkour dans la zone.",                               "parcool");
+    public static final BooleanFlag EMOTE_USE           = new BooleanFlag("emote-use",          false, "[Emotecraft] Autorise/refuse les emotes dans la zone.",                                     "emotecraft");
+    public static final BooleanFlag MUTANT_MOB_SPAWN    = new BooleanFlag("mutant-mob-spawn",   false, "[Mutant Monsters] Autorise/refuse le spawn de monstres mutants dans la zone.",             "mutantmonsters");
+    public static final BooleanFlag TF_PROJECTILE       = new BooleanFlag("tf-projectile",      false, "[Twilight Forest] Autorise/refuse les projectiles de boss TF dans la zone.",               "twilightforest");
+    public static final BooleanFlag CHARM_USE           = new BooleanFlag("charm-use",          false, "[Apotheosis] Autorise/refuse l'activation des charmes Apotheosis dans la zone.",           "apotheosis");
+    public static final BooleanFlag WAYSTONE_USE        = new BooleanFlag("waystone-use",        false, "[Waystones] Autorise/refuse l'utilisation des waystones dans la zone.",                  "waystones");
+    public static final BooleanFlag RECHISELED_USE      = new BooleanFlag("rechiseled-use",      false, "[Rechiseled] Autorise/refuse l'utilisation des blocs Rechiseled dans la zone.",          "rechiseled");
+    public static final BooleanFlag ARS_ADDITIONS_SCROLL = new BooleanFlag("ars-additions-scroll", false, "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",         "ars_additions");
 
     // --- Zone configuration ---
     public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");
