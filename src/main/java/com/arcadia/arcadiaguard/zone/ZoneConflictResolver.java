@@ -34,9 +34,10 @@ public final class ZoneConflictResolver {
         long dx = (long) zone.maxX() - (long) zone.minX() + 1L;
         long dy = (long) zone.maxY() - (long) zone.minY() + 1L;
         long dz = (long) zone.maxZ() - (long) zone.minZ() + 1L;
-        if (dx > Integer.MAX_VALUE || dy > Integer.MAX_VALUE || dz > Integer.MAX_VALUE) {
+        try {
+            return Math.multiplyExact(Math.multiplyExact(dx, dy), dz);
+        } catch (ArithmeticException e) {
             return Long.MAX_VALUE;
         }
-        return dx * dy * dz;
     }
 }
