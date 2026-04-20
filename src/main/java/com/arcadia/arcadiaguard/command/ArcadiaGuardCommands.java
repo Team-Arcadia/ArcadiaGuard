@@ -4,6 +4,7 @@ import static net.minecraft.commands.Commands.literal;
 
 import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.command.sub.DebugCommands;
+import com.arcadia.arcadiaguard.command.sub.DimFlagCommands;
 import com.arcadia.arcadiaguard.command.sub.ItemCommands;
 import com.arcadia.arcadiaguard.command.sub.LogCommands;
 import com.arcadia.arcadiaguard.command.sub.MigrateCommands;
@@ -37,7 +38,8 @@ public final class ArcadiaGuardCommands {
             .then(ItemCommands.build())
             .then(LogCommands.build())
             .then(MigrateCommands.build())
-            .then(DebugCommands.build());
+            .then(DebugCommands.build())
+            .then(DimFlagCommands.build());
 
         dispatcher.register(root);
         dispatcher.register(literal("ag").redirect(dispatcher.getRoot().getChild("arcadiaguard")));
@@ -76,6 +78,12 @@ public final class ArcadiaGuardCommands {
         sendCmd(ctx, "/ag log",                 "Dernières entrées du journal");
         sendCmd(ctx, "/ag log <zone>",          "Filtrer par zone");
         sendCmd(ctx, "/ag log <zone> <joueur>", "Filtrer par zone et joueur");
+
+        // Dim flags
+        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Flags de dimension"), false);
+        sendCmd(ctx, "/ag dimflag list [dimension]",     "Lister les flags de dimension");
+        sendCmd(ctx, "/ag dimflag clear <dimension>",    "Effacer les flags d'une dimension");
+        sendCmd(ctx, "/ag dimflag clear all",            "Effacer TOUS les flags de dimension");
 
         // Admin
         ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Admin"), false);

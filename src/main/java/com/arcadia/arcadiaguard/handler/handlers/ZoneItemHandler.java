@@ -44,12 +44,12 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         ItemStack stack = event.getItemStack();
         BlockPos pos = sp.blockPosition();
 
-        if (ArcadiaGuardConfig.ENABLE_SPAWN_EGG_PROTECTION.get() && isSpawnEgg(stack)) {
-            if (guardService.blockIfProtected(sp, pos, "spawn_egg_use", "spawn_egg_protection",
-                    ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked()) {
-                event.setCanceled(true);
-                return;
-            }
+        if (ArcadiaGuardConfig.ENABLE_SPAWN_EGG_PROTECTION.get() && isSpawnEgg(stack)
+                && checkFlagDenied(sp, pos, BuiltinFlags.SPAWN_EGG)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED));
+            event.setCanceled(true);
+            return;
         }
 
         // MOB_BUCKET: block releasing fish/axolotl/tadpole buckets
@@ -78,20 +78,22 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         BlockPos spawnPos = clicked.relative(event.getFace());
 
         if (ArcadiaGuardConfig.ENABLE_SPAWN_EGG_PROTECTION.get() && isSpawnEgg(stack)) {
-            boolean blockedAtClick = guardService.blockIfProtected(sp, clicked, "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
-            boolean blockedAtSpawn = !blockedAtClick && guardService.blockIfProtected(sp, spawnPos, "spawn_egg_use", "spawn_egg_protection", ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).blocked();
-            if (blockedAtClick || blockedAtSpawn) {
+            boolean blocked = checkFlagDenied(sp, clicked, BuiltinFlags.SPAWN_EGG)
+                || checkFlagDenied(sp, spawnPos, BuiltinFlags.SPAWN_EGG);
+            if (blocked) {
+                sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                    ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED));
                 event.setCanceled(true);
                 return;
             }
         }
 
-        if (ArcadiaGuardConfig.ENABLE_LEAD_PROTECTION.get() && stack.is(ArcadiaGuardTags.BANNED_LEADS)) {
-            if (guardService.blockIfProtected(sp, clicked, "lead_use", "lead_protection",
-                    ArcadiaGuardConfig.MESSAGE_LEAD.get()).blocked()) {
-                event.setCanceled(true);
-                return;
-            }
+        if (ArcadiaGuardConfig.ENABLE_LEAD_PROTECTION.get() && stack.is(ArcadiaGuardTags.BANNED_LEADS)
+                && checkFlagDenied(sp, clicked, BuiltinFlags.LEASH)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED));
+            event.setCanceled(true);
+            return;
         }
 
         // MOB_BUCKET on block (e.g. click water surface)
@@ -130,8 +132,9 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         ItemStack stack = sp.getMainHandItem().isEmpty() ? sp.getOffhandItem() : sp.getMainHandItem();
         if (!stack.is(ArcadiaGuardTags.BANNED_LEADS)) return;
 
-        if (guardService.blockIfProtected(sp, pos, "lead_use", "lead_protection",
-                ArcadiaGuardConfig.MESSAGE_LEAD.get()).blocked()) {
+        if (checkFlagDenied(sp, pos, BuiltinFlags.LEASH)) {
+            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED));
             event.setCanceled(true);
         }
     }

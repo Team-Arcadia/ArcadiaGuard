@@ -37,7 +37,6 @@ public final class BuiltinFlags {
 
     // --- Mobs ---
     public static final BooleanFlag MOB_SPAWN          = new BooleanFlag("mob-spawn",          false, "Autorise/refuse l'apparition de tout type de mob dans la zone.");
-    public static final ListFlag    MOB_SPAWN_LIST     = new ListFlag("mob-spawn-list",         "Liste de types de mobs spécifiques à bloquer (ex: minecraft:zombie).");
     public static final BooleanFlag ANIMAL_SPAWN       = new BooleanFlag("animal-spawn",       false, "Autorise/refuse l'apparition des animaux passifs.");
     public static final BooleanFlag MONSTER_SPAWN      = new BooleanFlag("monster-spawn",      false, "Autorise/refuse l'apparition des monstres hostiles.");
     public static final BooleanFlag VILLAGER_SPAWN     = new BooleanFlag("villager-spawn",     false, "Autorise/refuse l'apparition des villageois.");
@@ -76,13 +75,13 @@ public final class BuiltinFlags {
     public static final BooleanFlag EXIT               = new BooleanFlag("exit",               false, "Autorise/refuse la sortie de la zone pour les joueurs.");
 
     // --- Magic mods (global on/off + blacklist/whitelist) ---
-    public static final BooleanFlag ARS_SPELL_CAST     = new BooleanFlag("ars-spell-cast",     false, "[Ars Nouveau] Autorise/refuse le lancement de sorts dans la zone.");
-    public static final ListFlag    ARS_SPELL_BLACKLIST = new ListFlag("ars-spell-blacklist",   "[Ars Nouveau] Liste de sorts interdits dans la zone.");
-    public static final ListFlag    ARS_SPELL_WHITELIST = new ListFlag("ars-spell-whitelist",   "[Ars Nouveau] Liste de sorts autorisés (les autres sont bloqués).");
-    public static final BooleanFlag IRONS_SPELL_CAST   = new BooleanFlag("irons-spell-cast",   false, "[Iron's Spellbooks] Autorise/refuse le lancement de sorts dans la zone.");
-    public static final ListFlag    IRONS_SPELL_BLACKLIST = new ListFlag("irons-spell-blacklist", "[Iron's Spellbooks] Liste de sorts interdits dans la zone.");
-    public static final ListFlag    IRONS_SPELL_WHITELIST = new ListFlag("irons-spell-whitelist", "[Iron's Spellbooks] Liste de sorts autorisés (les autres sont bloqués).");
-    public static final BooleanFlag SIMPLYSWORDS_ABILITY = new BooleanFlag("simplyswords-ability", false, "[Simply Swords] Autorise/refuse les capacités spéciales des épées.");
+    public static final BooleanFlag ARS_SPELL_CAST      = new BooleanFlag("ars-spell-cast",      false, "[Ars Nouveau] Autorise/refuse le lancement de sorts dans la zone.",            "ars_nouveau");
+    public static final ListFlag    ARS_SPELL_BLACKLIST  = new ListFlag("ars-spell-blacklist",                "[Ars Nouveau] Liste de sorts interdits dans la zone.",                    "ars_nouveau");
+    public static final ListFlag    ARS_SPELL_WHITELIST  = new ListFlag("ars-spell-whitelist",               "[Ars Nouveau] Liste de sorts autorisés (les autres sont bloqués).",       "ars_nouveau");
+    public static final BooleanFlag IRONS_SPELL_CAST    = new BooleanFlag("irons-spell-cast",    false, "[Iron's Spellbooks] Autorise/refuse le lancement de sorts dans la zone.",      "irons_spellbooks");
+    public static final ListFlag    IRONS_SPELL_BLACKLIST = new ListFlag("irons-spell-blacklist",            "[Iron's Spellbooks] Liste de sorts interdits dans la zone.",              "irons_spellbooks");
+    public static final ListFlag    IRONS_SPELL_WHITELIST = new ListFlag("irons-spell-whitelist",            "[Iron's Spellbooks] Liste de sorts autorisés (les autres sont bloqués).", "irons_spellbooks");
+    public static final BooleanFlag SIMPLYSWORDS_ABILITY = new BooleanFlag("simplyswords-ability", false, "[Simply Swords] Autorise/refuse les capacités spéciales des épées.",         "simplyswords");
 
     // --- Custom flags ---
     public static final BooleanFlag SPELL_MOVEMENT     = new BooleanFlag("spell-movement",     false, "Autorise/refuse les déplacements magiques (vol, téléport par sort).");

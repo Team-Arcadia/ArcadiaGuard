@@ -33,7 +33,7 @@ public final class ProtectedZone implements IZone {
     private final Set<UUID> whitelistedPlayersUnmodifiable;
     private final Map<UUID, ZoneRole> memberRolesUnmodifiable;
     private boolean enabled = true;
-    private boolean inheritDimFlags = true;
+    private boolean inheritDimFlags = false;
 
     /** Convenience constructor — no parent, default priority 0. */
     public ProtectedZone(String name, String dimension, BlockPos a, BlockPos b) {

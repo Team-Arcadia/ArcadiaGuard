@@ -39,7 +39,7 @@ public final class ZoneMigrator {
             public int toVersion()   { return 2; }
             public void apply(JsonObject json) {
                 if (!json.has("inherit_dim_flags"))
-                    json.addProperty("inherit_dim_flags", true);
+                    json.addProperty("inherit_dim_flags", false);
                 if (!json.has("member_roles"))
                     json.add("member_roles", new JsonObject());
             }

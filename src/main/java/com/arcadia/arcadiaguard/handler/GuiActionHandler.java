@@ -30,6 +30,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -366,6 +367,8 @@ public final class GuiActionHandler {
         java.util.Map<String, Object> dimFlagValues = ArcadiaGuard.dimFlagStore().flags(dimKey);
         List<FlagInfo> flags = new ArrayList<>();
         for (Flag<?> flag : ArcadiaGuard.flagRegistry().all()) {
+            String mod = flag.requiredMod();
+            if (!mod.isEmpty() && !ModList.get().isLoaded(mod)) continue;
             Object raw = dimFlagValues.get(flag.id());
             boolean configured = raw != null;
             byte type;

@@ -30,6 +30,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +63,8 @@ public final class ZoneManager implements IZoneManager {
         MinecraftServer server = player.getServer();
         List<FlagEntry> flags = new ArrayList<>();
         for (Flag<?> flag : this.flagRegistry.all()) {
+            String mod = flag.requiredMod();
+            if (!mod.isEmpty() && !ModList.get().isLoaded(mod)) continue;
             Object raw = zone.flagValues().get(flag.id());
             boolean inherited = (raw == null);
             byte type;
