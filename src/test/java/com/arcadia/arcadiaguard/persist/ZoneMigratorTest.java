@@ -24,8 +24,8 @@ class ZoneMigratorTest {
         assertEquals(0, json.get("priority").getAsInt());
         assertTrue(json.has("whitelist"));
         assertTrue(json.has("flags"));
-        // v1→v2: new fields backfilled (defaults to false so zones n'héritent pas les dim flags)
-        assertFalse(json.get("inherit_dim_flags").getAsBoolean());
+        // v1→v2: new fields backfilled (defaults to true so zones héritent les dim flags par défaut)
+        assertTrue(json.get("inherit_dim_flags").getAsBoolean());
         assertTrue(json.has("member_roles"));
     }
 
@@ -88,7 +88,7 @@ class ZoneMigratorTest {
             assertEquals(ZoneMigrator.CURRENT_VERSION, after.get("format_version").getAsInt());
             // Zone reads correctly
             assertEquals("test", zone.name());
-            assertFalse(zone.inheritDimFlags());
+            assertTrue(zone.inheritDimFlags());
         } finally {
             java.nio.file.Files.deleteIfExists(tmpFile);
         }
