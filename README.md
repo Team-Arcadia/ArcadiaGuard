@@ -1,97 +1,137 @@
 # ArcadiaGuard
 
-> Mod de protection côté serveur pour NeoForge 1.21.1 — bloque les capacités magiques et les mécaniques de mods tiers dans des zones définies par les administrateurs.
+> Mod de protection standalone pour NeoForge 1.21.1 — systeme de zones configurable avec GUI in-game, wand de selection, flags granulaires et rendu 3D des limites de zone.
 
 ---
 
-## Présentation
+## Presentation
 
-ArcadiaGuard permet aux administrateurs de définir des **zones protégées** dans lesquelles les joueurs ne peuvent pas utiliser certaines capacités issues de mods de magie ou d'enchantement. Le mod intercepte les événements côté serveur et annule les actions non autorisées, sans nécessiter aucune modification côté client.
+ArcadiaGuard est un mod de protection complet permettant aux administrateurs de definir des **zones protegees** avec un systeme de flags granulaire (~60 flags). Le mod dispose de son propre systeme de zones interne, d'une **interface graphique** accessible en jeu, et d'un **wand de selection** pour definir les zones visuellement.
 
-Les contrôles de zone s'intègrent nativement au **profiler Spark** via le `ProfilerFiller` de Minecraft, ce qui permet de mesurer l'impact de chaque vérification directement dans les rapports de tick.
+Chaque zone peut etre configuree individuellement via des flags booleens, entiers ou listes. Les flags supportent l'heritage parent/enfant et les overrides par dimension.
 
 ---
 
-## Compatibilité
+## Fonctionnalites principales
 
-| Mod | Ce qui est bloqué |
+### Systeme de zones
+
+- Zones definies en jeu avec le **wand de selection** (clic droit/gauche = coin A/B)
+- Sous-zones avec heritage de flags du parent
+- Whitelist de joueurs par zone (membre, moderateur, proprietaire)
+- Flags configurables par zone ET par dimension
+- Resolution automatique des conflits de zones (priorite > volume > nom)
+
+### Interface graphique (GUI)
+
+- **Liste des zones** — vue tabulaire avec filtres par dimension, recherche, pagination
+- **Detail de zone** — stats, flags, membres, coordonnees editables
+- **Flag picker** — ajout/suppression de flags avec recherche
+- **Editeur de dimension** — flags au niveau dimension
+- **Logs d'audit** — historique filtre des actions bloquees
+- **Creation de zone** — formulaire avec preview en temps reel
+
+### Wand de selection
+
+- Item `zone_editor` avec deux modes : **EDIT** (selection) et **VIEW** (visualisation passive)
+- Affichage HUD des positions selectionnees (au-dessus de la barre XP)
+- Rendu 3D des limites de zones en wireframe colore
+
+### Protection des mods
+
+Chaque integration est independante et peut etre activee/desactivee dans la config :
+
+| Mod | Ce qui est bloque |
 |-----|-------------------|
 | [Iron's Spells 'n Spellbooks](https://www.curseforge.com/minecraft/mc-mods/irons-spells-n-spellbooks) | Lancement de sorts |
-| [Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau) | Sorts, rituels, runes |
-| [Simply Swords](https://www.curseforge.com/minecraft/mc-mods/simply-swords) | Capacités spéciales des épées |
-| [Occultism](https://www.curseforge.com/minecraft/mc-mods/occultism) | Invocations, interactions de magie |
-| [Supplementaries](https://www.curseforge.com/minecraft/mc-mods/supplementaries) | Lancer d'objets (boules de neige, etc.) |
-| [Apotheosis](https://www.curseforge.com/minecraft/mc-mods/apotheosis) | Enchantements de minage radial (Tunneling) |
-| [Better Archeology](https://www.curseforge.com/minecraft/mc-mods/better-archeology) | Fouille avec Tunneling |
+| [Ars Nouveau](https://www.curseforge.com/minecraft/mc-mods/ars-nouveau) | Sorts, teleportation warp scroll, portails |
+| [Simply Swords](https://www.curseforge.com/minecraft/mc-mods/simply-swords) | Capacites speciales des armes |
+| [Occultism](https://www.curseforge.com/minecraft/mc-mods/occultism) | Rituels et magie |
+| [Supplementaries](https://www.curseforge.com/minecraft/mc-mods/supplementaries) | Lancer d'objets |
+| [Apotheosis](https://www.curseforge.com/minecraft/mc-mods/apotheosis) | Tunneling, affix Enlightened |
+| [Better Archeology](https://www.curseforge.com/minecraft/mc-mods/better-archeology) | Enchantement Tunneling |
 
-Chaque intégration est **indépendante** et peut être activée ou désactivée séparément dans la configuration.
+### Protection d'items
 
-Le mod supporte également les zones définies par **YAWP** (Yet Another World Protector) en tant que provider externe.
+- Laisses vanilla et ender laisses (Apothic Enchanting)
+- Oeufs de spawn (verification bloc + face de spawn)
+- Livres vanilla (anti-duplication)
+- **Blocage dynamique d'items** via commande, sans redemarrage
+
+### Flags
+
+Le mod inclut ~60 flags couvrant :
+
+- Interactions blocs (casse, pose, interactions)
+- PvP et degats d'entites
+- Spawn de mobs et invocations
+- Sorts et capacites magiques (par mod)
+- Utilisation d'items specifiques
+- Propagation de fluides, feu, explosions
+- Et plus encore via l'API publique
 
 ---
 
 ## Installation
 
-1. Télécharger le `.jar` depuis les releases GitHub.
-2. Placer le fichier dans le dossier `mods/` du serveur.
-3. Lancer le serveur une première fois pour générer le fichier de configuration.
-4. Configurer les zones et les options selon vos besoins.
+1. Telecharger le `.jar` depuis les releases GitHub.
+2. Placer le fichier dans le dossier `mods/` (serveur ET client).
+3. Lancer le serveur une premiere fois pour generer la configuration.
+4. Utiliser le wand in-game ou les commandes pour creer des zones.
 
-> ArcadiaGuard est un mod **serveur uniquement**. Les clients n'ont pas besoin de l'installer.
+> ArcadiaGuard necessite une installation **client et serveur**. Le client fournit le GUI de gestion et le rendu des zones.
 
 ---
 
 ## Commandes
 
-Toutes les commandes nécessitent le niveau d'opérateur **2** (configurable).
+Toutes les commandes sont sous `/arcadiaguard` (niveau OP 2 par defaut).
 
-### Zones protégées
+### Zones
 
 ```
 /arcadiaguard zone add <nom> <x1> <y1> <z1> <x2> <y2> <z2>
 /arcadiaguard zone remove <nom>
 /arcadiaguard zone list
-/arcadiaguard zone info <nom>
 /arcadiaguard zone whitelist add <nom> <joueur>
 /arcadiaguard zone whitelist remove <nom> <joueur>
 ```
 
-### Zones d'exception
-
-Les zones d'exception permettent d'**autoriser explicitement** certaines mécaniques dans une sous-zone à l'intérieur d'une zone protégée.
+### Flags
 
 ```
-/arcadiaguard exception add <nom> <x1> <y1> <z1> <x2> <y2> <z2>
-/arcadiaguard exception remove <nom>
-/arcadiaguard exception list
-/arcadiaguard exception info <nom>
-/arcadiaguard exception allow <nom> <feature>
-/arcadiaguard exception deny <nom> <feature>
+/arcadiaguard flag set <zone> <flag> <valeur>
+/arcadiaguard flag get <zone> <flag>
+/arcadiaguard flag list
 ```
 
-Features disponibles : `ironsspellbooks`, `arsnouveau`, `simplyswords`, `occultism`, `supplementaries`, `apotheosis`, `betterarcheology`
+### Items dynamiques
 
-### Rechargement
+```
+/arcadiaguard item block <item>
+/arcadiaguard item unblock <item>
+/arcadiaguard item list
+```
+
+### Utilitaires
 
 ```
 /arcadiaguard reload
+/arcadiaguard debug
+/arcadiaguard log <zone> [joueur] [action]
+/arcadiaguard migrate
 ```
-
-Recharge les zones depuis le fichier JSON sans redémarrer le serveur.
 
 ---
 
 ## Configuration
 
-Le fichier de configuration est généré dans `config/arcadia/ArcadiaGuard/arcadiaguard-common.toml`.
+Fichier : `config/arcadia/ArcadiaGuard/arcadiaguard-common.toml`
 
 ```toml
 [general]
-  # Active les logs dans la console
   enable_logging = true
-  # Ecrit les actions bloquées dans un fichier de log dédié
   log_to_file = true
-  # Niveau OP requis pour bypasser les zones (0-4)
   bypass_op_level = 2
 
 [toggles]
@@ -102,64 +142,49 @@ Le fichier de configuration est généré dans `config/arcadia/ArcadiaGuard/arca
   enable_supplementaries = true
   enable_apotheosis_enchants = true
   enable_betterarcheology = true
-
-[messages]
-  message_ironsspellbooks = "Vous ne pouvez pas lancer ce sort ici."
-  message_arsnouveau = "Vous ne pouvez pas utiliser Ars Nouveau ici."
-  message_simplyswords = "Vous ne pouvez pas utiliser cette capacite ici."
-  message_occultism = "Vous ne pouvez pas utiliser cette magie ici."
-  message_supplementaries = "Vous ne pouvez pas lancer cet objet ici."
-  message_apotheosis = "Vous ne pouvez pas casser ces blocs ici."
-  message_betterarcheology = "Vous ne pouvez pas utiliser Tunneling ici."
 ```
 
 ---
 
-## Logs d'audit
+## Donnees
 
-Quand `log_to_file = true`, ArcadiaGuard écrit chaque action bloquée dans :
+| Fichier | Contenu |
+|---------|---------|
+| `config/arcadia/ArcadiaGuard/arcadiaguard-zones.json` | Zones et flags |
+| `config/arcadia/ArcadiaGuard/arcadiaguard-dim-flags.json` | Flags par dimension |
+| `config/arcadia/ArcadiaGuard/arcadiaguard-blocked-items.json` | Items bloques dynamiquement |
+| `logs/arcadia/ArcadiaGuard/arcadiaguard-audit.log` | Logs d'audit (rotation journaliere) |
 
-```
-logs/arcadia/ArcadiaGuard/arcadiaguard-audit.log
-```
+---
 
-Les logs sont **rotatés automatiquement** chaque jour. Les archives sont nommées :
+## API publique
 
-```
-logs/arcadia/ArcadiaGuard/arcadiaguard-audit-2025-01-15.log
-```
+ArcadiaGuard expose une API pour les mods tiers via `ArcadiaGuardAPI` :
 
-Format d'une ligne de log :
+```java
+// Enregistrer un flag custom
+ArcadiaGuardAPI.get().flagRegistry().register(myFlag);
 
-```
-[2025-01-15 20:34:12] [ArcadiaGuard] player=Blushister action=arsnouveau:glyph_fire zone=spawn pos=120 64 -45
+// Verifier un flag dans une zone
+ArcadiaGuardAPI.get().guardService().isFlagDenied(level, pos, MyFlags.MY_FLAG);
 ```
 
 ---
 
-## Données des zones
+## Extensibilite datapack
 
-Les zones sont sauvegardées dans :
+Les listes d'items sont pilotees par des tags overridables :
 
-```
-config/arcadia/ArcadiaGuard/arcadiaguard-zones.json
-```
-
-Le fichier est géré automatiquement par les commandes. Il peut être édité manuellement puis rechargé avec `/arcadiaguard reload`.
-
----
-
-## Intégration Spark
-
-ArcadiaGuard utilise le `ProfilerFiller` natif de Minecraft. Si [Spark](https://spark.lucko.me/) est installé sur le serveur, les vérifications de zone apparaissent sous le nœud **`arcadiaguard`** dans les rapports de profiling de tick, sans aucune configuration supplémentaire.
+- `arcadiaguard:banned_leads`
+- `arcadiaguard:banned_spawn_eggs`
+- `arcadiaguard:spawn_banned_books`
 
 ---
 
 ## Informations techniques
 
-- **Environnement** : Serveur uniquement (NeoForge 1.21.1)
+- **Environnement** : Client + Serveur (NeoForge 1.21.1)
 - **Java** : 21
-- **Group ID** : `com.arcadia.arcadiaguard`
 - **Mod ID** : `arcadiaguard`
 - **Licence** : All Rights Reserved
 
