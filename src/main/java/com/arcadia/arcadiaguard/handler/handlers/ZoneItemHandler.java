@@ -46,15 +46,15 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
 
         if (ArcadiaGuardConfig.ENABLE_SPAWN_EGG_PROTECTION.get() && isSpawnEgg(stack)
                 && checkFlagDenied(sp, pos, BuiltinFlags.SPAWN_EGG)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
             return;
         }
 
         // MOB_BUCKET: block releasing fish/axolotl/tadpole buckets
         if (isMobBucket(stack) && checkFlagDenied(sp, pos, BuiltinFlags.MOB_BUCKET)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"), true);
             event.setCanceled(true);
             return;
         }
@@ -81,8 +81,8 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             boolean blocked = checkFlagDenied(sp, clicked, BuiltinFlags.SPAWN_EGG)
                 || checkFlagDenied(sp, spawnPos, BuiltinFlags.SPAWN_EGG);
             if (blocked) {
-                sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                    ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED));
+                sp.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    ArcadiaGuardConfig.MESSAGE_SPAWN_EGG.get()).withStyle(net.minecraft.ChatFormatting.RED), true);
                 event.setCanceled(true);
                 return;
             }
@@ -90,15 +90,15 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
 
         if (ArcadiaGuardConfig.ENABLE_LEAD_PROTECTION.get() && stack.is(ArcadiaGuardTags.BANNED_LEADS)
                 && checkFlagDenied(sp, clicked, BuiltinFlags.LEASH)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
             return;
         }
 
         // MOB_BUCKET on block (e.g. click water surface)
         if (isMobBucket(stack) && checkFlagDenied(sp, clicked, BuiltinFlags.MOB_BUCKET)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"), true);
             event.setCanceled(true);
             return;
         }
@@ -120,9 +120,21 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         Entity target = event.getTarget();
         BlockPos pos = target.blockPosition();
 
+        // MOB_BUCKET: block capturing aquatic mobs (fish, axolotl, tadpole) with empty bucket
+        if (target instanceof net.minecraft.world.entity.animal.Bucketable) {
+            ItemStack held = sp.getMainHandItem().isEmpty() ? sp.getOffhandItem() : sp.getMainHandItem();
+            ResourceLocation heldId = BuiltInRegistries.ITEM.getKey(held.getItem());
+            if (heldId != null && heldId.getPath().equals("bucket")
+                    && checkFlagDenied(sp, pos, BuiltinFlags.MOB_BUCKET)) {
+                sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.mob_bucket"), true);
+                event.setCanceled(true);
+                return;
+            }
+        }
+
         // NPC_INTERACT: block right-clicking on NPCs (easy_npc mod entities)
         if (isNpc(target) && checkFlagDenied(sp, pos, BuiltinFlags.NPC_INTERACT)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.npc_interact"));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.npc_interact"), true);
             event.setCanceled(true);
             return;
         }
@@ -133,8 +145,8 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         if (!stack.is(ArcadiaGuardTags.BANNED_LEADS)) return;
 
         if (checkFlagDenied(sp, pos, BuiltinFlags.LEASH)) {
-            sp.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED));
+            sp.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
         }
     }
