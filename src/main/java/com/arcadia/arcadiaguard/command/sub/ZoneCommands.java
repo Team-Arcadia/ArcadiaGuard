@@ -76,7 +76,7 @@ public final class ZoneCommands {
 
     private static int createFromWand(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         String name;
-        try { name = StringArgumentType.getString(ctx, "name"); }
+        try { name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT); }
         catch (IllegalArgumentException e) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.usage_create"));
             return 0;
@@ -108,7 +108,7 @@ public final class ZoneCommands {
     }
 
     private static int add(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
         if (!VALID_NAME.matcher(name).matches()) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", name));
             return 0;
@@ -136,7 +136,7 @@ public final class ZoneCommands {
     }
 
     private static int remove(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
         boolean removed = ArcadiaGuard.zoneManager().remove(ctx.getSource().getLevel(), name);
         if (removed) {
             ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.command.zone.removed", name), true);
@@ -161,7 +161,7 @@ public final class ZoneCommands {
     }
 
     private static int info(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
         var zone = ArcadiaGuard.zoneManager().get(ctx.getSource().getLevel(), name);
         if (zone.isEmpty()) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.not_found", name));
@@ -178,7 +178,7 @@ public final class ZoneCommands {
     }
 
     private static int dimensional(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
         if (!VALID_NAME.matcher(name).matches()) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", name));
             return 0;
@@ -197,8 +197,12 @@ public final class ZoneCommands {
     }
 
     private static int copy(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
-        String newName = StringArgumentType.getString(ctx, "newname");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
+        String newName = StringArgumentType.getString(ctx, "newname").toLowerCase(java.util.Locale.ROOT);
+        if (!VALID_NAME.matcher(newName).matches()) {
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", newName));
+            return 0;
+        }
         var source = ArcadiaGuard.zoneManager().get(ctx.getSource().getLevel(), name);
         if (source.isEmpty()) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.not_found", name));
@@ -221,8 +225,8 @@ public final class ZoneCommands {
     }
 
     private static int parentSet(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
-        String parent = StringArgumentType.getString(ctx, "parent");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
+        String parent = StringArgumentType.getString(ctx, "parent").toLowerCase(java.util.Locale.ROOT);
         if (name.equalsIgnoreCase(parent)) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.parent_self"));
             return 0;
@@ -241,7 +245,7 @@ public final class ZoneCommands {
     }
 
     private static int parentClear(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name");
+        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
         boolean ok = ArcadiaGuard.zoneManager().setParent(ctx.getSource().getLevel(), name, null);
         if (!ok) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.not_found", name));
