@@ -11,6 +11,7 @@ import com.arcadia.arcadiaguard.api.zone.ZoneCheckResult;
 import com.arcadia.arcadiaguard.event.ZoneLifecycleEvent;
 import com.arcadia.arcadiaguard.flag.FlagRegistryImpl;
 import com.arcadia.arcadiaguard.flag.FlagResolver;
+import com.arcadia.arcadiaguard.util.FlagUtils;
 import com.arcadia.arcadiaguard.item.WandItem;
 import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload;
@@ -86,7 +87,7 @@ public final class ZoneManager implements IZoneManager {
                 List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
                 strVal = String.join(",", v);
             } else { continue; }
-            flags.add(new FlagEntry(flag.id(), formatFlagLabel(flag.id()),
+            flags.add(new FlagEntry(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
                 boolVal, inherited, flag.description(), type, strVal));
         }
         List<MemberEntry> members = new ArrayList<>();
@@ -135,16 +136,6 @@ public final class ZoneManager implements IZoneManager {
 
         PacketDistributor.sendToPlayer(player,
             new OpenGuiPayload(pageEntries, lp1, lp2, debugMode, p, PAGE_SIZE, pages));
-    }
-
-    private static String formatFlagLabel(String id) {
-        String[] parts = id.split("-");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!sb.isEmpty()) sb.append(' ');
-            sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
-        }
-        return sb.toString();
     }
 
     public void reload(MinecraftServer server) {

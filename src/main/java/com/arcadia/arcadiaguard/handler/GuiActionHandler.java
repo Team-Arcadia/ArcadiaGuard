@@ -6,6 +6,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.command.ZonePermission;
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
+import com.arcadia.arcadiaguard.util.FlagUtils;
 import com.arcadia.arcadiaguard.event.ZoneLifecycleEvent;
 import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload;
 import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload.FlagInfo;
@@ -384,7 +385,7 @@ public final class GuiActionHandler {
                 List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
                 strVal = String.join(",", v);
             } else { continue; }
-            flags.add(new FlagInfo(flag.id(), formatFlagLabel(flag.id()),
+            flags.add(new FlagInfo(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
                 boolVal, configured, flag.description(), type, strVal));
         }
         PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags));
@@ -410,16 +411,6 @@ public final class GuiActionHandler {
             if (flag instanceof BooleanFlag) return Boolean.parseBoolean(raw);
         } catch (NumberFormatException ignored) {}
         return null;
-    }
-
-    private static String formatFlagLabel(String id) {
-        String[] parts = id.split("-");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (!sb.isEmpty()) sb.append(' ');
-            sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
-        }
-        return sb.toString();
     }
 
     /** Backward-compat delegate for ArcadiaGuardCommands and other callers. */
