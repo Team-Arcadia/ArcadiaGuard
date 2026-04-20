@@ -76,13 +76,21 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
 
     private void handleSpell(Event event, ServerPlayer player, String spellId) {
         if (guardService.shouldBypass(player)) return;
+        // Check the player's position first; if not in a zone, also check the targeted block
+        // (prevents casting spells from outside a zone that affect blocks inside it)
         Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, player.blockPosition());
+        if (zoneOpt.isEmpty()) {
+            net.minecraft.world.phys.HitResult hit = player.pick(32, 0, false);
+            if (hit instanceof net.minecraft.world.phys.BlockHitResult bhr) {
+                zoneOpt = guardService.zoneManager().checkZone(player, bhr.getBlockPos());
+            }
+        }
         if (zoneOpt.isEmpty()) return;
         ProtectedZone zone = zoneOpt.get();
 
         if (movementFlag != null && !movementSpells.isEmpty() && movementSpells.contains(spellId)) {
             if (!guardService.isFlagAllowedOrUnset(zone, movementFlag, player.serverLevel())) {
-                player.sendSystemMessage(Component.translatable(movementMessageKey).withStyle(ChatFormatting.RED));
+                player.displayClientMessage(Component.translatable(movementMessageKey).withStyle(ChatFormatting.RED), true);
                 cancel(event);
                 return;
             }
@@ -97,7 +105,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                     if (whitelist.contains(spellId)) return;
                 }
             }
-            player.sendSystemMessage(Component.literal("\u00a7c" + castMessage.get()));
+            player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
             cancel(event);
             return;
         }
@@ -107,7 +115,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
             if (rawBl instanceof List<?> blList) {
                 List<String> blacklist = blList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
                 if (blacklist.contains(spellId)) {
-                    player.sendSystemMessage(Component.literal("\u00a7c" + castMessage.get()));
+                    player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
                     cancel(event);
                 }
             }

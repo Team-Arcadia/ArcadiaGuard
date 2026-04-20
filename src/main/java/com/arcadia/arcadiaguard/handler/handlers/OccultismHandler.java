@@ -1,11 +1,14 @@
 package com.arcadia.arcadiaguard.handler.handlers;
 
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
+import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.EntityInteractHandler;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.RightClickBlockHandler;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.RightClickItemHandler;
 import com.arcadia.arcadiaguard.util.ReflectionHelper;
+import com.arcadia.arcadiaguard.zone.ProtectedZone;
+import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -30,7 +33,7 @@ public final class OccultismHandler implements RightClickItemHandler, RightClick
         if (key == null || !"occultism".equals(key.getNamespace())) return;
         Object pos = ReflectionHelper.invoke(player, "blockPosition", new Class<?>[0]).orElse(null);
         if (pos instanceof net.minecraft.core.BlockPos blockPos
-            && this.guardService.blockIfProtected(player, blockPos, key.toString(), "occultism", ArcadiaGuardConfig.MESSAGE_OCCULTISM.get()).blocked()) {
+                && denyOccultism(player, blockPos)) {
             event.setCanceled(true);
         }
     }
@@ -52,7 +55,7 @@ public final class OccultismHandler implements RightClickItemHandler, RightClick
         if (!(location instanceof ResourceLocation blockKey)) return;
         if (!"occultism".equals(blockKey.getNamespace())) return;
         if (!blockKey.getPath().contains("bowl") && !blockKey.getPath().contains("chalice")) return;
-        if (this.guardService.blockIfProtected(player, blockPos, blockKey.toString(), "occultism", ArcadiaGuardConfig.MESSAGE_OCCULTISM.get()).blocked()) {
+        if (denyOccultism(player, blockPos)) {
             event.setCanceled(true);
         }
     }
@@ -68,11 +71,21 @@ public final class OccultismHandler implements RightClickItemHandler, RightClick
         if (!isSoulGem(key)) return;
         Object target = ReflectionHelper.invoke(event, "getTarget", new Class<?>[0]).orElse(null);
         Object pos = target == null ? null : ReflectionHelper.invoke(target, "blockPosition", new Class<?>[0]).orElse(null);
-        if (pos instanceof net.minecraft.core.BlockPos blockPos
-            && this.guardService.blockIfProtected(player, blockPos, key.toString(), "occultism", ArcadiaGuardConfig.MESSAGE_OCCULTISM.get()).blocked()) {
+        if (pos instanceof net.minecraft.core.BlockPos blockPos && denyOccultism(player, blockPos)) {
             ReflectionHelper.invoke(event, "setCancellationResult", new Class<?>[] { InteractionResult.class }, InteractionResult.FAIL);
             event.setCanceled(true);
         }
+    }
+
+    private boolean denyOccultism(ServerPlayer player, net.minecraft.core.BlockPos pos) {
+        if (guardService.shouldBypass(player)) return false;
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, pos);
+        if (zoneOpt.isEmpty()) return false;
+        if (!guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.OCCULTISM_USE, player.serverLevel())) return false;
+        player.displayClientMessage(
+            net.minecraft.network.chat.Component.translatable(ArcadiaGuardConfig.MESSAGE_OCCULTISM.get())
+                .withStyle(net.minecraft.ChatFormatting.RED), true);
+        return true;
     }
 
     private boolean isSoulGem(ResourceLocation key) {

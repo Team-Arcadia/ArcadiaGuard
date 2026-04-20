@@ -41,8 +41,8 @@ public final class SimplySwordsHandler implements RightClickItemHandler {
         ProtectedZone zone = zoneOpt.get();
         boolean abilityAllowed = guardService.isFlagAllowedOrUnset(zone, BuiltinFlags.SIMPLYSWORDS_ABILITY, player.serverLevel());
         if (!abilityAllowed) {
-            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
-                "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED));
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
         }
     }
