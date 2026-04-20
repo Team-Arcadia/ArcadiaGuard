@@ -42,7 +42,9 @@ public final class ArcadiaGuardCommands {
             .then(DimFlagCommands.build());
 
         dispatcher.register(root);
-        dispatcher.register(literal("ag").redirect(dispatcher.getRoot().getChild("arcadiaguard")));
+        dispatcher.register(literal("ag")
+            .requires(src -> ZonePermission.hasAnyRole(src))
+            .redirect(dispatcher.getRoot().getChild("arcadiaguard")));
     }
 
     private static int showHelp(CommandContext<CommandSourceStack> ctx) {
@@ -103,6 +105,10 @@ public final class ArcadiaGuardCommands {
     }
 
     private static int openGui(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        if (!ZonePermission.hasAnyRole(ctx.getSource())) {
+            ctx.getSource().sendFailure(Component.translatable("commands.help.failed"));
+            return 0;
+        }
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         GuiActionHandler.sendRefreshedList(player);
         ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.command.gui_opened"), false);
