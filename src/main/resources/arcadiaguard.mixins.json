@@ -1,0 +1,24 @@
+{
+  "required": true,
+  "package": "com.arcadia.arcadiaguard.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "arcadiaguard.refmap.json",
+  "minVersion": "0.8.5",
+  "mixins": [
+    "BasePressurePlateBlockMixin",
+    "LeavesBlockMixin",
+    "SpreadingSnowyDirtBlockMixin",
+    "VineBlockMixin",
+    "SculkSpreaderMixin",
+    "SnowLayerBlockMixin",
+    "IceBlockMixin",
+    "FlowingFluidMixin",
+    "SaplingBlockMixin",
+    "FireBlockMixin"
+  ],
+  "server": [],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
