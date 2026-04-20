@@ -115,11 +115,14 @@ public final class EntityEventHandler {
         var affected = event.getAffectedBlocks();
         if (affected.isEmpty()) return;
 
-        Entity exploder = event.getExplosion().getDirectSourceEntity();
+        var explosion = event.getExplosion();
+        Entity exploder = explosion.getDirectSourceEntity();
         BooleanFlag flag;
         if (exploder instanceof Creeper) {
             flag = BuiltinFlags.CREEPER_EXPLOSION;
-        } else if (exploder instanceof PrimedTnt) {
+        } else if (exploder instanceof PrimedTnt
+                || (exploder == null
+                    && "TNT".equals(explosion.getBlockInteraction().name()))) {
             flag = BuiltinFlags.TNT_EXPLOSION;
         } else {
             flag = BuiltinFlags.BLOCK_EXPLOSION;

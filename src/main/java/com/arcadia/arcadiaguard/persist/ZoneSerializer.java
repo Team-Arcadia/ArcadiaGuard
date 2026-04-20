@@ -186,7 +186,7 @@ public final class ZoneSerializer {
                                                maxX, maxY, maxZ, whitelist, parent, priority,
                                                flagValues, memberRoles);
         zone.setEnabled(json.has("enabled") ? json.get("enabled").getAsBoolean() : true);
-        zone.setInheritDimFlags(json.has("inherit_dim_flags") ? json.get("inherit_dim_flags").getAsBoolean() : true);
+        zone.setInheritDimFlags(json.has("inherit_dim_flags") ? json.get("inherit_dim_flags").getAsBoolean() : false);
         if (migrated) {
             Path bak = file.resolveSibling(file.getFileName().toString().replaceFirst("\\.json$", "") + ".bak");
             if (!Files.exists(bak)) {

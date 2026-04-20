@@ -67,8 +67,8 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
 
         BlockPos destination = warpScrollDestination(stack);
         if (destination != null) {
-            if (guardService.blockIfProtected(player, destination, key.toString(), "arsnouveau",
-                    ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
+            if (guardService.blockIfFlagDenied(player, destination, BuiltinFlags.ARS_SPELL_CAST,
+                    key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
                 event.setCanceled(true);
                 return;
             }
@@ -76,8 +76,8 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
 
         if (player.isShiftKeyDown()) {
             BlockPos pos = player.blockPosition();
-            if (guardService.blockIfProtected(player, pos, key.toString(), "arsnouveau",
-                    ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
+            if (guardService.blockIfFlagDenied(player, pos, BuiltinFlags.ARS_SPELL_CAST,
+                    key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
                 event.setCanceled(true);
             }
         }
@@ -97,8 +97,8 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
         Object blockPos = hitResult == null ? null : ReflectionHelper.invoke(hitResult, "getBlockPos", new Class<?>[0]).orElse(null);
         if (!(blockPos instanceof BlockPos pos)) return;
 
-        if (guardService.blockIfProtected(player, pos, key.toString(), "arsnouveau",
-                ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
+        if (guardService.blockIfFlagDenied(player, pos, BuiltinFlags.ARS_SPELL_CAST,
+                key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
             event.setCanceled(true);
         }
     }

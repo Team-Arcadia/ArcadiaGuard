@@ -2,6 +2,8 @@ package com.arcadia.arcadiaguard.flag;
 
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.FlagRegistry;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,7 +22,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
     @Override
     public void register(Flag<?> flag) {
         if (this.flags.containsKey(flag.id())) {
-            LOGGER.warn("[ArcadiaGuard] Flag already registered, skipping: {}", flag.id());
+            LOGGER.error("[ArcadiaGuard] Flag ID collision — '{}' is already registered. The second registration is ignored. Check for duplicate flag IDs across mods.", flag.id());
             return;
         }
         this.flags.put(flag.id(), flag);
@@ -61,7 +63,6 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.CHORUS_FRUIT);
         // Mobs
         register(BuiltinFlags.MOB_SPAWN);
-        register(BuiltinFlags.MOB_SPAWN_LIST);
         register(BuiltinFlags.ANIMAL_SPAWN);
         register(BuiltinFlags.MONSTER_SPAWN);
         register(BuiltinFlags.VILLAGER_SPAWN);
@@ -110,5 +111,20 @@ public final class FlagRegistryImpl implements FlagRegistry {
         // Zone configuration
         register(BuiltinFlags.HEAL_AMOUNT);
         register(BuiltinFlags.FEED_AMOUNT);
+
+        validateAllBuiltinsRegistered();
+    }
+
+    private void validateAllBuiltinsRegistered() {
+        for (Field field : BuiltinFlags.class.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+            if (!Flag.class.isAssignableFrom(field.getType())) continue;
+            try {
+                Flag<?> flag = (Flag<?>) field.get(null);
+                if (!this.flags.containsKey(flag.id())) {
+                    LOGGER.error("[ArcadiaGuard] BuiltinFlags.{} ('{}') was not registered — add it to registerBuiltins().", field.getName(), flag.id());
+                }
+            } catch (IllegalAccessException ignored) {}
+        }
     }
 }

@@ -1,14 +1,10 @@
 package com.arcadia.arcadiaguard.handler;
 
-import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
-import com.arcadia.arcadiaguard.flag.FlagResolver;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -247,13 +243,7 @@ public final class FlagEventHandler {
     private boolean deny(ServerPlayer player, BlockPos pos, BooleanFlag flag, String actionName) {
         Optional<ProtectedZone> zoneOpt = guard.zoneManager().checkZone(player, pos);
         if (zoneOpt.isEmpty()) return false;
-        @SuppressWarnings("unchecked")
-        Function<String, Optional<ProtectedZone>> lookup =
-            name -> (Optional<ProtectedZone>)(Optional<?>) guard.zoneManager().get(player.level(), name);
-        Function<String, Map<String, Object>> dimLookup =
-            dim -> ArcadiaGuard.dimFlagStore().flags(dim);
-        Optional<Boolean> resolved = FlagResolver.resolveOptional(zoneOpt.get(), flag, lookup, dimLookup);
-        if (resolved.isEmpty() || resolved.get()) return false;
+        if (!guard.isZoneDenying(zoneOpt.get(), flag, player.serverLevel())) return false;
         player.sendSystemMessage(Component.translatable("arcadiaguard.message." + actionName)
             .withStyle(ChatFormatting.RED));
         return true;

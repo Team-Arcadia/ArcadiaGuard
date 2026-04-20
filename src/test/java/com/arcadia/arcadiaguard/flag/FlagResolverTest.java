@@ -89,6 +89,7 @@ class FlagResolverTest {
     @Test
     void resolve_dimFlagFallback_usedWhenZoneAndParentUnset() {
         ProtectedZone z = zone("z", null);
+        z.setInheritDimFlags(true); // explicit: this test verifies the inheritance IS active
         Map<String, Object> dimFlags = Map.of(FLAG.id(), false);
 
         boolean result = FlagResolver.resolve(z, FLAG, name -> Optional.empty(), dim -> dimFlags);

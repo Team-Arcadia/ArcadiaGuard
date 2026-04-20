@@ -59,13 +59,17 @@ public final class FlagResolver {
                                                    Function<String, Optional<ProtectedZone>> parentLookup,
                                                    @Nullable Function<String, Map<String, Object>> dimFlagLookup,
                                                    int depth) {
-        if (depth > MAX_DEPTH) return Optional.empty();
+        if (depth > MAX_DEPTH) {
+            ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Parent chain depth exceeded {} for zone '{}' resolving flag '{}'. Possible cycle in parent references — resolution stopped.",
+                MAX_DEPTH, zone.name(), flag.id());
+            return Optional.empty();
+        }
 
         Object value = zone.flagValues().get(flag.id());
         if (value != null) {
             try { return Optional.of((T) value); }
             catch (ClassCastException e) {
-                ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Type mismatch for flag '{}' on zone '{}', ignoring",
+                ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Type mismatch for flag '{}' on zone '{}' — stored type incompatible with flag's expected type. Zone config may be corrupt.",
                     flag.id(), zone.name());
             }
         }
@@ -87,7 +91,7 @@ public final class FlagResolver {
                 if (dimVal != null) {
                     try { return Optional.of((T) dimVal); }
                     catch (ClassCastException e) {
-                        ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Type mismatch for dim flag '{}' in '{}', ignoring",
+                        ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Type mismatch for dim flag '{}' in '{}' — stored type incompatible with flag's expected type.",
                             flag.id(), zone.dimension());
                     }
                 }

@@ -15,4 +15,10 @@ public interface Flag<T> {
 
     /** Short human-readable description shown in the GUI tooltip. May be empty. */
     default String description() { return ""; }
+
+    /**
+     * Returns the NeoForge mod ID that must be loaded for this flag to be shown in the GUI.
+     * Returns an empty string if the flag is always visible (no mod dependency).
+     */
+    default String requiredMod() { return ""; }
 }
