@@ -24,3 +24,6 @@ type="required"
 versionRange="${minecraft_version_range}"
 ordering="NONE"
 side="SERVER"
+
+[[mixins]]
+config="arcadiaguard.mixins.json"

@@ -95,6 +95,15 @@ configurations {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.11.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // Workaround NeoGradle 7.1.21 : neoFormRecompile échoue silencieusement pour certaines
@@ -106,6 +115,107 @@ afterEvaluate {
         ?.find { it.name == "neoforge-${neo_version}-universal.jar" }
     if (renameJar) compileJava.classpath += files(renameJar)
     if (universalJar) compileJava.classpath += files(universalJar)
+}
+
+// Workaround NeoGradle 7.1.21 : StreamCodec absent du raw.jar généré par supplyRawJar.
+// On patche le jar après génération en injectant les classes depuis le jar recompilé intermédiaire.
+afterEvaluate {
+    def supplyTask = tasks.findByName("supplyRawJarForneoFormJoined1.21.1-20240808.144430")
+    if (supplyTask != null) {
+        // Capture au moment de la configuration (pas dans doLast)
+        def rawJarPath = layout.projectDirectory.dir(".gradle/configuration/neoForm/neoFormJoined1.21.1-20240808.144430").file("raw.jar").asFile.absolutePath
+        def gradleHome = gradle.gradleUserHomeDir.absolutePath
+        supplyTask.doLast {
+            def rawJar = new File(rawJarPath)
+            if (!rawJar.exists()) return
+
+            // Utiliser sourcesAndCompiledWithNeoForge comme source principale (classes patchées NF)
+            // et recompile_ comme source secondaire (classes MC manquantes du NeoForge jar)
+            def intermediateDir = new File(gradleHome, "caches/neoformruntime/intermediate_results")
+
+            // Source prioritaire : sourcesAndCompiledWithNeoForge (contient les classes NeoForge-patchées)
+            def nfJar = intermediateDir.listFiles()?.findAll { f ->
+                f.name.startsWith("sourcesAndCompiledWithNeoForge_") && f.name.endsWith("_output.jar")
+            }?.sort { -it.lastModified() }?.find { f ->
+                try { new java.util.zip.ZipFile(f).close(); true } catch (ex) { false }
+            }
+
+            // Source secondaire : recompile_ (classes MC manquantes)
+            def mcJar = intermediateDir.listFiles()?.findAll { f ->
+                f.name.startsWith("recompile_") && f.name.endsWith("_output.jar")
+            }?.sort { -it.lastModified() }?.find { f ->
+                try {
+                    def zf = new java.util.zip.ZipFile(f)
+                    def has = zf.getEntry("net/minecraft/network/codec/StreamCodec.class") != null
+                    zf.close(); has
+                } catch (ex) { false }
+            }
+
+            if (nfJar == null && mcJar == null) { logger.warn("patchRawJar: aucun jar source trouvé"); return }
+            logger.lifecycle("patchRawJar: NF=${nfJar?.name}, MC=${mcJar?.name}")
+
+            // Construire la map de classes à ajouter/remplacer depuis les sources
+            // Priorité : NF jar > MC jar
+            def srcMap = [:]  // name -> srcFile
+            [mcJar, nfJar].each { srcFile ->
+                if (srcFile == null) return
+                try {
+                    def zf = new java.util.zip.ZipFile(srcFile)
+                    zf.entries().each { e ->
+                        if (e.name.endsWith(".class")) srcMap[e.name] = srcFile
+                    }
+                    zf.close()
+                } catch (ex) { /* skip */ }
+            }
+
+            // Ce qu'on a déjà dans raw.jar
+            def dstMap = [:]
+            def dstZip = new java.util.zip.ZipFile(rawJar)
+            dstZip.entries().each { dstMap[it.name] = true }
+            dstZip.close()
+
+            // Classes à ajouter (manquantes) + classes NF-patchées à remplacer
+            // On remplace toute classe qui existe dans srcMap (pour garantir version NF-patchée)
+            def toAdd = srcMap.entrySet().collect { [it.value, it.key] }
+
+            if (toAdd.empty) { logger.lifecycle("patchRawJar: déjà patché, rien à faire"); return }
+
+            def tmpJar = new File(rawJar.parent, "raw_patched.jar")
+            def tmpOut = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(tmpJar))
+
+            // Copier l'existant en excluant les .class qui seront remplacés
+            def existingZip = new java.util.zip.ZipFile(rawJar)
+            existingZip.entries().each { e ->
+                if (e.name.endsWith(".class") && srcMap.containsKey(e.name)) return  // sera remplacé
+                tmpOut.putNextEntry(new java.util.zip.ZipEntry(e.name))
+                if (!e.directory) tmpOut.write(existingZip.getInputStream(e).bytes)
+                tmpOut.closeEntry()
+            }
+            existingZip.close()
+
+            // Ajouter/remplacer toutes les classes depuis srcMap (NF-patchées)
+            def replaced = 0; def added = 0
+            toAdd.each { pair ->
+                def (srcFile, entryName) = pair
+                try {
+                    def sz = new java.util.zip.ZipFile(srcFile)
+                    def ze = sz.getEntry(entryName)
+                    if (ze != null) {
+                        tmpOut.putNextEntry(new java.util.zip.ZipEntry(entryName))
+                        tmpOut.write(sz.getInputStream(ze).bytes)
+                        tmpOut.closeEntry()
+                        if (dstMap.containsKey(entryName)) replaced++ else added++
+                    }
+                    sz.close()
+                } catch (ex) { /* skip */ }
+            }
+            tmpOut.close()
+
+            rawJar.delete()
+            tmpJar.renameTo(rawJar)
+            logger.lifecycle("patchRawJar: ${replaced} classes remplacées (NF-patch), ${added} ajoutées")
+        }
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
