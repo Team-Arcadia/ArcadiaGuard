@@ -7,16 +7,21 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Internal implementation of {@link FlagRegistry}. Populated at FMLCommonSetupEvent. */
 public final class FlagRegistryImpl implements FlagRegistry {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FlagRegistryImpl.class);
 
     private final Map<String, Flag<?>> flags = new LinkedHashMap<>();
 
     @Override
     public void register(Flag<?> flag) {
         if (this.flags.containsKey(flag.id())) {
-            throw new IllegalArgumentException("Flag already registered: " + flag.id());
+            LOGGER.warn("[ArcadiaGuard] Flag already registered, skipping: {}", flag.id());
+            return;
         }
         this.flags.put(flag.id(), flag);
     }

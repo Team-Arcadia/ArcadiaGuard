@@ -46,7 +46,8 @@ public final class AsyncZoneWriter {
             this.thread.interrupt();
             try { this.thread.join(10_000); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             if (this.thread.isAlive()) {
-                ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] AsyncZoneWriter thread did not terminate within 10s, {} tasks may be lost", queue.size());
+                ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] AsyncZoneWriter did not stop in time, forcing flush");
+                this.thread.interrupt();
             }
         }
     }
