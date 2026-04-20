@@ -5,7 +5,6 @@ import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.flag.FlagResolver;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
-import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import java.util.Optional;
 import java.util.function.Function;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -128,26 +127,7 @@ public final class EntityEventHandler {
             flag = BuiltinFlags.BLOCK_EXPLOSION;
         }
 
-        // H-P5: Long2ByteOpenHashMap avoids Long boxing: -1=absent, 0=allow, 1=deny.
-        // Cache zone verdicts per 16×16×16 cell: typical explosions cluster in
-        // a handful of cells, so we go from O(N) zone lookups to ~O(cells).
-        Long2ByteOpenHashMap cellVerdict = new Long2ByteOpenHashMap(16);
-        cellVerdict.defaultReturnValue((byte) -1);
-        affected.removeIf(pos -> {
-            long key = cellKey(pos);
-            byte cached = cellVerdict.get(key);
-            if (cached != -1) return cached == 1;
-            boolean deny = guard.isZoneDenying(level, pos, flag);
-            cellVerdict.put(key, deny ? (byte) 1 : (byte) 0);
-            return deny;
-        });
-    }
-
-    private static long cellKey(net.minecraft.core.BlockPos pos) {
-        long cx = pos.getX() >> 4;
-        long cy = pos.getY() >> 4;
-        long cz = pos.getZ() >> 4;
-        return (cx & 0x1FFFFFFL) | ((cz & 0x1FFFFFFL) << 25) | ((cy & 0xFFFL) << 50);
+        affected.removeIf(pos -> guard.isZoneDenying(level, pos, flag));
     }
 
     /**
