@@ -25,6 +25,8 @@ import net.minecraft.world.item.ProjectileItem;
 import net.minecraft.world.item.SnowballItem;
 import net.minecraft.world.item.ThrowablePotionItem;
 import net.minecraft.world.item.TridentItem;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.ButtonBlock;
@@ -37,6 +39,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
 import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
@@ -45,6 +48,7 @@ import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.block.CropGrowEvent;
+import net.neoforged.neoforge.event.level.BlockGrowFeatureEvent;
 
 /** Catch-all handler for flags that don't fit elsewhere. */
 public final class FlagEventHandler {
@@ -99,6 +103,22 @@ public final class FlagEventHandler {
         if ((stack.getItem() instanceof BoatItem || stack.getItem() instanceof MinecartItem)
                 && deny(player, event.getPos().relative(event.getFace()), BuiltinFlags.VEHICLE_PLACE, "vehicle_place")) {
             event.setCanceled(true);
+            return;
+        }
+
+        // WAYSTONE_USE : blocs waystones
+        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        if (blockId != null && "waystones".equals(blockId.getNamespace())
+                && deny(player, pos, BuiltinFlags.WAYSTONE_USE, "waystone_use")) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // RECHISELED_USE : blocs rechiseled (interfaces de design de blocs)
+        if (blockId != null && "rechiseled".equals(blockId.getNamespace())
+                && deny(player, pos, BuiltinFlags.RECHISELED_USE, "rechiseled_use")) {
+            event.setCanceled(true);
+            return;
         }
     }
 
@@ -119,6 +139,14 @@ public final class FlagEventHandler {
         }
         if (stack.getItem() instanceof ChorusFruitItem
                 && deny(player, pos, BuiltinFlags.CHORUS_FRUIT, "chorus_fruit")) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // ARS_ADDITIONS_SCROLL : parchemins Ars Additions (namespace ars_additions)
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (itemId != null && "ars_additions".equals(itemId.getNamespace())
+                && deny(player, pos, BuiltinFlags.ARS_ADDITIONS_SCROLL, "ars_additions_scroll")) {
             event.setCanceled(true);
             return;
         }
@@ -216,6 +244,30 @@ public final class FlagEventHandler {
         }
     }
 
+    public void onFarmlandTrample(BlockEvent.FarmlandTrampleEvent event) {
+        Level level = (Level) event.getLevel();
+        if (guard.isZoneDenying(level, event.getPos(), BuiltinFlags.FARMLAND_TRAMPLE)) {
+            event.setCanceled(true);
+        }
+    }
+
+    public void onTreeGrow(BlockGrowFeatureEvent event) {
+        Level level = (Level) event.getLevel();
+        if (guard.isZoneDenying(level, event.getPos(), BuiltinFlags.TREE_GROWTH)) {
+            event.setCanceled(true);
+        }
+    }
+
+    public void onVehicleJoin(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide()) return;
+        Entity entity = event.getEntity();
+        if (!(entity instanceof Boat) && !(entity instanceof AbstractMinecart)) return;
+        Level level = (Level) event.getLevel();
+        if (guard.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.VEHICLE_PLACE)) {
+            event.setCanceled(true);
+        }
+    }
+
     public void onFluidPlaceBlock(BlockEvent.FluidPlaceBlockEvent event) {
         // La lave crée du feu/obsidienne ; l'eau crée de l'obsidienne au contact de lave.
         Level level = (Level) event.getLevel();
@@ -244,8 +296,8 @@ public final class FlagEventHandler {
         Optional<ProtectedZone> zoneOpt = guard.zoneManager().checkZone(player, pos);
         if (zoneOpt.isEmpty()) return false;
         if (!guard.isZoneDenying(zoneOpt.get(), flag, player.serverLevel())) return false;
-        player.sendSystemMessage(Component.translatable("arcadiaguard.message." + actionName)
-            .withStyle(ChatFormatting.RED));
+        player.displayClientMessage(Component.translatable("arcadiaguard.message." + actionName)
+            .withStyle(ChatFormatting.RED), true);
         return true;
     }
 }
