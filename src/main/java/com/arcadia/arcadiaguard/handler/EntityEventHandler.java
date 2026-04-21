@@ -19,6 +19,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -58,8 +59,8 @@ public final class EntityEventHandler {
             if (guard.isZoneDenying(zone, BuiltinFlags.PLAYER_DAMAGE, level)) {
                 event.setCanceled(true);
             }
-        } else if (victim instanceof Animal animal) {
-            if (isAnimalInvincibleZone(level, animal, zone)) {
+        } else if (victim instanceof Animal) {
+            if (isAnimalInvincibleZone(level, zone)) {
                 event.setCanceled(true);
                 return;
             }
@@ -130,24 +131,36 @@ public final class EntityEventHandler {
         affected.removeIf(pos -> guard.isZoneDenying(level, pos, flag));
     }
 
+    public void onAnimalJoinLevel(EntityJoinLevelEvent event) {
+        if (event.isCanceled()) return;
+        if (!(event.getLevel() instanceof Level level)) return;
+        if (level.isClientSide()) return;
+        if (!(event.getEntity() instanceof Animal animal)) return;
+        if (!isAnimalInvincibleZone(level, animal)) return;
+        animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
+        animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
+    }
+
     /**
      * Applies Resistance and Regeneration to animals in zones with ANIMAL_INVINCIBLE=true.
-     * Refreshes effects every 40 ticks so they never expire.
+     * Refreshes every 20 ticks with a 40-tick duration so effects never expire between refreshes,
+     * closing the damage window both for zone entry (via frontier crossing, no JoinLevelEvent)
+     * and for animals whose initial join-level effect expires.
      */
     public void onEntityTick(EntityTickEvent.Post event) {
         if (!(event.getEntity() instanceof Animal animal)) return;
         Level level = animal.level();
         if (level.isClientSide()) return;
-        if (animal.tickCount % 40 != 0) return;
+        if (animal.tickCount % 20 != 0) return;
         if (!isAnimalInvincibleZone(level, animal)) return;
 
-        animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 255, false, false));
-        animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 60, 255, false, false));
+        animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
+        animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
     }
 
     /** H-P2 overload: uses an already-resolved zone — no extra lookup. */
     @SuppressWarnings("unchecked")
-    private boolean isAnimalInvincibleZone(Level level, Animal animal, ProtectedZone zone) {
+    private boolean isAnimalInvincibleZone(Level level, ProtectedZone zone) {
         Function<String, Optional<ProtectedZone>> lookup =
             name -> (Optional<ProtectedZone>)(Optional<?>) guard.zoneManager().get(level, name);
         return FlagResolver.resolve(zone, BuiltinFlags.ANIMAL_INVINCIBLE, lookup);

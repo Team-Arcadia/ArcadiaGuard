@@ -132,6 +132,19 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             }
         }
 
+        // ARS_ADDITIONS_SCROLL : parchemins Ars Additions utilisés via EntityInteract.
+        // Utilise l'ItemStack réel de l'event (lié à event.getHand()) — sinon un scroll
+        // en offhand est ignoré quand la mainhand tient un autre item.
+        ItemStack arsHeld = event.getItemStack();
+        if (!arsHeld.isEmpty()) {
+            ResourceLocation arsScrollId = BuiltInRegistries.ITEM.getKey(arsHeld.getItem());
+            if (arsScrollId != null && "ars_additions".equals(arsScrollId.getNamespace())
+                    && checkFlagDenied(sp, pos, BuiltinFlags.ARS_ADDITIONS_SCROLL)) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+
         // NPC_INTERACT: block right-clicking on NPCs (easy_npc mod entities)
         if (isNpc(target) && checkFlagDenied(sp, pos, BuiltinFlags.NPC_INTERACT)) {
             sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("arcadiaguard.message.npc_interact"), true);
