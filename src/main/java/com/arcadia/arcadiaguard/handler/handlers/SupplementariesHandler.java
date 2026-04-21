@@ -32,7 +32,12 @@ public final class SupplementariesHandler implements RightClickItemHandler {
         Object entity = ReflectionHelper.invoke(event, "getEntity", new Class<?>[0]).orElse(null);
         if (!(entity instanceof ServerPlayer player)) return;
         ItemStack stack = event.getItemStack();
-        if (!stack.is(THROWABLE_BRICKS)) return;
+        // S-H17 T5 : couvre les briques (tag throwable_bricks) ET les bombes
+        // (supplementaries:bomb, supplementaries:bomb_blue, etc. — pas dans le tag).
+        ResourceLocation itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+        boolean isBomb = itemId != null && "supplementaries".equals(itemId.getNamespace())
+                && itemId.getPath().startsWith("bomb");
+        if (!stack.is(THROWABLE_BRICKS) && !isBomb) return;
         Object pos = ReflectionHelper.invoke(player, "blockPosition", new Class<?>[0]).orElse(null);
         if (pos instanceof net.minecraft.core.BlockPos blockPos) {
             if (guardService.shouldBypass(player)) return;

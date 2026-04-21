@@ -118,7 +118,17 @@ public final class EntityEventHandler {
         var explosion = event.getExplosion();
         Entity exploder = explosion.getDirectSourceEntity();
         BooleanFlag flag;
-        if (exploder instanceof Creeper) {
+        // S-H17 T1 : detecter aussi les entites du namespace mutantmonsters
+        // (MutantCreeper, CreeperMinion, etc.) comme source creeper.
+        boolean isMutantCreeperLike = false;
+        if (exploder != null) {
+            var entType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(exploder.getType());
+            if (entType != null && "mutantmonsters".equals(entType.getNamespace())
+                    && entType.getPath().contains("creeper")) {
+                isMutantCreeperLike = true;
+            }
+        }
+        if (exploder instanceof Creeper || isMutantCreeperLike) {
             flag = BuiltinFlags.CREEPER_EXPLOSION;
         } else if (exploder instanceof PrimedTnt
                 || exploder instanceof MinecartTNT

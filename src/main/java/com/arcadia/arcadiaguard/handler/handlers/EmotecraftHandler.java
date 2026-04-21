@@ -59,12 +59,13 @@ public final class EmotecraftHandler {
     }
 
     private static Object pass() throws Exception {
-        Class<?> resultClass = Class.forName("io.github.kosmx.emotes.api.events.EventResult");
+        // EventResult vient de player-animation-lib (dependance Emotecraft), pas d'Emotecraft lui-meme.
+        Class<?> resultClass = Class.forName("dev.kosmx.playerAnim.core.impl.event.EventResult");
         return resultClass.getField("PASS").get(null);
     }
 
     private static Object fail() throws Exception {
-        Class<?> resultClass = Class.forName("io.github.kosmx.emotes.api.events.EventResult");
+        Class<?> resultClass = Class.forName("dev.kosmx.playerAnim.core.impl.event.EventResult");
         return resultClass.getField("FAIL").get(null);
     }
 }

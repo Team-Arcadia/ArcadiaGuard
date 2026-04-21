@@ -29,7 +29,24 @@ public final class TwilightForestHandler {
         if (!ModList.get().isLoaded("twilightforest")) return;
         Entity projectile = event.getProjectile();
         ResourceLocation type = BuiltInRegistries.ENTITY_TYPE.getKey(projectile.getType());
-        if (type == null || !"twilightforest".equals(type.getNamespace())) return;
+        boolean tfProjectile = type != null && "twilightforest".equals(type.getNamespace());
+
+        // S-H16 T4 : les arcs TF (ice_bow, ender_bow, etc.) tirent des fleches vanilla
+        // (minecraft:arrow / spectral_arrow). On check si l'owner tient un item TF
+        // de type arc dans l'une de ses mains.
+        if (!tfProjectile && projectile instanceof net.minecraft.world.entity.projectile.Projectile proj
+                && proj.getOwner() instanceof net.minecraft.world.entity.LivingEntity shooter) {
+            for (net.minecraft.world.item.ItemStack held : new net.minecraft.world.item.ItemStack[]{
+                    shooter.getMainHandItem(), shooter.getOffhandItem() }) {
+                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(held.getItem());
+                if (itemId != null && "twilightforest".equals(itemId.getNamespace())
+                        && itemId.getPath().contains("bow")) {
+                    tfProjectile = true;
+                    break;
+                }
+            }
+        }
+        if (!tfProjectile) return;
 
         Level level = (Level) projectile.level();
         if (level.isClientSide()) return;

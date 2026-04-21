@@ -92,6 +92,32 @@ public final class FlagEventHandler {
             return;
         }
 
+        // S-H16 T3 : blocs de mods qui agissent comme des leviers mais n'etendent pas LeverBlock.
+        // Create (handcrank, clutch, gearshift, lever), Supplementaries (sconce_lever),
+        // Design'n'Decor et autres. Filtre par namespace + path.
+        ResourceLocation blockIdForLever = BuiltInRegistries.BLOCK.getKey(block);
+        if (blockIdForLever != null) {
+            String ns = blockIdForLever.getNamespace();
+            String path = blockIdForLever.getPath();
+            boolean isModLever =
+                ("create".equals(ns) && (path.contains("handcrank") || path.contains("clutch")
+                    || path.contains("gearshift") || path.contains("lever")))
+                || ("supplementaries".equals(ns) && path.contains("lever"))
+                || ("design_decor".equals(ns) && path.contains("lever"));
+            if (isModLever && deny(player, pos, BuiltinFlags.LEVER, "lever")) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+
+        // S-H17 T4 : Macaw's garage door (n'etend pas DoorBlock vanilla).
+        if (blockIdForLever != null && "mcwdoors".equals(blockIdForLever.getNamespace())
+                && blockIdForLever.getPath().contains("garage_door")
+                && deny(player, pos, BuiltinFlags.DOOR, "door")) {
+            event.setCanceled(true);
+            return;
+        }
+
         // ARS_ADDITIONS_SCROLL : parchemins Ars Additions utilisés sur un bloc (use() overridé côté serveur).
         // Vérifié AVANT BLOCK_INTERACT générique pour garantir le message spécifique
         // et la prise en compte du flag même quand block_interact=true.
