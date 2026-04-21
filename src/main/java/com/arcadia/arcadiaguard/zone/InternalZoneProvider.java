@@ -147,6 +147,17 @@ public final class InternalZoneProvider implements ZoneProvider {
     }
 
     @Override
+    public Collection<ProtectedZone> allZones(MinecraftServer server) {
+        // Accès natif : on lit directement la map en mémoire, pas besoin d'itérer les levels
+        // (couvre aussi les dimensions dont aucun level n'est chargé au moment du call).
+        List<ProtectedZone> out = new ArrayList<>();
+        for (Map<String, ProtectedZone> dimZones : this.zonesByDimension.values()) {
+            out.addAll(dimZones.values());
+        }
+        return out;
+    }
+
+    @Override
     public Optional<ProtectedZone> get(Level level, String name) {
         return Optional.ofNullable(
             this.zonesByDimension.getOrDefault(DimensionUtils.keyOf(level), Map.of()).get(name.toLowerCase()));

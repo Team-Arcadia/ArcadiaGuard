@@ -329,11 +329,26 @@ public final class GuiActionHandler {
     // ── Teleport / Debug ─────────────────────────────────────────────────────────
 
     private static void teleport(ServerPlayer player, String zoneName) {
-        ArcadiaGuard.zoneManager().get(player.serverLevel(), zoneName).ifPresent(zone -> {
+        // S-H18 : chercher la zone cross-dim (sinon impossible de TP vers une zone d'une autre dim).
+        MinecraftServer server = player.getServer();
+        var zoneOpt = server.getAllLevels() != null
+            ? java.util.stream.StreamSupport.stream(server.getAllLevels().spliterator(), false)
+                .flatMap(lvl -> ArcadiaGuard.zoneManager().get(lvl, zoneName).stream())
+                .findFirst()
+            : java.util.Optional.<com.arcadia.arcadiaguard.api.zone.IZone>empty();
+        zoneOpt.ifPresent(zone -> {
             double cx = (zone.minX() + zone.maxX()) / 2.0 + 0.5;
             double cz = (zone.minZ() + zone.maxZ()) / 2.0 + 0.5;
             double cy = zone.maxY() + 1;
-            player.teleportTo(player.serverLevel(), cx, cy, cz, player.getYRot(), player.getXRot());
+            // Résoudre le ServerLevel cible depuis le dimKey de la zone.
+            net.minecraft.resources.ResourceLocation dimLoc =
+                net.minecraft.resources.ResourceLocation.tryParse(zone.dimension());
+            net.minecraft.server.level.ServerLevel targetLevel = dimLoc != null
+                ? server.getLevel(net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION, dimLoc))
+                : null;
+            if (targetLevel == null) targetLevel = player.serverLevel();
+            player.teleportTo(targetLevel, cx, cy, cz, player.getYRot(), player.getXRot());
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.teleported", zoneName).withStyle(ChatFormatting.GREEN));
         });
     }

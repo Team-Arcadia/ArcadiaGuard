@@ -115,8 +115,10 @@ public final class ZoneManager implements IZoneManager {
     }
 
     public void sendRefreshedList(ServerPlayer player, int page) {
+        // S-H18 : collecter les zones de TOUTES les dimensions pour que la sidebar
+        // affiche les counts corrects et les dimensions modées même si le joueur n'y est pas.
         @SuppressWarnings("unchecked")
-        Collection<ProtectedZone> zones = (Collection<ProtectedZone>)(Collection<?>) this.internal.zones(player.serverLevel());
+        Collection<ProtectedZone> zones = (Collection<ProtectedZone>)(Collection<?>) this.internal.allZones(player.getServer());
         List<OpenGuiPayload.ZoneEntry> all = zones.stream()
             .map(z -> new OpenGuiPayload.ZoneEntry(
                 z.name(), z.dimension(),
