@@ -6,6 +6,7 @@
   "minVersion": "0.8.5",
   "mixins": [
     "BasePressurePlateBlockMixin",
+    "GrowingPlantHeadBlockMixin",
     "LeavesBlockMixin",
     "SpreadingSnowyDirtBlockMixin",
     "VineBlockMixin",

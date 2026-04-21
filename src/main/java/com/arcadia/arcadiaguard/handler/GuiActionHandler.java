@@ -251,8 +251,16 @@ public final class GuiActionHandler {
             ZoneLifecycleEvent.ModifyZone.Kind kind, Object arg1, Object arg2) {
         var event = new ZoneLifecycleEvent.ModifyZone(player, player.serverLevel(), zoneName, kind, arg1, arg2);
         NeoForge.EVENT_BUS.post(event);
-        if (event.isSuccess()) ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
-        else player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
+        if (event.isSuccess()) {
+            ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+        } else {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
+            // Re-push le detail pour que le client resynchronise son UI à l'état serveur réel
+            // (sinon un échec de validation laisse l'UI cliente avec une valeur fantôme).
+            if (ArcadiaGuard.zoneManager().get(player.serverLevel(), zoneName).isPresent()) {
+                ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+            }
+        }
     }
 
     private static void whitelistAction(ServerPlayer player, GuiActionPayload p, boolean add) {
@@ -290,6 +298,7 @@ public final class GuiActionHandler {
         }
         postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
             parentName.isEmpty() ? null : parentName, null);
+        ArcadiaGuard.zoneManager().sendRefreshedList(player);
     }
 
     private static void setZoneBounds(ServerPlayer player, GuiActionPayload p) {

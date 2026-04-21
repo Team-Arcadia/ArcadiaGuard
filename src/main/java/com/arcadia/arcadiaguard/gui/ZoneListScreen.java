@@ -600,8 +600,9 @@ public final class ZoneListScreen extends Screen {
             return true;
         }
         if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
-        // F → focus search box
-        if (keyCode == 70 && !hasControlDown() && searchBox != null) {
+        // F / Ctrl+F → focus search box. Ignore les combinaisons avec Alt/Shift
+        // pour laisser passer d'éventuels autres raccourcis (AZERTY, mods tiers).
+        if (keyCode == 70 && searchBox != null && !hasAltDown() && !hasShiftDown()) {
             setFocused(searchBox);
             searchBox.setFocused(true);
             return true;

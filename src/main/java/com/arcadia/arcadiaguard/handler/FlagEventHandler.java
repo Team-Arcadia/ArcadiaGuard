@@ -32,6 +32,7 @@ import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.ButtonBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
+import net.minecraft.world.level.block.GrowingPlantBlock;
 import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -47,6 +48,7 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.entity.player.BonemealEvent;
 import net.neoforged.neoforge.event.level.block.CropGrowEvent;
 import net.neoforged.neoforge.event.level.BlockGrowFeatureEvent;
 
@@ -84,6 +86,17 @@ public final class FlagEventHandler {
             return;
         }
 
+        // ARS_ADDITIONS_SCROLL : parchemins Ars Additions utilisés sur un bloc (use() overridé côté serveur).
+        // Vérifié AVANT BLOCK_INTERACT générique pour garantir le message spécifique
+        // et la prise en compte du flag même quand block_interact=true.
+        ItemStack stack = event.getItemStack();
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (itemId != null && "ars_additions".equals(itemId.getNamespace())
+                && deny(player, pos, BuiltinFlags.ARS_ADDITIONS_SCROLL, "ars_additions_scroll")) {
+            event.setCanceled(true);
+            return;
+        }
+
         // Conteneurs : block entity qui expose Container ou MenuProvider.
         if (be instanceof Container || be instanceof MenuProvider) {
             if (deny(player, pos, BuiltinFlags.CONTAINER_ACCESS, "container_access")) {
@@ -99,7 +112,6 @@ public final class FlagEventHandler {
         }
 
         // VEHICLE_PLACE : poser un boat/minecart.
-        ItemStack stack = event.getItemStack();
         if ((stack.getItem() instanceof BoatItem || stack.getItem() instanceof MinecartItem)
                 && deny(player, event.getPos().relative(event.getFace()), BuiltinFlags.VEHICLE_PLACE, "vehicle_place")) {
             event.setCanceled(true);
@@ -241,6 +253,23 @@ public final class FlagEventHandler {
     public void onCropGrow(CropGrowEvent.Pre event) {
         if (guard.isZoneDenying((Level) event.getLevel(), event.getPos(), BuiltinFlags.CROP_GROWTH)) {
             event.setResult(CropGrowEvent.Pre.Result.DO_NOT_GROW);
+        }
+    }
+
+    public void onBonemeal(BonemealEvent event) {
+        if (!(event.getLevel() instanceof Level level)) return;
+        if (level.isClientSide()) return;
+        BlockPos pos = event.getPos();
+        if (guard.isZoneDenying(level, pos, BuiltinFlags.CROP_GROWTH)) {
+            event.setCanceled(true);
+            return;
+        }
+        // Les vines (overworld, nether, cave) sont des GrowingPlantBlock : bonemeal sur body
+        // délègue à la head, donc on check VINE_GROWTH en plus.
+        Block block = event.getState().getBlock();
+        if (block instanceof GrowingPlantBlock
+                && guard.isZoneDenying(level, pos, BuiltinFlags.VINE_GROWTH)) {
+            event.setCanceled(true);
         }
     }
 
