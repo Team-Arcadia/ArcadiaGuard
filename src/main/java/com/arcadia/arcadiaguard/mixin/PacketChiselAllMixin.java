@@ -18,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "com.supermartijn642.rechiseled.packet.PacketChiselAll", remap = false)
 public abstract class PacketChiselAllMixin {
 
+    private static boolean WARNED = false;
+
     @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false)
     private void arcadiaguard$blockChiselAll(Object context, CallbackInfo ci) {
         try {
@@ -28,6 +30,12 @@ public abstract class PacketChiselAllMixin {
             if (FlagMixinHelper.isDenied(level, mcPlayer.blockPosition(), BuiltinFlags.RECHISELED_USE)) {
                 ci.cancel();
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            if (!WARNED) {
+                WARNED = true;
+                com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.warn(
+                    "[ArcadiaGuard] RECHISELED_USE mixin sur PacketChiselAll inoperant: {}", t.toString());
+            }
+        }
     }
 }
