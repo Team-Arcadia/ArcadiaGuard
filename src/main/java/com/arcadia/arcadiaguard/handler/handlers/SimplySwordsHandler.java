@@ -11,6 +11,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
@@ -41,6 +43,34 @@ public final class SimplySwordsHandler implements RightClickItemHandler {
         ProtectedZone zone = zoneOpt.get();
         boolean abilityAllowed = guardService.isFlagAllowedOrUnset(zone, BuiltinFlags.SIMPLYSWORDS_ABILITY, player.serverLevel());
         if (!abilityAllowed) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED), true);
+            event.setCanceled(true);
+        }
+    }
+
+    /**
+     * S-H16 T7 : certaines abilities SimplySwords (ex: simplyswords:caelestis)
+     * sont declenchees au debut de l'usage de l'item (chargement), pas via
+     * RightClickItem. On intercepte donc aussi LivingEntityUseItemEvent.Start
+     * pour couvrir ces cas.
+     */
+    public void onUseItemStart(LivingEntityUseItemEvent.Start event) {
+        if (!ArcadiaGuardConfig.ENABLE_SIMPLYSWORDS.get()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        Level level = player.level();
+        if (level.isClientSide()) return;
+
+        ItemStack stack = event.getItem();
+        ResourceLocation key = itemKey(stack);
+        if (key == null || !"simplyswords".equals(key.getNamespace())) return;
+
+        if (guardService.shouldBypass(player)) return;
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager()
+            .checkZone(player, player.blockPosition());
+        if (zoneOpt.isEmpty()) return;
+
+        if (!guardService.isFlagAllowedOrUnset(zoneOpt.get(), BuiltinFlags.SIMPLYSWORDS_ABILITY, player.serverLevel())) {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);

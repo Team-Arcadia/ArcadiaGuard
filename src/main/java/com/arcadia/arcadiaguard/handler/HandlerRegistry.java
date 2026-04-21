@@ -16,6 +16,7 @@ import com.arcadia.arcadiaguard.handler.handlers.ZoneItemHandler;
 import com.arcadia.arcadiaguard.handler.handlers.IronsSpellbooksHandler;
 import com.arcadia.arcadiaguard.handler.handlers.OccultismHandler;
 import com.arcadia.arcadiaguard.handler.handlers.SimplySwordsHandler;
+import com.arcadia.arcadiaguard.handler.handlers.SophisticatedStorageHandler;
 import com.arcadia.arcadiaguard.handler.handlers.SupplementariesHandler;
 import com.arcadia.arcadiaguard.util.ReflectionHelper;
 import java.util.List;
@@ -52,6 +53,8 @@ public final class HandlerRegistry {
     private final FlagEventHandler flagEventHandler;
     private final MutantMonstersHandler mutantMonstersHandler;
     private final TwilightForestHandler twilightForestHandler;
+    private final SophisticatedStorageHandler sophisticatedStorageHandler;
+    private final SimplySwordsHandler simplySwordsHandlerRef;
     private final List<Object> handlers;
 
     // H-P8: pre-typed arrays for O(1) dispatch without instanceof on every event
@@ -67,13 +70,16 @@ public final class HandlerRegistry {
         this.flagEventHandler = new FlagEventHandler(guardService);
         this.mutantMonstersHandler = new MutantMonstersHandler(guardService);
         this.twilightForestHandler = new TwilightForestHandler(guardService);
+        this.sophisticatedStorageHandler = new SophisticatedStorageHandler(guardService);
+        SimplySwordsHandler simplySwordsHandler = new SimplySwordsHandler(guardService);
+        this.simplySwordsHandlerRef = simplySwordsHandler;
         ApotheosisCharmHandler charmHandler = new ApotheosisCharmHandler(guardService);
         this.playerEventHandler = new PlayerEventHandler(guardService, charmHandler);
         this.handlers = List.of(
             this.playerEventHandler,
             new IronsSpellbooksHandler(guardService),
             new ArsNouveauHandler(guardService),
-            new SimplySwordsHandler(guardService),
+            simplySwordsHandler,
             new OccultismHandler(guardService),
             new SupplementariesHandler(guardService),
             new ApotheosisHandler(guardService),
@@ -125,6 +131,12 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTickEvent.Post.class, entityEventHandler::onEntityTick);
 
         // FlagEventHandler : interactions / combats / items / téléportations / croissance
+        // S-H16 T1 : Sophisticated Storage en HIGHEST — doit s'executer avant FlagEventHandler
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, PlayerInteractEvent.RightClickBlock.class, sophisticatedStorageHandler::onRightClickBlock);
+        // S-H16 T7 : SimplySwords abilities declenchees au chargement de l'item
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false,
+            net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent.Start.class,
+            simplySwordsHandlerRef::onUseItemStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickBlock.class, flagEventHandler::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickItem.class, flagEventHandler::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, AttackEntityEvent.class, flagEventHandler::onAttackEntity);
