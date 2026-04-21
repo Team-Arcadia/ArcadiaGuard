@@ -2,6 +2,7 @@ package com.arcadia.arcadiaguard.command;
 
 import static net.minecraft.commands.Commands.literal;
 
+import net.minecraft.ChatFormatting;
 import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.command.sub.DebugCommands;
 import com.arcadia.arcadiaguard.command.sub.DimFlagCommands;
@@ -48,59 +49,64 @@ public final class ArcadiaGuardCommands {
     }
 
     private static int showHelp(CommandContext<CommandSourceStack> ctx) {
-        ctx.getSource().sendSuccess(() -> Component.literal(
-            "\u00a76\u25ac\u25ac\u25ac ArcadiaGuard \u25ac\u25ac\u25ac \u00a77v" + ArcadiaGuard.MOD_ID), false);
+        ctx.getSource().sendSuccess(() -> Component.translatable(
+            "arcadiaguard.help.header", ArcadiaGuard.MOD_ID).withStyle(ChatFormatting.GOLD), false);
 
-        // Bouton GUI proéminent
-        MutableComponent guiBtn = Component.literal("\u00a7a[\u00a7e \u2726 Ouvrir l'interface \u00a7a]")
+        // Bouton GUI proeminent
+        MutableComponent guiBtn = Component.translatable("arcadiaguard.help.open_gui_button")
             .withStyle(s -> s.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ag gui"))
-                             .withUnderlined(true));
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a77  ").append(guiBtn), false);
+                             .withUnderlined(true)
+                             .withColor(ChatFormatting.GREEN));
+        ctx.getSource().sendSuccess(() -> Component.literal("  ").append(guiBtn), false);
 
-        // Zones
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Zones"), false);
-        sendCmd(ctx, "/ag zone list",                              "Lister les zones de la dimension");
-        sendCmd(ctx, "/ag zone info <nom>",                        "Détails + flags d'une zone");
-        sendCmd(ctx, "/ag zone create <nom>",                      "Créer (après sélection baguette)");
-        sendCmd(ctx, "/ag zone remove <nom>",                      "Supprimer une zone");
-        sendCmd(ctx, "/ag zone copy <nom> <nouveau>",              "Dupliquer une zone");
-        sendCmd(ctx, "/ag zone flag <nom> <flag> allow|deny|reset","Configurer un flag");
-        sendCmd(ctx, "/ag zone whitelist add <zone> <joueur>",     "Ajouter à la whitelist");
-        sendCmd(ctx, "/ag zone whitelist role <zone> <joueur> <rôle>", "Assigner OWNER/MODERATOR/MEMBER");
-        sendCmd(ctx, "/ag zone parent set <sous-zone> <parent>",   "Définir la zone parente");
+        sendSection(ctx, "arcadiaguard.help.section.zones");
+        sendCmdI18n(ctx, "/ag zone list",                              "arcadiaguard.help.zone_list");
+        sendCmdI18n(ctx, "/ag zone info <nom>",                        "arcadiaguard.help.zone_info");
+        sendCmdI18n(ctx, "/ag zone create <nom>",                      "arcadiaguard.help.zone_create");
+        sendCmdI18n(ctx, "/ag zone remove <nom>",                      "arcadiaguard.help.zone_remove");
+        sendCmdI18n(ctx, "/ag zone copy <nom> <nouveau>",              "arcadiaguard.help.zone_copy");
+        sendCmdI18n(ctx, "/ag zone flag <nom> <flag> allow|deny|reset","arcadiaguard.help.zone_flag");
+        sendCmdI18n(ctx, "/ag zone whitelist add <zone> <joueur>",     "arcadiaguard.help.zone_whitelist_add");
+        sendCmdI18n(ctx, "/ag zone whitelist role <zone> <joueur> <rôle>", "arcadiaguard.help.zone_whitelist_role");
+        sendCmdI18n(ctx, "/ag zone parent set <sous-zone> <parent>",   "arcadiaguard.help.zone_parent_set");
 
-        // Items
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Items"), false);
-        sendCmd(ctx, "/ag item block <item>",   "Bloquer un item dans toutes les zones");
-        sendCmd(ctx, "/ag item unblock <item>", "Débloquer un item");
-        sendCmd(ctx, "/ag item list",           "Lister les items bloqués");
+        sendSection(ctx, "arcadiaguard.help.section.items");
+        sendCmdI18n(ctx, "/ag item block <item>",   "arcadiaguard.help.item_block");
+        sendCmdI18n(ctx, "/ag item unblock <item>", "arcadiaguard.help.item_unblock");
+        sendCmdI18n(ctx, "/ag item list",           "arcadiaguard.help.item_list");
 
-        // Log
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Logs"), false);
-        sendCmd(ctx, "/ag log",                 "Dernières entrées du journal");
-        sendCmd(ctx, "/ag log <zone>",          "Filtrer par zone");
-        sendCmd(ctx, "/ag log <zone> <joueur>", "Filtrer par zone et joueur");
+        sendSection(ctx, "arcadiaguard.help.section.logs");
+        sendCmdI18n(ctx, "/ag log",                 "arcadiaguard.help.log");
+        sendCmdI18n(ctx, "/ag log <zone>",          "arcadiaguard.help.log_zone");
+        sendCmdI18n(ctx, "/ag log <zone> <joueur>", "arcadiaguard.help.log_zone_player");
 
-        // Dim flags
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Flags de dimension"), false);
-        sendCmd(ctx, "/ag dimflag list [dimension]",     "Lister les flags de dimension");
-        sendCmd(ctx, "/ag dimflag clear <dimension>",    "Effacer les flags d'une dimension");
-        sendCmd(ctx, "/ag dimflag clear all",            "Effacer TOUS les flags de dimension");
+        sendSection(ctx, "arcadiaguard.help.section.dimflags");
+        sendCmdI18n(ctx, "/ag dimflag list [dimension]",     "arcadiaguard.help.dimflag_list");
+        sendCmdI18n(ctx, "/ag dimflag clear <dimension>",    "arcadiaguard.help.dimflag_clear");
+        sendCmdI18n(ctx, "/ag dimflag clear all",            "arcadiaguard.help.dimflag_clear_all");
 
-        // Admin
-        ctx.getSource().sendSuccess(() -> Component.literal("\u00a76 \u25b6 Admin"), false);
-        sendCmd(ctx, "/ag wand give editor|viewer", "Obtenir la baguette de sélection");
-        sendCmd(ctx, "/ag migrate yawp",            "Importer les zones depuis YAWP");
-        sendCmd(ctx, "/ag reload",                  "Recharger les zones et les items bloqués");
+        sendSection(ctx, "arcadiaguard.help.section.admin");
+        sendCmdI18n(ctx, "/ag wand give editor|viewer", "arcadiaguard.help.wand_give");
+        sendCmdI18n(ctx, "/ag migrate yawp",            "arcadiaguard.help.migrate_yawp");
+        sendCmdI18n(ctx, "/ag reload",                  "arcadiaguard.help.reload");
 
         return 1;
     }
 
-    private static void sendCmd(CommandContext<CommandSourceStack> ctx, String cmd, String desc) {
-        MutableComponent text = Component.literal("\u00a7e" + cmd)
-            .withStyle(s -> s.withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, cmd)));
-        MutableComponent line = Component.literal("\u00a77 \u2192 ").append(text)
-            .append(Component.literal("\u00a78 — \u00a77" + desc));
+    private static void sendSection(CommandContext<CommandSourceStack> ctx, String key) {
+        ctx.getSource().sendSuccess(() ->
+            Component.literal(" \u25b6 ").withStyle(ChatFormatting.GOLD)
+                .append(Component.translatable(key).withStyle(ChatFormatting.GOLD)), false);
+    }
+
+    private static void sendCmdI18n(CommandContext<CommandSourceStack> ctx, String cmd, String descKey) {
+        MutableComponent text = Component.literal(cmd).withStyle(s -> s
+            .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, cmd))
+            .withColor(ChatFormatting.YELLOW));
+        MutableComponent line = Component.literal(" \u2192 ").withStyle(ChatFormatting.GRAY)
+            .append(text)
+            .append(Component.literal(" \u2014 ").withStyle(ChatFormatting.DARK_GRAY))
+            .append(Component.translatable(descKey).withStyle(ChatFormatting.GRAY));
         ctx.getSource().sendSuccess(() -> line, false);
     }
 

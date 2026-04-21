@@ -60,13 +60,14 @@ public final class DimFlagCommands {
                 Component.translatable("arcadiaguard.dimflag.none_for_dim", dim).withStyle(ChatFormatting.YELLOW), false);
             return 1;
         }
-        ctx.getSource().sendSuccess(() -> Component.literal(ChatFormatting.GOLD + "Flags dim " + dim + ":"), false);
+        ctx.getSource().sendSuccess(() ->
+            Component.translatable("arcadiaguard.dimflag.flags_for_dim", dim).withStyle(ChatFormatting.GOLD), false);
         sendDimFlags(ctx, dim, flags);
         return 1;
     }
 
     private static void sendDimFlags(CommandContext<CommandSourceStack> ctx, String dim, Map<String, Object> flags) {
-        ctx.getSource().sendSuccess(() -> Component.literal(ChatFormatting.AQUA + "  " + dim + ":"), false);
+        ctx.getSource().sendSuccess(() -> Component.literal("  " + dim + ":").withStyle(ChatFormatting.AQUA), false);
         for (var e : flags.entrySet()) {
             String color = Boolean.FALSE.equals(e.getValue()) ? ChatFormatting.RED.toString() : ChatFormatting.GREEN.toString();
             ctx.getSource().sendSuccess(() ->
