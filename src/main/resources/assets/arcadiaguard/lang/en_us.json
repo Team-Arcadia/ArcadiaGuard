@@ -346,5 +346,12 @@
   "arcadiaguard.help.wand_give": "Get the selection wand",
   "arcadiaguard.help.migrate_yawp": "Import zones from YAWP",
   "arcadiaguard.help.reload": "Reload zones and blocked items",
+  "arcadiaguard.gui.zonedetail.itemblocks": "Blocked items",
+  "arcadiaguard.gui.zonedetail.itemblocks.title": "Items blocked in this zone",
+  "arcadiaguard.gui.zonedetail.itemblocks.blocked": "Blocked (%1$s)",
+  "arcadiaguard.gui.zonedetail.itemblocks.empty": "No items blocked in this zone.",
+  "arcadiaguard.gui.zonedetail.itemblocks.more": "... and %1$s more",
+  "arcadiaguard.gui.zonedetail.itemblocks.search_hint": "Search an item (e.g. diamond_sword)...",
+  "arcadiaguard.gui.zonedetail.itemblocks.no_match": "No item matches.",
   "arcadiaguard.command.zone.no_permission": "Permission denied."
 }

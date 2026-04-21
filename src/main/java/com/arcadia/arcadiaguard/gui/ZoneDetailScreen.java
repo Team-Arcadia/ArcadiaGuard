@@ -26,13 +26,15 @@ public final class ZoneDetailScreen extends Screen {
     private sealed interface PopupState
         permits PopupState.None, PopupState.ConfirmDelete,
                 PopupState.WhitelistInput, PopupState.ParentInput,
-                PopupState.FlagPicker, PopupState.CoordsEditor {
+                PopupState.FlagPicker, PopupState.CoordsEditor,
+                PopupState.ItemBlocksPicker {
         record None()          implements PopupState {}
         record ConfirmDelete() implements PopupState {}
         record WhitelistInput() implements PopupState {}
         record ParentInput()   implements PopupState {}
         record FlagPicker()    implements PopupState {}
         record CoordsEditor()  implements PopupState {}
+        record ItemBlocksPicker() implements PopupState {}
     }
 
     private record Hitbox(int x, int y, int w, int h, Runnable action) {
@@ -64,8 +66,12 @@ public final class ZoneDetailScreen extends Screen {
     private int flagPickerScroll = 0;
     private boolean viewZone     = false;
 
-    private int btX1, btX2, btX3, btX4;
-    private int btW1, btW2, btW3, btW4;
+    // S-H20 Item blocks picker state
+    private int itemPickerScroll = 0;
+    private EditBox itemSearchBox;
+
+    private int btX1, btX2, btX3, btX4, btX5;
+    private int btW1, btW2, btW3, btW4, btW5;
 
     private EditBox whitelistBox;
     private EditBox parentBox;
@@ -76,6 +82,7 @@ public final class ZoneDetailScreen extends Screen {
     private CartographiaButton footerBackBtn;
     private CartographiaButton footerPlayerBtn;
     private CartographiaButton footerParentBtn;
+    private CartographiaButton footerItemBlocksBtn;
     private CartographiaButton footerDeleteBtn;
 
     // ── Constructor ──────────────────────────────────────────────────────────────
@@ -135,6 +142,18 @@ public final class ZoneDetailScreen extends Screen {
         flagSearchBox.setVisible(false);
         addRenderableWidget(flagSearchBox);
 
+        // S-H20 : search box pour l'ItemBlocksPicker
+        itemSearchBox = new EditBox(font, 0, 0, 100, 14,
+            Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.search_hint"));
+        itemSearchBox.setMaxLength(80);
+        itemSearchBox.setBordered(false);
+        itemSearchBox.setTextColor(Colors.TEXT);
+        itemSearchBox.setHint(Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.search_hint")
+            .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+        itemSearchBox.setResponder(s -> itemPickerScroll = 0);
+        itemSearchBox.setVisible(false);
+        addRenderableWidget(itemSearchBox);
+
         String[] coordHintKeys = {
             "arcadiaguard.gui.zonedetail.coord_minx.hint",
             "arcadiaguard.gui.zonedetail.coord_miny.hint",
@@ -158,21 +177,23 @@ public final class ZoneDetailScreen extends Screen {
 
         viewZone = ClientZoneCache.zones().stream().anyMatch(z -> z.name().equals(detail.name()));
 
-        btW1 = 70; btW2 = 90; btW3 = 110; btW4 = 110;
-        int totalBtns = btW1 + btW2 + btW3 + btW4;
+        btW1 = 60; btW2 = 80; btW3 = 90; btW4 = 80; btW5 = 90;
+        int totalBtns = btW1 + btW2 + btW3 + btW4 + btW5;
         int usable = GUI_W - 16;
-        if (usable < totalBtns + 12) {
-            int avail = Math.max(usable - 12, 80);
-            btW1 = avail * 70 / totalBtns;
-            btW2 = avail * 90 / totalBtns;
-            btW3 = avail * 110 / totalBtns;
-            btW4 = avail - btW1 - btW2 - btW3;
+        if (usable < totalBtns + 16) {
+            int avail = Math.max(usable - 16, 80);
+            btW1 = avail * 60 / totalBtns;
+            btW2 = avail * 80 / totalBtns;
+            btW3 = avail * 90 / totalBtns;
+            btW4 = avail * 80 / totalBtns;
+            btW5 = avail - btW1 - btW2 - btW3 - btW4;
         }
-        int gap = Math.max(4, (usable - btW1 - btW2 - btW3 - btW4) / 3);
+        int gap = Math.max(4, (usable - btW1 - btW2 - btW3 - btW4 - btW5) / 4);
         btX1 = gx + 8;
         btX2 = btX1 + btW1 + gap;
         btX3 = btX2 + btW2 + gap;
         btX4 = btX3 + btW3 + gap;
+        btX5 = btX4 + btW4 + gap;
 
         int bfy = gy + GUI_H - FOOTER_H + 6;
         boolean isWhitelist = popup instanceof PopupState.WhitelistInput;
@@ -219,7 +240,23 @@ public final class ZoneDetailScreen extends Screen {
             });
         addRenderableWidget(footerParentBtn);
 
-        footerDeleteBtn = CartographiaButton.danger(btX4, bfy, btW4, 16,
+        footerItemBlocksBtn = CartographiaButton.neutral(btX4, bfy, btW4, 16,
+            Component.translatable("arcadiaguard.gui.zonedetail.itemblocks"),
+            b -> {
+                if (popup instanceof PopupState.ItemBlocksPicker) {
+                    popup = new PopupState.None();
+                    itemSearchBox.setVisible(false);
+                } else {
+                    popup = new PopupState.ItemBlocksPicker();
+                    itemSearchBox.setValue("");
+                    itemSearchBox.setVisible(true);
+                    setFocused(itemSearchBox);
+                    itemPickerScroll = 0;
+                }
+            });
+        addRenderableWidget(footerItemBlocksBtn);
+
+        footerDeleteBtn = CartographiaButton.danger(btX5, bfy, btW5, 16,
             Component.translatable("arcadiaguard.gui.zonedetail.delete"),
             b -> popup = new PopupState.ConfirmDelete());
         addRenderableWidget(footerDeleteBtn);
@@ -260,11 +297,13 @@ public final class ZoneDetailScreen extends Screen {
         drawFocusRingIfFocused(g, whitelistBox);
         drawFocusRingIfFocused(g, parentBox);
         drawFocusRingIfFocused(g, flagSearchBox);
+        drawFocusRingIfFocused(g, itemSearchBox);
         if (coordBoxes != null) for (EditBox cb : coordBoxes) drawFocusRingIfFocused(g, cb);
 
         super.render(g, mx, my, delta);
 
         if (popup instanceof PopupState.FlagPicker)    renderFlagPicker(g, mx, my);
+        if (popup instanceof PopupState.ItemBlocksPicker) renderItemBlocksPicker(g, mx, my);
         if (popup instanceof PopupState.ConfirmDelete) renderConfirmPopup(g, mx, my);
         if (popup instanceof PopupState.CoordsEditor)  renderCoordsEditor(g, mx, my);
     }
@@ -745,6 +784,191 @@ public final class ZoneDetailScreen extends Screen {
             px + pw / 2, py + ph - 10, Colors.TEXT_MUTE);
     }
 
+    // ── S-H20 : ItemBlocks picker ────────────────────────────────────────────────
+
+    private static final int ITEM_ROW_H = 14;
+
+    /** Retourne la liste des ResourceLocation de tous les items candidats filtres par recherche. */
+    private List<net.minecraft.resources.ResourceLocation> itemPickerSearchResults() {
+        String q = itemSearchBox != null ? itemSearchBox.getValue().trim().toLowerCase() : "";
+        java.util.List<net.minecraft.resources.ResourceLocation> all = new java.util.ArrayList<>();
+        // Registry client-side contient tous les items vanilla + mods charges
+        var registry = net.minecraft.core.registries.BuiltInRegistries.ITEM;
+        for (var item : registry) {
+            var id = registry.getKey(item);
+            if (id == null) continue;
+            if (id.toString().equals("minecraft:air")) continue;
+            // Deja bloque : skip dans les resultats (affiche dans la section du haut)
+            if (detail.blockedItems().contains(id.toString())) continue;
+            if (q.isEmpty() || id.getPath().contains(q) || id.getNamespace().contains(q)) {
+                all.add(id);
+            }
+            if (all.size() >= 200) break; // cap pour perf
+        }
+        all.sort(java.util.Comparator.comparing(net.minecraft.resources.ResourceLocation::toString));
+        return all;
+    }
+
+    private void renderItemBlocksPicker(GuiGraphics g, int mx, int my) {
+        g.fill(gx, gy, gx + GUI_W, gy + GUI_H, 0x90000000);
+        int pw = Math.min(440, GUI_W - 40);
+        int ph = Math.min(360, GUI_H - 40);
+        int px = gx + (GUI_W - pw) / 2;
+        int py = gy + (GUI_H - ph) / 2;
+
+        g.fill(px - 1, py - 1, px + pw + 1, py + ph + 1, Colors.ACCENT_LO);
+        g.fill(px, py, px + pw, py + ph, Colors.BG_1);
+
+        // Titre + close
+        g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.title").getString(),
+            px + 8, py + 7, Colors.ACCENT, false);
+        int closeBtnX = px + pw - 20;
+        boolean closeHov = mx >= closeBtnX && mx < closeBtnX + 16 && my >= py + 4 && my < py + 18;
+        if (closeHov) g.fill(closeBtnX, py + 4, closeBtnX + 16, py + 18,
+            Colors.DANGER & 0xFFFFFF | 0x40000000);
+        g.drawCenteredString(font, "\u2715", closeBtnX + 8, py + 7,
+            closeHov ? Colors.DANGER : Colors.TEXT_MUTE);
+        GuiTextures.dividerH(g, px + 4, py + 20, pw - 8);
+
+        // Section 1 : liste des items deja bannis (scrollable si > 4)
+        int y = py + 24;
+        g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.blocked",
+            detail.blockedItems().size()).getString(), px + 8, y, Colors.TEXT_MUTE, false);
+        y += 12;
+        int blockedTop = y;
+        int blockedVisible = 4;
+        int blockedH = blockedVisible * ITEM_ROW_H;
+        g.fill(px + 4, y, px + pw - 4, y + blockedH, Colors.BG_0);
+        List<String> blockedList = detail.blockedItems();
+        int blockedEnd = Math.min(blockedList.size(), blockedVisible);
+        for (int i = 0; i < blockedEnd; i++) {
+            String id = blockedList.get(i);
+            int iy = blockedTop + i * ITEM_ROW_H;
+            if (i % 2 == 1) g.fill(px + 4, iy, px + pw - 4, iy + ITEM_ROW_H, 0x08FFFFFF);
+            g.drawString(font, id, px + 10, iy + 3, Colors.TEXT, false);
+            // Bouton ✕ a droite
+            int xbtnX = px + pw - 22;
+            boolean xhov = mx >= xbtnX && mx < xbtnX + 14 && my >= iy && my < iy + ITEM_ROW_H;
+            if (xhov) g.fill(xbtnX, iy, xbtnX + 14, iy + ITEM_ROW_H, Colors.DANGER & 0xFFFFFF | 0x40000000);
+            g.drawCenteredString(font, "\u2715", xbtnX + 7, iy + 3, xhov ? Colors.DANGER : Colors.TEXT_MUTE);
+        }
+        if (blockedList.isEmpty()) {
+            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.empty").getString(),
+                px + pw / 2, blockedTop + blockedH / 2 - 4, Colors.TEXT_MUTE);
+        } else if (blockedList.size() > blockedVisible) {
+            g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.more",
+                blockedList.size() - blockedVisible).getString(),
+                px + 8, blockedTop + blockedH + 2, Colors.TEXT_MUTE, false);
+        }
+
+        // Separateur
+        int searchY = blockedTop + blockedH + 14;
+        GuiTextures.dividerH(g, px + 4, searchY - 2, pw - 8);
+
+        // Search box
+        g.fill(px + 4, searchY, px + pw - 4, searchY + 18, Colors.BG_0);
+        g.fill(px + 4, searchY, px + pw - 4, searchY + 1, Colors.ACCENT_LO);
+        g.fill(px + 4, searchY + 17, px + pw - 4, searchY + 18, Colors.ACCENT_LO);
+        if (itemSearchBox != null) {
+            itemSearchBox.setX(px + 8);
+            itemSearchBox.setY(searchY + 3);
+            itemSearchBox.setWidth(pw - 16);
+            itemSearchBox.setVisible(true);
+        }
+
+        // Liste resultats de recherche (section ajoutable)
+        int listTop = searchY + 22;
+        int listH = ph - (listTop - py) - 14;
+        int maxVis = listH / ITEM_ROW_H;
+        List<net.minecraft.resources.ResourceLocation> results = itemPickerSearchResults();
+        itemPickerScroll = Mth.clamp(itemPickerScroll, 0, Math.max(0, results.size() - maxVis));
+        int end = Math.min(itemPickerScroll + maxVis, results.size());
+        for (int i = itemPickerScroll; i < end; i++) {
+            var id = results.get(i);
+            int iy = listTop + (i - itemPickerScroll) * ITEM_ROW_H;
+            boolean hov = mx >= px + 4 && mx < px + pw - 4 && my >= iy && my < iy + ITEM_ROW_H;
+            if (i % 2 == 1) g.fill(px + 4, iy, px + pw - 4, iy + ITEM_ROW_H, 0x08FFFFFF);
+            if (hov) g.fill(px + 4, iy, px + pw - 4, iy + ITEM_ROW_H, Colors.accentTint(0x20));
+            g.drawString(font, id.toString(), px + 10, iy + 3, Colors.TEXT, false);
+            // Icone + a droite
+            int addX = px + pw - 22;
+            boolean ahov = mx >= addX && mx < addX + 14 && my >= iy && my < iy + ITEM_ROW_H;
+            if (ahov) g.fill(addX, iy, addX + 14, iy + ITEM_ROW_H, Colors.VERDIGRIS & 0xFFFFFF | 0x40000000);
+            g.drawCenteredString(font, "+", addX + 7, iy + 3, ahov ? Colors.VERDIGRIS : Colors.TEXT_MUTE);
+        }
+        if (results.isEmpty() && itemSearchBox != null && !itemSearchBox.getValue().trim().isEmpty()) {
+            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.no_match").getString(),
+                px + pw / 2, listTop + 16, Colors.TEXT_MUTE);
+        }
+
+        // Scrollbar
+        if (results.size() > maxVis) {
+            int trackX = px + pw - 7;
+            int thumbH = Math.max(12, listH * maxVis / results.size());
+            int thumbY = listTop + (listH - thumbH) * itemPickerScroll
+                / Math.max(1, results.size() - maxVis);
+            g.fill(trackX, listTop, trackX + 3, listTop + listH, Colors.BG_0);
+            g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, Colors.ACCENT_LO);
+        }
+    }
+
+    /** Click handling pour le ItemBlocks popup. Retourne true si consomme. */
+    private boolean handleItemBlocksPickerClick(double mx, double my) {
+        int pw = Math.min(440, GUI_W - 40);
+        int ph = Math.min(360, GUI_H - 40);
+        int px = gx + (GUI_W - pw) / 2;
+        int py = gy + (GUI_H - ph) / 2;
+
+        // Close
+        int closeBtnX = px + pw - 20;
+        if (mx >= closeBtnX && mx < closeBtnX + 16 && my >= py + 4 && my < py + 18) {
+            popup = new PopupState.None();
+            itemSearchBox.setVisible(false);
+            return true;
+        }
+
+        // Hors du popup = close
+        if (mx < px || mx >= px + pw || my < py || my >= py + ph) {
+            popup = new PopupState.None();
+            itemSearchBox.setVisible(false);
+            return true;
+        }
+
+        // Section items bannis (haut) : clic sur ✕
+        int blockedTop = py + 24 + 12;
+        int blockedVisible = 4;
+        List<String> blockedList = detail.blockedItems();
+        int blockedEnd = Math.min(blockedList.size(), blockedVisible);
+        for (int i = 0; i < blockedEnd; i++) {
+            int iy = blockedTop + i * ITEM_ROW_H;
+            int xbtnX = px + pw - 22;
+            if (mx >= xbtnX && mx < xbtnX + 14 && my >= iy && my < iy + ITEM_ROW_H) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    GuiActionPayload.itemBlockRemove(detail.name(), blockedList.get(i)));
+                return true;
+            }
+        }
+
+        // Section search results (bas) : clic sur +
+        int searchY = blockedTop + blockedVisible * ITEM_ROW_H + 14;
+        int listTop = searchY + 22;
+        int listH = ph - (listTop - py) - 14;
+        int maxVis = listH / ITEM_ROW_H;
+        List<net.minecraft.resources.ResourceLocation> results = itemPickerSearchResults();
+        int end = Math.min(itemPickerScroll + maxVis, results.size());
+        for (int i = itemPickerScroll; i < end; i++) {
+            int iy = listTop + (i - itemPickerScroll) * ITEM_ROW_H;
+            int addX = px + pw - 22;
+            if (mx >= addX && mx < addX + 14 && my >= iy && my < iy + ITEM_ROW_H) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    GuiActionPayload.itemBlockAdd(detail.name(), results.get(i).toString()));
+                return true;
+            }
+        }
+
+        return true; // absorbe le clic sur le popup
+    }
+
     // ── Encart description flag ──────────────────────────────────────────────────
 
     private void renderFlagDesc(GuiGraphics g) {
@@ -998,6 +1222,14 @@ public final class ZoneDetailScreen extends Screen {
             return handleConfirmDeleteClick(imx, imy);
         if (popup instanceof PopupState.FlagPicker)
             return handleFlagPickerClick(imx, imy, mx, my, btn);
+        if (popup instanceof PopupState.ItemBlocksPicker) {
+            // Laisser la search box consommer le clic d'abord
+            if (itemSearchBox != null && itemSearchBox.isVisible() && itemSearchBox.mouseClicked(mx, my, btn)) {
+                setFocused(itemSearchBox);
+                return true;
+            }
+            return handleItemBlocksPickerClick(mx, my);
+        }
         if (popup instanceof PopupState.CoordsEditor)
             return handleCoordsEditorClick(imx, imy, mx, my, btn);
         if (super.mouseClicked(mx, my, btn)) return true;
@@ -1047,6 +1279,19 @@ public final class ZoneDetailScreen extends Screen {
             int maxVis  = listH / PICKER_FLAG_H;
             flagPickerScroll = Mth.clamp((int)(flagPickerScroll - dy),
                 0, Math.max(0, pickerFiltered().size() - maxVis));
+            return true;
+        }
+        if (popup instanceof PopupState.ItemBlocksPicker) {
+            int pw = Math.min(440, GUI_W - 40);
+            int ph = Math.min(360, GUI_H - 40);
+            int py = gy + (GUI_H - ph) / 2;
+            int blockedTop = py + 24 + 12;
+            int searchY = blockedTop + 4 * ITEM_ROW_H + 14;
+            int listTop = searchY + 22;
+            int listH = ph - (listTop - py) - 14;
+            int maxVis = listH / ITEM_ROW_H;
+            itemPickerScroll = Mth.clamp((int)(itemPickerScroll - dy),
+                0, Math.max(0, itemPickerSearchResults().size() - maxVis));
             return true;
         }
 
