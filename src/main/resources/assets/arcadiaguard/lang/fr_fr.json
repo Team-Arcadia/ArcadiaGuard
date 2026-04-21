@@ -307,5 +307,7 @@
   "arcadiaguard.gui.zonedetail.no_parent_flags": "Aucun parent \u2014 flags autonomes",
   "arcadiaguard.gui.action.zone_too_large": "Zone trop grande (max 10M blocs en surface).",
   "arcadiaguard.gui.action.parent_not_found": "Zone parent introuvable : %1$s",
+  "arcadiaguard.gui.action.parent_self": "Une zone ne peut pas \u00eatre son propre parent.",
+  "arcadiaguard.gui.action.parent_cycle": "D\u00e9finir %1$s comme parent cr\u00e9erait un cycle.",
   "arcadiaguard.command.zone.no_permission": "Permission refus\u00e9e."
 }
