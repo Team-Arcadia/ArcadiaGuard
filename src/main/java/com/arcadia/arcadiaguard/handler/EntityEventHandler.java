@@ -15,6 +15,7 @@ import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.vehicle.MinecartTNT;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -75,9 +76,12 @@ public final class EntityEventHandler {
     }
 
     public void onLivingFall(LivingFallEvent event) {
-        if (!(event.getEntity() instanceof Player player)) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
         Level level = player.level();
         if (level.isClientSide()) return;
+        // R3 : bypass OP/membre pour cohrence avec les autres flags — sinon un OP en
+        // mode survie ne peut pas tester fall_damage sans desactiver le flag.
+        if (guard.shouldBypass(player)) return;
         if (guard.isZoneDenying(level, player.blockPosition(), BuiltinFlags.FALL_DAMAGE)) {
             event.setCanceled(true);
         }
@@ -113,7 +117,11 @@ public final class EntityEventHandler {
         Level level = event.getLevel();
         if (level.isClientSide()) return;
         var affected = event.getAffectedBlocks();
-        if (affected.isEmpty()) return;
+        var affectedEntities = event.getAffectedEntities();
+        if (affected.isEmpty() && affectedEntities.isEmpty()) return;
+        // P3 : fast-path — explosions dans des dimensions sans zone passent vanilla
+        // (gros gain sur mega-TNT avec 10k+ blocs affectes).
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
 
         var explosion = event.getExplosion();
         Entity exploder = explosion.getDirectSourceEntity();
@@ -139,7 +147,13 @@ public final class EntityEventHandler {
             flag = BuiltinFlags.BLOCK_EXPLOSION;
         }
 
-        affected.removeIf(pos -> guard.isZoneDenying(level, pos, flag));
+        // R2 : retirer les blocs ET les entites de la zone d'effet pour que
+        // l'explosion n'endommage ni les blocs ni les joueurs/mobs proteges.
+        // On reutilise la meme classification de flag (creeper/tnt/block).
+        final BooleanFlag finalFlag = flag;
+        affected.removeIf(pos -> guard.isZoneDenying(level, pos, finalFlag));
+        affectedEntities.removeIf(entity ->
+            guard.isZoneDenying(level, entity.blockPosition(), finalFlag));
     }
 
     public void onAnimalJoinLevel(EntityJoinLevelEvent event) {
@@ -147,6 +161,7 @@ public final class EntityEventHandler {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;
         if (!(event.getEntity() instanceof Animal animal)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
         if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
         animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
@@ -163,6 +178,8 @@ public final class EntityEventHandler {
         Level level = animal.level();
         if (level.isClientSide()) return;
         if (animal.tickCount % 20 != 0) return;
+        // P2 : fast-path O(1) — skip l'animal si aucune zone dans la dim.
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
         if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
 
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));

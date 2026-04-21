@@ -15,7 +15,6 @@
     "IceBlockMixin",
     "FlowingFluidMixin",
     "SaplingBlockMixin",
-    "FireBlockMixin",
     "PacketChiselBlocksMixin",
     "PacketChiselAllMixin",
     "ReinforcedPressurePlateBlockMixin",
