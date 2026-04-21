@@ -12,6 +12,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.vehicle.MinecartTNT;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
@@ -120,6 +121,7 @@ public final class EntityEventHandler {
         if (exploder instanceof Creeper) {
             flag = BuiltinFlags.CREEPER_EXPLOSION;
         } else if (exploder instanceof PrimedTnt
+                || exploder instanceof MinecartTNT
                 || (exploder == null
                     && "TNT".equals(explosion.getBlockInteraction().name()))) {
             flag = BuiltinFlags.TNT_EXPLOSION;
