@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 public final class ProtectedZone implements IZone {
@@ -29,9 +30,11 @@ public final class ProtectedZone implements IZone {
     private final Set<UUID> whitelistedPlayers;
     private final Map<UUID, ZoneRole> memberRoles;
     private final Map<String, Object> flagValues;
+    private final Set<ResourceLocation> blockedItems;
     private final Map<String, Object> flagValuesUnmodifiable;
     private final Set<UUID> whitelistedPlayersUnmodifiable;
     private final Map<UUID, ZoneRole> memberRolesUnmodifiable;
+    private final Set<ResourceLocation> blockedItemsUnmodifiable;
     private boolean enabled = true;
     private boolean inheritDimFlags = true;
 
@@ -73,6 +76,17 @@ public final class ProtectedZone implements IZone {
                          @Nullable String parent, int priority,
                          @Nullable Map<String, Object> flagValues,
                          @Nullable Map<UUID, ZoneRole> memberRoles) {
+        this(name, dimension, minX, minY, minZ, maxX, maxY, maxZ, whitelistedPlayers,
+            parent, priority, flagValues, memberRoles, null);
+    }
+
+    /** Full constructor with blocked items per zone (S-H20). */
+    public ProtectedZone(String name, String dimension, int minX, int minY, int minZ,
+                         int maxX, int maxY, int maxZ, Set<UUID> whitelistedPlayers,
+                         @Nullable String parent, int priority,
+                         @Nullable Map<String, Object> flagValues,
+                         @Nullable Map<UUID, ZoneRole> memberRoles,
+                         @Nullable Set<ResourceLocation> blockedItems) {
         this.name = name;
         this.dimension = dimension;
         this.minX = minX;
@@ -86,11 +100,13 @@ public final class ProtectedZone implements IZone {
         this.priority = priority;
         this.flagValues = flagValues != null ? new LinkedHashMap<>(flagValues) : new LinkedHashMap<>();
         this.memberRoles = memberRoles != null ? new LinkedHashMap<>(memberRoles) : new LinkedHashMap<>();
+        this.blockedItems = blockedItems != null ? new HashSet<>(blockedItems) : new HashSet<>();
         // Ensure all members with roles are also whitelisted
         this.whitelistedPlayers.addAll(this.memberRoles.keySet());
         this.flagValuesUnmodifiable = Collections.unmodifiableMap(this.flagValues);
         this.whitelistedPlayersUnmodifiable = Collections.unmodifiableSet(this.whitelistedPlayers);
         this.memberRolesUnmodifiable = Collections.unmodifiableMap(this.memberRoles);
+        this.blockedItemsUnmodifiable = Collections.unmodifiableSet(this.blockedItems);
     }
 
     public boolean contains(String dimension, BlockPos pos) {
@@ -181,5 +197,22 @@ public final class ProtectedZone implements IZone {
     public boolean whitelistRemove(UUID playerId) {
         this.memberRoles.remove(playerId);
         return this.whitelistedPlayers.remove(playerId);
+    }
+
+    // --- S-H20 : items bloques par zone ---
+
+    /** Items bloques specifiquement dans cette zone (non heritables). */
+    public Set<ResourceLocation> blockedItems() { return this.blockedItemsUnmodifiable; }
+
+    public boolean isItemBlocked(ResourceLocation itemId) {
+        return itemId != null && this.blockedItems.contains(itemId);
+    }
+
+    public boolean blockItem(ResourceLocation itemId) {
+        return itemId != null && this.blockedItems.add(itemId);
+    }
+
+    public boolean unblockItem(ResourceLocation itemId) {
+        return itemId != null && this.blockedItems.remove(itemId);
     }
 }

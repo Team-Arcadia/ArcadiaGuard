@@ -312,6 +312,16 @@ public final class InternalZoneProvider implements ZoneProvider {
         return true;
     }
 
+    /** S-H20 : ajoute ou retire un item de la liste des items bloqu\u00e9s de la zone. */
+    public boolean setItemBlocked(Level level, String zoneName,
+            net.minecraft.resources.ResourceLocation itemId, boolean add) {
+        Optional<ProtectedZone> zone = get(level, zoneName);
+        if (zone.isEmpty() || itemId == null) return false;
+        boolean changed = add ? zone.get().blockItem(itemId) : zone.get().unblockItem(itemId);
+        if (changed) scheduleWrite(zone.get());
+        return true;
+    }
+
     public boolean setFlag(Level level, String zoneName, String flagId, Object value) {
         Optional<ProtectedZone> zone = get(level, zoneName);
         if (zone.isEmpty()) return false;

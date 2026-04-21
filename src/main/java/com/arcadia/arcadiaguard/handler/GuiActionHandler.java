@@ -170,8 +170,30 @@ public final class GuiActionHandler {
                     if (!isOp(player)) return;
                     ArcadiaGuard.zoneManager().sendRefreshedList(player, payload.x1());
                 }
+                case ITEM_BLOCK_ADD -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    itemBlockChange(player, payload, true);
+                }
+                case ITEM_BLOCK_REMOVE -> {
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
+                    itemBlockChange(player, payload, false);
+                }
             }
         });
+    }
+
+    /** S-H20 : ajoute/retire un item de la liste des items bloqu\u00e9s d'une zone. */
+    private static void itemBlockChange(ServerPlayer player, GuiActionPayload p, boolean add) {
+        net.minecraft.resources.ResourceLocation itemId =
+            net.minecraft.resources.ResourceLocation.tryParse(p.arg1());
+        if (itemId == null) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.invalid_value", p.arg1())
+                .withStyle(ChatFormatting.RED));
+            return;
+        }
+        postModify(player, p.zoneName(),
+            ZoneLifecycleEvent.ModifyZone.Kind.ITEM_BLOCK_CHANGED,
+            add ? "add" : "remove", itemId.toString());
     }
 
     private static void sendZoneLogs(ServerPlayer player, GuiActionPayload p) {
