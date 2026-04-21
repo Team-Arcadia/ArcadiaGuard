@@ -15,7 +15,12 @@
     "IceBlockMixin",
     "FlowingFluidMixin",
     "SaplingBlockMixin",
-    "FireBlockMixin"
+    "FireBlockMixin",
+    "PacketChiselBlocksMixin",
+    "PacketChiselAllMixin",
+    "ReinforcedPressurePlateBlockMixin",
+    "ActionStatePayloadMixin",
+    "MagnetUpgradeWrapperMixin"
   ],
   "server": [],
   "client": [],
