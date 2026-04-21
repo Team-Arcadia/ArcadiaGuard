@@ -15,6 +15,7 @@ import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.Boat;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BoatItem;
 import net.minecraft.world.item.ChorusFruitItem;
 import net.minecraft.world.item.EggItem;
@@ -28,12 +29,17 @@ import net.minecraft.world.item.TridentItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AbstractCauldronBlock;
 import net.minecraft.world.level.block.BaseFireBlock;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.ButtonBlock;
+import net.minecraft.world.level.block.CakeBlock;
+import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.GrowingPlantBlock;
 import net.minecraft.world.level.block.LeverBlock;
+import net.minecraft.world.level.block.NoteBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -106,7 +112,18 @@ public final class FlagEventHandler {
         }
 
         // BLOCK_INTERACT générique (couvre tout le reste).
-        if (deny(player, pos, BuiltinFlags.BLOCK_INTERACT, "block_interact")) {
+        // Exception pose : si le joueur tient un BlockItem ET le bloc n'est pas interagissable,
+        // laisser passer → BlockEvent.EntityPlaceEvent (flag block_place) décide.
+        // Les blocs interagissables sans Container/MenuProvider sont listés explicitement
+        // pour éviter que tenir un BlockItem ne contourne le flag (ex: dormir dans un lit).
+        boolean holdingBlockItem = stack.getItem() instanceof BlockItem;
+        boolean isInteractiveBlock = block instanceof BedBlock
+                || block instanceof NoteBlock
+                || block instanceof ComposterBlock
+                || block instanceof AbstractCauldronBlock
+                || block instanceof CakeBlock;
+        if ((!holdingBlockItem || isInteractiveBlock)
+                && deny(player, pos, BuiltinFlags.BLOCK_INTERACT, "block_interact")) {
             event.setCanceled(true);
             return;
         }
