@@ -42,10 +42,10 @@ public final class DimFlagCommands {
     private static int listAll(CommandContext<CommandSourceStack> ctx) {
         var all = ArcadiaGuard.dimFlagStore().all();
         if (all.isEmpty()) {
-            ctx.getSource().sendSuccess(() -> Component.literal(ChatFormatting.YELLOW + "Aucun flag de dimension configuré."), false);
+            ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.dimflag.none_configured").withStyle(ChatFormatting.YELLOW), false);
             return 1;
         }
-        ctx.getSource().sendSuccess(() -> Component.literal(ChatFormatting.GOLD + "=== Flags de dimension ==="), false);
+        ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.dimflag.header").withStyle(ChatFormatting.GOLD), false);
         for (var dim : all.entrySet()) {
             sendDimFlags(ctx, dim.getKey(), dim.getValue());
         }
@@ -57,7 +57,7 @@ public final class DimFlagCommands {
         var flags = ArcadiaGuard.dimFlagStore().flags(dim);
         if (flags.isEmpty()) {
             ctx.getSource().sendSuccess(() ->
-                Component.literal(ChatFormatting.YELLOW + "Aucun flag configuré pour : " + dim), false);
+                Component.translatable("arcadiaguard.dimflag.none_for_dim", dim).withStyle(ChatFormatting.YELLOW), false);
             return 1;
         }
         ctx.getSource().sendSuccess(() -> Component.literal(ChatFormatting.GOLD + "Flags dim " + dim + ":"), false);
@@ -78,14 +78,14 @@ public final class DimFlagCommands {
         String dim = StringArgumentType.getString(ctx, "dimension");
         var flags = ArcadiaGuard.dimFlagStore().flags(dim);
         if (flags.isEmpty()) {
-            ctx.getSource().sendFailure(Component.literal("Aucun flag à effacer pour : " + dim));
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.dimflag.none_to_clear", dim));
             return 0;
         }
         new java.util.ArrayList<>(flags.keySet())
             .forEach(k -> ArcadiaGuard.dimFlagStore().resetFlag(dim, k));
         saveDimFlags();
         ctx.getSource().sendSuccess(() ->
-            Component.literal(ChatFormatting.GREEN + "Flags de dimension effacés : " + dim), true);
+            Component.translatable("arcadiaguard.dimflag.cleared", dim).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -93,7 +93,7 @@ public final class DimFlagCommands {
         ArcadiaGuard.dimFlagStore().clear();
         saveDimFlags();
         ctx.getSource().sendSuccess(() ->
-            Component.literal(ChatFormatting.GREEN + "Tous les flags de dimension ont été effacés."), true);
+            Component.translatable("arcadiaguard.dimflag.cleared_all").withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

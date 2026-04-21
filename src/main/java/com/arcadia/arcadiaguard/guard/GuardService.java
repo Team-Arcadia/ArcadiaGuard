@@ -159,7 +159,9 @@ public final class GuardService implements IGuardService {
             ZoneCheckResult result = this.zoneManager.check(player, pos);
             if (!result.blocked()) return new GuardResult(false, "");
 
-            player.sendSystemMessage(Component.translatable(message).withStyle(ChatFormatting.RED));
+            // Actionbar (true) au lieu du chat pour eviter le spam lors
+            // d'actions repetitives (casse, pose, interactions, etc.).
+            player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
             this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, result.zoneName(), pos);
             return new GuardResult(true, result.zoneName());
         } finally {
@@ -199,7 +201,7 @@ public final class GuardService implements IGuardService {
             // Flag non défini quelque part → le mod n'intervient pas.
             if (resolved.isEmpty() || resolved.get()) return new GuardResult(false, "");
 
-            player.sendSystemMessage(Component.translatable(message).withStyle(ChatFormatting.RED));
+            player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
             this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, zoneName, pos);
             return new GuardResult(true, zoneName);
         } finally {

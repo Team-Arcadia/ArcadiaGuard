@@ -309,5 +309,13 @@
   "arcadiaguard.gui.action.parent_not_found": "Parent zone not found: %1$s",
   "arcadiaguard.gui.action.parent_self": "A zone cannot be its own parent.",
   "arcadiaguard.gui.action.parent_cycle": "Setting %1$s as parent would create a cycle.",
+  "arcadiaguard.gui.debug_mode.enabled": "[ArcadiaGuard] Debug mode ENABLED — protection applies even to OPs.",
+  "arcadiaguard.gui.debug_mode.disabled": "[ArcadiaGuard] Debug mode DISABLED.",
+  "arcadiaguard.dimflag.none_configured": "No dimension flag configured.",
+  "arcadiaguard.dimflag.header": "=== Dimension flags ===",
+  "arcadiaguard.dimflag.none_for_dim": "No flag configured for: %1$s",
+  "arcadiaguard.dimflag.none_to_clear": "No flag to clear for: %1$s",
+  "arcadiaguard.dimflag.cleared": "Dimension flags cleared: %1$s",
+  "arcadiaguard.dimflag.cleared_all": "All dimension flags have been cleared.",
   "arcadiaguard.command.zone.no_permission": "Permission denied."
 }

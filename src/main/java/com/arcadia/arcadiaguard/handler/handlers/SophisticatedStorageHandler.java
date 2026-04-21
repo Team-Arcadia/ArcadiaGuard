@@ -6,6 +6,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.AbstractMinecartContainer;
+import net.minecraft.world.entity.vehicle.ChestBoat;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
@@ -44,6 +47,27 @@ public final class SophisticatedStorageHandler {
         if (!"sophisticatedstorage".equals(ns) && !"sophisticatedbackpacks".equals(ns)) return;
 
         if (guardService.isZoneDenying(level, pos, BuiltinFlags.CONTAINER_ACCESS)) {
+            event.setCanceled(true);
+        }
+    }
+
+    /**
+     * S-H16 AC1 : couvre les minecarts-coffres (ChestMinecart, HopperMinecart, ender) et
+     * les chest-boats qui sont des Entity, pas des BlockEntity — le check
+     * {@code onRightClickBlock} ne les voit pas. Applique CONTAINER_ACCESS
+     * sur l'interaction avec ces entites-conteneurs.
+     */
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.isCanceled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (guardService.shouldBypass(player)) return;
+        Entity target = event.getTarget();
+        boolean isContainerEntity = target instanceof AbstractMinecartContainer
+                || target instanceof ChestBoat;
+        if (!isContainerEntity) return;
+        Level level = player.level();
+        if (level.isClientSide()) return;
+        if (guardService.isZoneDenying(level, target.blockPosition(), BuiltinFlags.CONTAINER_ACCESS)) {
             event.setCanceled(true);
         }
     }

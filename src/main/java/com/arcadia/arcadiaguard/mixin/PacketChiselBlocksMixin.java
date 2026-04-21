@@ -33,8 +33,15 @@ public abstract class PacketChiselBlocksMixin {
             if (!(player instanceof Player mcPlayer)) return;
             if (!(mcPlayer.level() instanceof net.minecraft.world.level.Level level)) return;
             if (level.isClientSide()) return;
-            // Recuperer la position via reflection sur le field 'pos' du packet
-            java.lang.reflect.Field posField = this.getClass().getDeclaredField("pos");
+            // Recuperer la position via reflection sur le field 'pos' du packet,
+            // en remontant les superclasses au cas ou le field serait herite.
+            java.lang.reflect.Field posField = null;
+            Class<?> cls = this.getClass();
+            while (cls != null && posField == null) {
+                try { posField = cls.getDeclaredField("pos"); }
+                catch (NoSuchFieldException nsf) { cls = cls.getSuperclass(); }
+            }
+            if (posField == null) return;
             posField.setAccessible(true);
             Object posObj = posField.get(this);
             if (!(posObj instanceof BlockPos pos)) return;
