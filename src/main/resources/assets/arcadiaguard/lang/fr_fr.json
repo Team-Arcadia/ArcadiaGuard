@@ -346,5 +346,12 @@
   "arcadiaguard.help.wand_give": "Obtenir la baguette de s\u00e9lection",
   "arcadiaguard.help.migrate_yawp": "Importer les zones depuis YAWP",
   "arcadiaguard.help.reload": "Recharger les zones et les items bloqu\u00e9s",
+  "arcadiaguard.gui.zonedetail.itemblocks": "Items bannis",
+  "arcadiaguard.gui.zonedetail.itemblocks.title": "Items bannis dans cette zone",
+  "arcadiaguard.gui.zonedetail.itemblocks.blocked": "Bannis (%1$s)",
+  "arcadiaguard.gui.zonedetail.itemblocks.empty": "Aucun item banni dans cette zone.",
+  "arcadiaguard.gui.zonedetail.itemblocks.more": "... et %1$s autre(s)",
+  "arcadiaguard.gui.zonedetail.itemblocks.search_hint": "Rechercher un item (ex: diamond_sword)...",
+  "arcadiaguard.gui.zonedetail.itemblocks.no_match": "Aucun item ne correspond.",
   "arcadiaguard.command.zone.no_permission": "Permission refus\u00e9e."
 }
