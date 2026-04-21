@@ -38,6 +38,7 @@ import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.FenceGateBlock;
 import net.minecraft.world.level.block.GrowingPlantBlock;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.LeverBlock;
 import net.minecraft.world.level.block.NoteBlock;
 import net.minecraft.world.level.block.TrapDoorBlock;
@@ -74,6 +75,8 @@ public final class FlagEventHandler {
 
         BlockPos pos = event.getPos();
         Level level = player.level();
+        // P1 : fast-path O(1) — skip la dim si aucune zone configuree.
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
         BlockState state = level.getBlockState(pos);
         Block block = state.getBlock();
         BlockEntity be = level.getBlockEntity(pos);
@@ -145,11 +148,28 @@ public final class FlagEventHandler {
         // Les blocs interagissables sans Container/MenuProvider sont listés explicitement
         // pour éviter que tenir un BlockItem ne contourne le flag (ex: dormir dans un lit).
         boolean holdingBlockItem = stack.getItem() instanceof BlockItem;
+        // R6 : blocs vanilla avec une action utilisateur native qui n'ouvrent pas
+        // un Container/MenuProvider — BLOCK_INTERACT doit s'y appliquer meme si le
+        // joueur tient un BlockItem (sinon contournement trivial).
         boolean isInteractiveBlock = block instanceof BedBlock
                 || block instanceof NoteBlock
                 || block instanceof ComposterBlock
                 || block instanceof AbstractCauldronBlock
-                || block instanceof CakeBlock;
+                || block instanceof CakeBlock
+                || block instanceof net.minecraft.world.level.block.AnvilBlock
+                || block instanceof net.minecraft.world.level.block.EnchantingTableBlock
+                || block instanceof net.minecraft.world.level.block.BeaconBlock
+                || block instanceof net.minecraft.world.level.block.BellBlock
+                || block instanceof net.minecraft.world.level.block.CampfireBlock
+                || block instanceof net.minecraft.world.level.block.JukeboxBlock
+                || block instanceof net.minecraft.world.level.block.DragonEggBlock
+                || block instanceof net.minecraft.world.level.block.RespawnAnchorBlock
+                || block instanceof net.minecraft.world.level.block.LecternBlock
+                || block instanceof net.minecraft.world.level.block.LoomBlock
+                || block instanceof net.minecraft.world.level.block.SmithingTableBlock
+                || block instanceof net.minecraft.world.level.block.GrindstoneBlock
+                || block instanceof net.minecraft.world.level.block.StonecutterBlock
+                || block instanceof net.minecraft.world.level.block.CartographyTableBlock;
         if ((!holdingBlockItem || isInteractiveBlock)
                 && deny(player, pos, BuiltinFlags.BLOCK_INTERACT, "block_interact")) {
             event.setCanceled(true);
@@ -305,13 +325,20 @@ public final class FlagEventHandler {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;
         BlockPos pos = event.getPos();
+        Block block = event.getState().getBlock();
+        // R4 : le bonemeal sur un sapling doit respecter TREE_GROWTH, pas CROP_GROWTH.
+        if (block instanceof SaplingBlock) {
+            if (guard.isZoneDenying(level, pos, BuiltinFlags.TREE_GROWTH)) {
+                event.setCanceled(true);
+            }
+            return;
+        }
         if (guard.isZoneDenying(level, pos, BuiltinFlags.CROP_GROWTH)) {
             event.setCanceled(true);
             return;
         }
         // Les vines (overworld, nether, cave) sont des GrowingPlantBlock : bonemeal sur body
-        // délègue à la head, donc on check VINE_GROWTH en plus.
-        Block block = event.getState().getBlock();
+        // delegue a la head, donc on check VINE_GROWTH en plus.
         if (block instanceof GrowingPlantBlock
                 && guard.isZoneDenying(level, pos, BuiltinFlags.VINE_GROWTH)) {
             event.setCanceled(true);
@@ -334,21 +361,38 @@ public final class FlagEventHandler {
 
     public void onVehicleJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()) return;
+        // R7 : ignorer les entites charges depuis le disque (chunk-load) — sinon on
+        // re-check un vehicle pose il y a des semaines a chaque load. Seul le spawn
+        // reel (dispenser, player place) doit etre filtre.
+        if (event.loadedFromDisk()) return;
         Entity entity = event.getEntity();
         if (!(entity instanceof Boat) && !(entity instanceof AbstractMinecart)) return;
         Level level = (Level) event.getLevel();
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
         if (guard.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.VEHICLE_PLACE)) {
             event.setCanceled(true);
         }
     }
 
     public void onFluidPlaceBlock(BlockEvent.FluidPlaceBlockEvent event) {
-        // La lave crée du feu/obsidienne ; l'eau crée de l'obsidienne au contact de lave.
+        // La lave cree du feu/obsidienne ; l'eau cree de l'obsidienne/cobble au contact de lave.
         Level level = (Level) event.getLevel();
         BlockPos pos = event.getPos();
         BlockState newState = event.getNewState();
-        if (newState.getBlock() instanceof BaseFireBlock
+        Block newBlock = newState.getBlock();
+        // LAVA_FIRE : feu cree par lave
+        if (newBlock instanceof BaseFireBlock
                 && guard.isZoneDenying(level, pos, BuiltinFlags.LAVA_FIRE)) {
+            event.setNewState(level.getBlockState(pos));
+            return;
+        }
+        // R5 : LAVA_SPREAD couvre aussi la generation obsidienne/cobblestone/stone via
+        // interaction fluide (generator de cobble, coulee de lave vs eau).
+        if ((newBlock == net.minecraft.world.level.block.Blocks.OBSIDIAN
+                || newBlock == net.minecraft.world.level.block.Blocks.COBBLESTONE
+                || newBlock == net.minecraft.world.level.block.Blocks.STONE
+                || newBlock == net.minecraft.world.level.block.Blocks.BASALT)
+                && guard.isZoneDenying(level, pos, BuiltinFlags.LAVA_SPREAD)) {
             event.setNewState(level.getBlockState(pos));
         }
     }
