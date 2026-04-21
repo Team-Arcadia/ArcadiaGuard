@@ -82,6 +82,13 @@ public final class ZoneSerializer {
         }
         json.add("member_roles", rolesJson);
 
+        // S-H20 : items bloques par zone
+        JsonArray blockedItemsArr = new JsonArray();
+        for (var id : zone.blockedItems()) {
+            blockedItemsArr.add(id.toString());
+        }
+        json.add("blocked_items", blockedItemsArr);
+
         Files.createDirectories(file.getParent());
         Path tmp = file.resolveSibling(file.getFileName() + ".tmp");
         try (Writer writer = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
@@ -182,9 +189,18 @@ public final class ZoneSerializer {
             }
         }
 
+        // S-H20 : items bloques par zone
+        Set<net.minecraft.resources.ResourceLocation> blockedItems = new HashSet<>();
+        if (json.has("blocked_items") && json.get("blocked_items").isJsonArray()) {
+            for (var el : json.getAsJsonArray("blocked_items")) {
+                net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.tryParse(el.getAsString());
+                if (id != null) blockedItems.add(id);
+            }
+        }
+
         ProtectedZone zone = new ProtectedZone(name, dimension, minX, minY, minZ,
                                                maxX, maxY, maxZ, whitelist, parent, priority,
-                                               flagValues, memberRoles);
+                                               flagValues, memberRoles, blockedItems);
         zone.setEnabled(json.has("enabled") ? json.get("enabled").getAsBoolean() : true);
         zone.setInheritDimFlags(json.has("inherit_dim_flags") ? json.get("inherit_dim_flags").getAsBoolean() : true);
         if (migrated) {

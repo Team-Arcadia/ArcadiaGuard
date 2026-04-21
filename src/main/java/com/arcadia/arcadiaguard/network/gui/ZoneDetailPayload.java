@@ -60,7 +60,8 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
         List<FlagEntry> flags,
         List<MemberEntry> members,
         boolean enabled,
-        boolean inheritDimFlags
+        boolean inheritDimFlags,
+        List<String> blockedItems
     ) {
         static final StreamCodec<ByteBuf, Detail> CODEC = StreamCodec.of(
             (buf, d) -> {
@@ -75,6 +76,8 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
                 for (MemberEntry m : d.members) MemberEntry.CODEC.encode(buf, m);
                 buf.writeBoolean(d.enabled);
                 buf.writeBoolean(d.inheritDimFlags);
+                buf.writeInt(d.blockedItems.size());
+                for (String id : d.blockedItems) ByteBufCodecs.STRING_UTF8.encode(buf, id);
             },
             buf -> {
                 String name = ByteBufCodecs.STRING_UTF8.decode(buf);
@@ -92,8 +95,12 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
                 for (int i = 0; i < mc; i++) members.add(MemberEntry.CODEC.decode(buf));
                 boolean enabled = buf.readBoolean();
                 boolean inheritDimFlags = buf.readBoolean();
+                int bic = buf.readInt();
+                if (bic < 0 || bic > 4096) throw new io.netty.handler.codec.DecoderException("Invalid blocked items count " + bic + " in ZoneDetailPayload");
+                List<String> blockedItems = new ArrayList<>(bic);
+                for (int i = 0; i < bic; i++) blockedItems.add(ByteBufCodecs.STRING_UTF8.decode(buf));
                 return new Detail(name, dim, minX, minY, minZ, maxX, maxY, maxZ,
-                    parent.isEmpty() ? null : parent, flags, members, enabled, inheritDimFlags);
+                    parent.isEmpty() ? null : parent, flags, members, enabled, inheritDimFlags, blockedItems);
             }
         );
     }

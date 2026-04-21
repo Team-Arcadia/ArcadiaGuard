@@ -83,7 +83,8 @@ public abstract class ZoneLifecycleEvent extends Event {
 
     public static final class ModifyZone extends ZoneLifecycleEvent {
         public enum Kind { WHITELIST_ADD, WHITELIST_REMOVE, SET_PARENT,
-                           TOGGLE_ENABLED, TOGGLE_INHERIT, SET_BOUNDS }
+                           TOGGLE_ENABLED, TOGGLE_INHERIT, SET_BOUNDS,
+                           ITEM_BLOCK_CHANGED }
 
         private final String zoneName;
         private final Kind kind;

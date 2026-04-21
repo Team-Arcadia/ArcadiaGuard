@@ -103,10 +103,14 @@ public final class ZoneManager implements IZoneManager {
                 .orElse(uuid.toString().substring(0, 8) + "…");
             members.add(new MemberEntry(uuid.toString(), name));
         }
+        List<String> blockedItems = new ArrayList<>();
+        for (var id : zone.blockedItems()) blockedItems.add(id.toString());
+        java.util.Collections.sort(blockedItems);
         Detail detail = new Detail(zone.name(), zone.dimension(),
             zone.minX(), zone.minY(), zone.minZ(),
             zone.maxX(), zone.maxY(), zone.maxZ(),
-            zone.parent(), flags, members, zone.enabled(), zone.inheritDimFlags());
+            zone.parent(), flags, members, zone.enabled(), zone.inheritDimFlags(),
+            blockedItems);
         PacketDistributor.sendToPlayer(player, new ZoneDetailPayload(detail));
     }
 
@@ -259,6 +263,10 @@ public final class ZoneManager implements IZoneManager {
             case SET_BOUNDS ->
                 this.internal.setBounds(event.level(), event.zoneName(),
                     (BlockPos) event.arg1(), (BlockPos) event.arg2());
+            case ITEM_BLOCK_CHANGED ->
+                this.internal.setItemBlocked(event.level(), event.zoneName(),
+                    net.minecraft.resources.ResourceLocation.tryParse((String) event.arg2()),
+                    "add".equals(event.arg1()));
         };
         event.setSuccess(ok);
     }

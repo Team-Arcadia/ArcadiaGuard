@@ -59,7 +59,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             return;
         }
 
-        if (dynamicList.contains(stack)) {
+        if (isItemBlockedAt(sp, pos, stack)) {
             // H6: defer "item_use:" + itemId concat until we know it will be used (blockIfProtected checks zone inside)
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, pos, actionName, "dynamic_item",
@@ -67,6 +67,21 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
                 event.setCanceled(true);
             }
         }
+    }
+
+    /**
+     * S-H20 : un item est bloqu\u00e9 \u00e0 {@code pos} si la zone le contient dans
+     * sa liste per-zone {@code blockedItems}, ou si la liste globale legacy
+     * {@code DynamicItemBlockList} le contient (fallback pour retro-compat).
+     */
+    private boolean isItemBlockedAt(ServerPlayer sp, BlockPos pos, ItemStack stack) {
+        if (stack.isEmpty()) return false;
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(sp, pos);
+        if (zoneOpt.isPresent() && itemId != null && zoneOpt.get().isItemBlocked(itemId)) {
+            return true;
+        }
+        return dynamicList.contains(stack);
     }
 
     @Override
@@ -103,7 +118,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             return;
         }
 
-        if (dynamicList.contains(stack)) {
+        if (isItemBlockedAt(sp, clicked, stack)) {
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, clicked, actionName, "dynamic_item",
                     ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
