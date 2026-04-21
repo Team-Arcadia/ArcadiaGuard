@@ -27,3 +27,6 @@ side="BOTH"
 
 [[mixins]]
 config="arcadiaguard.mixins.json"
+
+[[mixins]]
+config="arcadiaguard.mods.mixins.json"

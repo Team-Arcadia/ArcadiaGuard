@@ -1,0 +1,19 @@
+{
+  "required": false,
+  "package": "com.arcadia.arcadiaguard.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "arcadiaguard.refmap.json",
+  "minVersion": "0.8.5",
+  "mixins": [
+    "PacketChiselBlocksMixin",
+    "PacketChiselAllMixin",
+    "ReinforcedPressurePlateBlockMixin",
+    "ActionStatePayloadMixin",
+    "MagnetUpgradeWrapperMixin"
+  ],
+  "server": [],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}
