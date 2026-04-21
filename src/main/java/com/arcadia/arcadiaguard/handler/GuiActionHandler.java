@@ -292,13 +292,47 @@ public final class GuiActionHandler {
 
     private static void setParent(ServerPlayer player, GuiActionPayload p) {
         String parentName = p.arg1().trim();
-        if (!parentName.isEmpty() && ArcadiaGuard.zoneManager().get(player.serverLevel(), parentName).isEmpty()) {
-            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", parentName).withStyle(ChatFormatting.RED));
-            return;
+        String zoneName = p.zoneName();
+        if (!parentName.isEmpty()) {
+            // Self-parent
+            if (parentName.equalsIgnoreCase(zoneName)) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.parent_self").withStyle(ChatFormatting.RED));
+                ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+                return;
+            }
+            // Zone parente inexistante
+            if (ArcadiaGuard.zoneManager().get(player.serverLevel(), parentName).isEmpty()) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", parentName).withStyle(ChatFormatting.RED));
+                ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+                return;
+            }
+            // Détection de cycle : remonter la chaîne du parent proposé
+            if (wouldCreateCycle(player.serverLevel(), parentName, zoneName)) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.parent_cycle", parentName).withStyle(ChatFormatting.RED));
+                ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
+                return;
+            }
         }
-        postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
+        postModify(player, zoneName, ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
             parentName.isEmpty() ? null : parentName, null);
         ArcadiaGuard.zoneManager().sendRefreshedList(player);
+    }
+
+    /**
+     * Retourne true si définir {@code parentName} comme parent de {@code zoneName}
+     * créerait un cycle (parent → grand-parent → … → zoneName).
+     */
+    private static boolean wouldCreateCycle(Level level, String parentName, String zoneName) {
+        String current = parentName;
+        int maxDepth = 32; // garde-fou contre une chaîne déjà cyclique
+        while (current != null && maxDepth-- > 0) {
+            if (current.equalsIgnoreCase(zoneName)) return true;
+            var opt = ArcadiaGuard.zoneManager().get(level, current);
+            if (opt.isEmpty()) return false;
+            if (!(opt.get() instanceof com.arcadia.arcadiaguard.zone.ProtectedZone pz)) return false;
+            current = pz.parent();
+        }
+        return false;
     }
 
     private static void setZoneBounds(ServerPlayer player, GuiActionPayload p) {

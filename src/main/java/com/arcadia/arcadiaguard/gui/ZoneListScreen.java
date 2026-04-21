@@ -46,6 +46,8 @@ public final class ZoneListScreen extends Screen {
     private ParentFilter parentFilter = ParentFilter.ALL;
     private int selectedIndex = -1;
     private int scrollOffset  = 0;
+    /** Set à true après un focus de la search box via F/Ctrl+F : consomme le prochain charTyped('f'/'F'). */
+    private boolean suppressNextFChar = false;
 
     /** Extra dimensions from mod-added zones (computed in applyFilter). */
     private List<String> extraDims = new ArrayList<>();
@@ -592,6 +594,16 @@ public final class ZoneListScreen extends Screen {
     }
 
     @Override
+    public boolean charTyped(char c, int modifiers) {
+        if (suppressNextFChar && (c == 'f' || c == 'F')) {
+            suppressNextFChar = false;
+            return true;
+        }
+        suppressNextFChar = false;
+        return super.charTyped(c, modifiers);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // H-U4: Esc unfocuses EditBox
         if (keyCode == 256 && getFocused() instanceof EditBox eb) {
@@ -605,6 +617,9 @@ public final class ZoneListScreen extends Screen {
         if (keyCode == 70 && searchBox != null && !hasAltDown() && !hasShiftDown()) {
             setFocused(searchBox);
             searchBox.setFocused(true);
+            // Consomme le prochain charTyped('f'/'F') pour que la lettre ne soit pas
+            // tapée dans la barre de recherche juste après le focus.
+            suppressNextFChar = true;
             return true;
         }
         // Enter / Numpad Enter → open detail for selected zone

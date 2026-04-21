@@ -2,11 +2,8 @@ package com.arcadia.arcadiaguard.handler;
 
 import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
-import com.arcadia.arcadiaguard.flag.FlagResolver;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
-import java.util.Optional;
-import java.util.function.Function;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -60,7 +57,9 @@ public final class EntityEventHandler {
                 event.setCanceled(true);
             }
         } else if (victim instanceof Animal) {
-            if (isAnimalInvincibleZone(level, zone)) {
+            // Convention GUI : "ON" (vert) = value=false = protection active
+            // → on utilise isZoneDenying comme tous les autres flags (cohérence sémantique).
+            if (guard.isZoneDenying(zone, BuiltinFlags.ANIMAL_INVINCIBLE, level)) {
                 event.setCanceled(true);
                 return;
             }
@@ -136,7 +135,7 @@ public final class EntityEventHandler {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;
         if (!(event.getEntity() instanceof Animal animal)) return;
-        if (!isAnimalInvincibleZone(level, animal)) return;
+        if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
         animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
     }
@@ -152,29 +151,18 @@ public final class EntityEventHandler {
         Level level = animal.level();
         if (level.isClientSide()) return;
         if (animal.tickCount % 20 != 0) return;
-        if (!isAnimalInvincibleZone(level, animal)) return;
+        if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
 
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
         animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
     }
 
-    /** H-P2 overload: uses an already-resolved zone — no extra lookup. */
-    @SuppressWarnings("unchecked")
-    private boolean isAnimalInvincibleZone(Level level, ProtectedZone zone) {
-        Function<String, Optional<ProtectedZone>> lookup =
-            name -> (Optional<ProtectedZone>)(Optional<?>) guard.zoneManager().get(level, name);
-        return FlagResolver.resolve(zone, BuiltinFlags.ANIMAL_INVINCIBLE, lookup);
-    }
-
-    /** Overload used by onEntityTick (no pre-resolved zone available). */
-    @SuppressWarnings("unchecked")
-    private boolean isAnimalInvincibleZone(Level level, Animal animal) {
-        return guard.zoneManager().findZoneContaining(level, animal.blockPosition())
-            .map(z -> {
-                Function<String, Optional<ProtectedZone>> lookup =
-                    name -> (Optional<ProtectedZone>)(Optional<?>) guard.zoneManager().get(level, name);
-                return FlagResolver.resolve((ProtectedZone) z, BuiltinFlags.ANIMAL_INVINCIBLE, lookup);
-            })
-            .orElse(false);
+    /**
+     * Retourne true si la zone contenant {@code pos} a la protection animal_invincible
+     * active (sémantique GUI : "ON (vert)" = value=false = protection active, cohérent
+     * avec le reste des flags via {@link GuardService#isZoneDenying(Level, BlockPos, BooleanFlag)}).
+     */
+    private boolean isAnimalInvincibleAt(Level level, net.minecraft.core.BlockPos pos) {
+        return guard.isZoneDenying(level, pos, BuiltinFlags.ANIMAL_INVINCIBLE);
     }
 }
