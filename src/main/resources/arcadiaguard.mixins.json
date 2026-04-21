@@ -14,12 +14,7 @@
     "SnowLayerBlockMixin",
     "IceBlockMixin",
     "FlowingFluidMixin",
-    "SaplingBlockMixin",
-    "PacketChiselBlocksMixin",
-    "PacketChiselAllMixin",
-    "ReinforcedPressurePlateBlockMixin",
-    "ActionStatePayloadMixin",
-    "MagnetUpgradeWrapperMixin"
+    "SaplingBlockMixin"
   ],
   "server": [],
   "client": [],
