@@ -39,10 +39,14 @@ public final class TwilightForestHandler {
             for (net.minecraft.world.item.ItemStack held : new net.minecraft.world.item.ItemStack[]{
                     shooter.getMainHandItem(), shooter.getOffhandItem() }) {
                 ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(held.getItem());
-                if (itemId != null && "twilightforest".equals(itemId.getNamespace())
-                        && itemId.getPath().contains("bow")) {
-                    tfProjectile = true;
-                    break;
+                if (itemId != null && "twilightforest".equals(itemId.getNamespace())) {
+                    String path = itemId.getPath();
+                    // Match strict : path = "bow" ou se termine par "_bow" (ice_bow, ender_bow, triple_bow…)
+                    // Evite les faux positifs sur rainbow, bowl, elbow_guard, etc.
+                    if (path.equals("bow") || path.endsWith("_bow")) {
+                        tfProjectile = true;
+                        break;
+                    }
                 }
             }
         }

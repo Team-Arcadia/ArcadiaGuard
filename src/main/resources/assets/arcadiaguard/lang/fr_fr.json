@@ -309,5 +309,13 @@
   "arcadiaguard.gui.action.parent_not_found": "Zone parent introuvable : %1$s",
   "arcadiaguard.gui.action.parent_self": "Une zone ne peut pas \u00eatre son propre parent.",
   "arcadiaguard.gui.action.parent_cycle": "D\u00e9finir %1$s comme parent cr\u00e9erait un cycle.",
+  "arcadiaguard.gui.debug_mode.enabled": "[ArcadiaGuard] Mode debug ACTIV\u00c9 \u2014 la protection s'applique m\u00eame en OP.",
+  "arcadiaguard.gui.debug_mode.disabled": "[ArcadiaGuard] Mode debug D\u00c9SACTIV\u00c9.",
+  "arcadiaguard.dimflag.none_configured": "Aucun flag de dimension configur\u00e9.",
+  "arcadiaguard.dimflag.header": "=== Flags de dimension ===",
+  "arcadiaguard.dimflag.none_for_dim": "Aucun flag configur\u00e9 pour : %1$s",
+  "arcadiaguard.dimflag.none_to_clear": "Aucun flag \u00e0 effacer pour : %1$s",
+  "arcadiaguard.dimflag.cleared": "Flags de dimension effac\u00e9s : %1$s",
+  "arcadiaguard.dimflag.cleared_all": "Tous les flags de dimension ont \u00e9t\u00e9 effac\u00e9s.",
   "arcadiaguard.command.zone.no_permission": "Permission refus\u00e9e."
 }

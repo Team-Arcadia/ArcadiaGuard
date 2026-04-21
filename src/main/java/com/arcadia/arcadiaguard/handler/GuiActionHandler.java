@@ -389,10 +389,10 @@ public final class GuiActionHandler {
 
     private static void toggleDebug(ServerPlayer player) {
         boolean enabled = ArcadiaGuard.guardService().toggleDebug(player.getUUID());
-        String msg = enabled
-            ? "\u00a7e[ArcadiaGuard] Mode debug \u00a7aACTIVÉ\u00a7e — la protection s'applique même en OP."
-            : "\u00a7e[ArcadiaGuard] Mode debug \u00a7cDÉSACTIVÉ\u00a7e.";
-        player.sendSystemMessage(Component.literal(msg));
+        String key = enabled
+            ? "arcadiaguard.gui.debug_mode.enabled"
+            : "arcadiaguard.gui.debug_mode.disabled";
+        player.sendSystemMessage(Component.translatable(key).withStyle(ChatFormatting.YELLOW));
         ArcadiaGuard.zoneManager().sendRefreshedList(player);
     }
 

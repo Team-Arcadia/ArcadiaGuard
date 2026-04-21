@@ -94,16 +94,17 @@ public final class FlagEventHandler {
 
         // S-H16 T3 : blocs de mods qui agissent comme des leviers mais n'etendent pas LeverBlock.
         // Create (handcrank, clutch, gearshift, lever), Supplementaries (sconce_lever),
-        // Design'n'Decor et autres. Filtre par namespace + path.
+        // Design'n'Decor. Matching strict via endsWith pour eviter les faux positifs
+        // (ex: sconce_lever_holder ou gearshift_cluster).
         ResourceLocation blockIdForLever = BuiltInRegistries.BLOCK.getKey(block);
         if (blockIdForLever != null) {
             String ns = blockIdForLever.getNamespace();
             String path = blockIdForLever.getPath();
             boolean isModLever =
-                ("create".equals(ns) && (path.contains("handcrank") || path.contains("clutch")
-                    || path.contains("gearshift") || path.contains("lever")))
-                || ("supplementaries".equals(ns) && path.contains("lever"))
-                || ("design_decor".equals(ns) && path.contains("lever"));
+                ("create".equals(ns) && (path.endsWith("handcrank") || path.endsWith("clutch")
+                    || path.endsWith("gearshift") || path.endsWith("lever")))
+                || ("supplementaries".equals(ns) && path.endsWith("lever"))
+                || ("design_decor".equals(ns) && path.endsWith("lever"));
             if (isModLever && deny(player, pos, BuiltinFlags.LEVER, "lever")) {
                 event.setCanceled(true);
                 return;
@@ -111,8 +112,9 @@ public final class FlagEventHandler {
         }
 
         // S-H17 T4 : Macaw's garage door (n'etend pas DoorBlock vanilla).
+        // endsWith strict pour ne pas matcher garage_door_button / garage_door_trim / etc.
         if (blockIdForLever != null && "mcwdoors".equals(blockIdForLever.getNamespace())
-                && blockIdForLever.getPath().contains("garage_door")
+                && blockIdForLever.getPath().endsWith("garage_door")
                 && deny(player, pos, BuiltinFlags.DOOR, "door")) {
             event.setCanceled(true);
             return;

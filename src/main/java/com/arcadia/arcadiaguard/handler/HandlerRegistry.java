@@ -133,6 +133,8 @@ public final class HandlerRegistry {
         // FlagEventHandler : interactions / combats / items / téléportations / croissance
         // S-H16 T1 : Sophisticated Storage en HIGHEST — doit s'executer avant FlagEventHandler
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, PlayerInteractEvent.RightClickBlock.class, sophisticatedStorageHandler::onRightClickBlock);
+        // S-H16 AC1 : minecarts-coffres et chest-boats (Entity, pas BlockEntity)
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, PlayerInteractEvent.EntityInteract.class, sophisticatedStorageHandler::onEntityInteract);
         // S-H16 T7 : SimplySwords abilities declenchees au chargement de l'item
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false,
             net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent.Start.class,
