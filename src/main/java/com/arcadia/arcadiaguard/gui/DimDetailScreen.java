@@ -34,6 +34,7 @@ public final class DimDetailScreen extends Screen {
     private boolean showPicker    = false;
     private int     pickerScroll  = 0;
     private EditBox pickerSearch;
+    private EditBox activeFlagSearch;
 
     private CartographiaButton backBtn;
 
@@ -66,6 +67,17 @@ public final class DimDetailScreen extends Screen {
         pickerSearch.setHint(Component.translatable("arcadiaguard.gui.dimdetail.picker_search.hint")
             .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
         addRenderableWidget(pickerSearch);
+
+        // Search box persistante au-dessus de la liste des flags configures.
+        // Filtre live la liste affichee sans passer par le popup de selection.
+        activeFlagSearch = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font,
+            gx + 8, gy + HDR_H + 26, GUI_W - 16, 14,
+            Component.translatable("arcadiaguard.gui.dimdetail.picker_search.hint"));
+        activeFlagSearch.setBordered(false);
+        activeFlagSearch.setTextColor(Colors.TEXT);
+        activeFlagSearch.setHint(Component.translatable("arcadiaguard.gui.dimdetail.picker_search.hint")
+            .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+        addRenderableWidget(activeFlagSearch);
 
         int fy = gy + GUI_H - FTR_H;
         backBtn = CartographiaButton.neutral(
@@ -135,11 +147,22 @@ public final class DimDetailScreen extends Screen {
         g.drawString(font,
             Component.translatable("arcadiaguard.gui.dimdetail.configured_hint").getString(),
             cx, cy + 11, Colors.TEXT_MUTE, false);
-        cy += 24;
+        cy += 20;
+        // Cadre de la searchbox persistante (EditBox positionnee a cy via init()).
+        g.fill(cx, cy, cx + cw, cy + 18, Colors.BG_0);
+        g.fill(cx, cy,      cx + cw, cy + 1,  Colors.ACCENT_LO);
+        g.fill(cx, cy + 17, cx + cw, cy + 18, Colors.ACCENT_LO);
+        cy += 22;
         GuiTextures.dividerH(g, cx, cy, cw); cy += 4;
 
-        List<FlagInfo> flags = data.flags().stream().filter(FlagInfo::configured).toList();
-        int listH  = GUI_H - HDR_H - FTR_H - 34 - DESC_H - 4;
+        String searchText = activeFlagSearch == null ? "" : activeFlagSearch.getValue().toLowerCase().trim();
+        List<FlagInfo> flags = data.flags().stream()
+            .filter(FlagInfo::configured)
+            .filter(f -> searchText.isEmpty()
+                || f.label().toLowerCase().contains(searchText)
+                || f.id().toLowerCase().contains(searchText))
+            .toList();
+        int listH  = GUI_H - HDR_H - FTR_H - 34 - DESC_H - 4 - 22;
         int maxVis = listH / FLAG_H;
         scroll = Mth.clamp(scroll, 0, Math.max(0, flags.size() - maxVis));
         int end = Math.min(scroll + maxVis + 1, flags.size());
@@ -330,6 +353,7 @@ public final class DimDetailScreen extends Screen {
     private void openPicker() {
         showPicker   = true;
         pickerScroll = 0;
+        if (activeFlagSearch != null) activeFlagSearch.setVisible(false);
         if (pickerSearch != null) {
             // L6: reposition only when toggling picker open
             int[] b = pickerBounds();
@@ -350,6 +374,7 @@ public final class DimDetailScreen extends Screen {
             pickerSearch.setVisible(false);
             pickerSearch.setValue("");
         }
+        if (activeFlagSearch != null) activeFlagSearch.setVisible(true);
         backBtn.active = true;
     }
 
