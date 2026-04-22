@@ -126,7 +126,7 @@ public final class ZoneListScreen extends Screen {
         zoneColX[4] = tableX + Math.max(175, tableW * 360 / 477);
         zoneColX[5] = tableX + Math.max(210, tableW * 420 / 477);
 
-        searchBox = new EditBox(font, tableX + 22, searchY + 4, tableW - 30, 14,
+        searchBox = new EditBox(font, tableX + 22, searchY + 5, tableW - 30, 14,
             Component.translatable("arcadiaguard.gui.zone_list.search_placeholder"));
         searchBox.setMaxLength(60);
         searchBox.setBordered(false);
@@ -600,8 +600,9 @@ public final class ZoneListScreen extends Screen {
         String zoneName = filteredZones.get(selectedIndex).name();
         g.fill(gx, gy, gx + GUI_W, gy + GUI_H, 0x80000000);
 
-        int pw = Math.min(270, GUI_W - 10);
-        int ph = 86;
+        // Popup plus large pour accueillir les noms de zone longs.
+        int pw = Math.min(360, GUI_W - 20);
+        int ph = 92;
         int px = gx + (GUI_W - pw) / 2;
         int py = gy + (GUI_H - ph) / 2;
 
@@ -637,7 +638,7 @@ public final class ZoneListScreen extends Screen {
 
     private boolean handleDeleteConfirmClick(int imx, int imy) {
         if (!confirmDeleteOpen || selectedIndex < 0 || selectedIndex >= filteredZones.size()) return false;
-        int pw = Math.min(270, GUI_W - 10), ph = 86;
+        int pw = Math.min(360, GUI_W - 20), ph = 92;
         int px = gx + (GUI_W - pw) / 2, py = gy + (GUI_H - ph) / 2;
         int btY = py + 54;
         if (imx >= px + 10 && imx < px + 110 && imy >= btY && imy < btY + 22) {
