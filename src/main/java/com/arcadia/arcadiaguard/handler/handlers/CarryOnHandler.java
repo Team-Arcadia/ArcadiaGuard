@@ -57,16 +57,22 @@ public final class CarryOnHandler {
             PlayerInteractEvent.RightClickBlock.class, this::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false,
             PlayerTickEvent.Post.class, this::onPlayerTick);
-        // Event custom : on utilise addListener sur la classe generique puis filtre par FQN.
+        // Event custom : on passe la classe concrete EntityPickupEvent (NeoForge refuse Event.class abstract).
         try {
             Class<?> pickupCls = Class.forName(PICKUP_EVENT_CLS);
-            NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.Event.class, event -> {
-                if (pickupCls.isInstance(event)) handleCustomPickupEvent(event);
-            });
+            registerPickupListener(pickupCls);
             ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Carry On handler enregistre (EntityPickupEvent + RightClickBlock + PlayerTick).");
         } catch (ClassNotFoundException e) {
             ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Carry On EntityPickupEvent introuvable : pickup entite non bloque via event. RightClickBlock suffit pour la plupart des cas.");
+        } catch (Throwable t) {
+            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Carry On EntityPickupEvent listener registration failed: {}", t.toString());
         }
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void registerPickupListener(Class<?> pickupCls) {
+        Class raw = pickupCls;
+        NeoForge.EVENT_BUS.addListener(raw, (java.util.function.Consumer) (Object event) -> handleCustomPickupEvent(event));
     }
 
     /** Cancel RightClickBlock si player sneak + empty hand en zone deny (pattern trigger Carry On). */
