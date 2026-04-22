@@ -58,7 +58,7 @@ public final class DimDetailScreen extends Screen {
         // It will be re-positioned when showPicker toggles via openPicker/closePicker
         int[] pb = pickerBounds();
         int searchY = pb[1] + 24;
-        pickerSearch = new EditBox(font, pb[0] + 8, searchY + 3, pb[2] - 16, 14,
+        pickerSearch = new EditBox(font, pb[0] + 8, searchY + 4, pb[2] - 16, 14,
             Component.translatable("arcadiaguard.gui.dim_detail.search"));
         pickerSearch.setVisible(false);
         pickerSearch.setBordered(false);
@@ -335,7 +335,7 @@ public final class DimDetailScreen extends Screen {
             int[] b = pickerBounds();
             int searchY = b[1] + 24;
             pickerSearch.setX(b[0] + 8);
-            pickerSearch.setY(searchY + 3);
+            pickerSearch.setY(searchY + 4);
             pickerSearch.setWidth(b[2] - 16);
             pickerSearch.setValue("");
             pickerSearch.setVisible(true);
