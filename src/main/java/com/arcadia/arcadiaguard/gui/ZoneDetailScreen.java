@@ -334,7 +334,7 @@ public final class ZoneDetailScreen extends Screen {
             g.fill(fx, fy, fx + cellW - 8, fy + 1, Colors.ACCENT_LO);
             g.fill(fx, fy + cellH - 1, fx + cellW - 8, fy + cellH, Colors.ACCENT_LO);
             coordBoxes[i].setX(fx + 3);
-            coordBoxes[i].setY(fy + 4);
+            coordBoxes[i].setY(fy + 5);
             coordBoxes[i].setWidth(cellW - 14);
             coordBoxes[i].setVisible(true);
         }
@@ -720,7 +720,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(px + 4, searchY + 17, px + pw - 4, searchY + 18, Colors.ACCENT_LO);
         if (flagSearchBox != null) {
             flagSearchBox.setX(px + 8);
-            flagSearchBox.setY(searchY + 4);
+            flagSearchBox.setY(searchY + 5);
             flagSearchBox.setWidth(pw - 16);
             flagSearchBox.setVisible(true);
         }
@@ -859,7 +859,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(px + 4, searchY + 17, px + pw - 4, searchY + 18, Colors.ACCENT_LO);
         if (itemSearchBox != null) {
             itemSearchBox.setX(px + 8);
-            itemSearchBox.setY(searchY + 4);
+            itemSearchBox.setY(searchY + 5);
             itemSearchBox.setWidth(pw - 16);
             itemSearchBox.setVisible(true);
         }
@@ -1019,7 +1019,7 @@ public final class ZoneDetailScreen extends Screen {
             g.fill(cx, cy, cx + cw, cy + 1, Colors.LINE_STRONG);
             g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.add_player_label").getString(), cx + 2, cy + 12 - font.lineHeight / 2, Colors.TEXT_MUTE, false);
             whitelistBox.setX(cx + 80);
-            whitelistBox.setY(cy + 4);
+            whitelistBox.setY(cy + 5);
             whitelistBox.setWidth(cw - 84);
             whitelistBox.setVisible(true);
             parentBox.setVisible(false);
@@ -1029,7 +1029,7 @@ public final class ZoneDetailScreen extends Screen {
             g.fill(cx, cy, cx + cw, cy + 1, Colors.LINE_STRONG);
             g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.parent_label").getString(), cx + 2, cy + 12 - font.lineHeight / 2, Colors.TEXT_MUTE, false);
             parentBox.setX(cx + 72);
-            parentBox.setY(cy + 4);
+            parentBox.setY(cy + 5);
             parentBox.setWidth(cw - 76);
             parentBox.setVisible(true);
             whitelistBox.setVisible(false);
@@ -1206,7 +1206,18 @@ public final class ZoneDetailScreen extends Screen {
         if (imx < px || imx >= px + pw || imy < py || imy >= py + ph) {
             closeCoordsEditor(); return true;
         }
-        if (coordBoxes != null) for (EditBox cb : coordBoxes) if (cb.isVisible() && cb.mouseClicked(mx, my, btn)) break;
+        // Clic sur une coord-box : focus explicite (MC auto-focus ne fonctionne pas sur widgets
+        // scrollables non-addRenderableWidget). Defocus les autres.
+        if (coordBoxes != null) {
+            for (EditBox cb : coordBoxes) {
+                if (cb.isVisible() && cb.mouseClicked(mx, my, btn)) {
+                    for (EditBox other : coordBoxes) if (other != cb) other.setFocused(false);
+                    cb.setFocused(true);
+                    setFocused(cb);
+                    return true;
+                }
+            }
+        }
         return true;
     }
 
