@@ -100,8 +100,9 @@ public final class ZoneManager implements IZoneManager {
                 String joined = String.join(",", v);
                 strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
             } else { continue; }
-            String desc = flag.description();
-            if (desc != null && desc.length() > 1024) desc = desc.substring(0, 1021) + "…";
+            // i18n: on envoie la CLE de traduction, le client traduira via
+            // Component.translatable() avec sa locale.
+            String desc = "arcadiaguard.flag." + flag.id() + ".description";
             flags.add(new FlagEntry(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
                 boolVal, inherited, desc != null ? desc : "", type, strVal));
         }
@@ -240,6 +241,13 @@ public final class ZoneManager implements IZoneManager {
 
     @SubscribeEvent
     public void onDeleteZone(ZoneLifecycleEvent.DeleteZone event) {
+        // CHUNKLOAD : liberer les chunks forces AVANT la suppression.
+        if (event.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            @SuppressWarnings("unchecked")
+            var zoneOpt = (java.util.Optional<ProtectedZone>)(java.util.Optional<?>)
+                this.internal.get(event.level(), event.zoneName());
+            zoneOpt.ifPresent(z -> ZoneChunkLoader.unload(sl, z));
+        }
         event.setSuccess(this.internal.remove(event.level(), event.zoneName()));
     }
 
@@ -248,6 +256,14 @@ public final class ZoneManager implements IZoneManager {
         boolean ok = event.isReset()
             ? this.internal.resetFlag(event.level(), event.zoneName(), event.flagId())
             : this.internal.setFlag(event.level(), event.zoneName(), event.flagId(), event.value());
+        // CHUNKLOAD : re-appliquer si le flag modifie est chunkload.
+        if (ok && "chunkload".equals(event.flagId())
+                && event.level() instanceof net.minecraft.server.level.ServerLevel sl) {
+            @SuppressWarnings("unchecked")
+            var zoneOpt = (java.util.Optional<ProtectedZone>)(java.util.Optional<?>)
+                this.internal.get(event.level(), event.zoneName());
+            zoneOpt.ifPresent(z -> ZoneChunkLoader.apply(sl, z, ArcadiaGuard.guardService()));
+        }
         event.setSuccess(ok);
     }
 

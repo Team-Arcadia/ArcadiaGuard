@@ -160,7 +160,7 @@ public final class DimDetailScreen extends Screen {
             if (i % 2 == 1) g.fill(cx, iy, cx + cw, iy + FLAG_H, 0x08FFFFFF);
             if (hov) {
                 g.fill(cx, iy, cx + cw, iy + FLAG_H, Colors.accentTint(0x10));
-                if (!f.description().isEmpty()) hoveredDesc = f.description();
+                if (!f.description().isEmpty()) hoveredDesc = net.minecraft.network.chat.Component.translatable(f.description()).getString();
             }
 
             g.fill(cx + 2, iy + FLAG_H / 2 - 2, cx + 5, iy + FLAG_H / 2 + 2, Colors.VERDIGRIS);
