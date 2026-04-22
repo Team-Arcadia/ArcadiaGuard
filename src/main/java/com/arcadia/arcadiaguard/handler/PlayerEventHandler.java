@@ -189,6 +189,12 @@ public final class PlayerEventHandler
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                 player,
                 new com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload(parcoolBlocked));
+            // Message one-shot a la transition (pas de spam car envoye seulement sur changement).
+            if (parcoolBlocked) {
+                player.displayClientMessage(
+                    Component.translatable("arcadiaguard.message.parcool_actions")
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+            }
         }
 
         // Meme pattern pour Emotecraft (verifier client-side).
@@ -202,6 +208,11 @@ public final class PlayerEventHandler
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                 player,
                 new com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload(emoteBlocked));
+            if (emoteBlocked) {
+                player.displayClientMessage(
+                    Component.translatable("arcadiaguard.message.emote_use")
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+            }
         }
 
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)
