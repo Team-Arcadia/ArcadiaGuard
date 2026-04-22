@@ -428,7 +428,7 @@
   "arcadiaguard.flag.ars-additions-scroll.description": "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",
   "arcadiaguard.flag.chunkload.description": "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).",
   "arcadiaguard.flag.fly.description": "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignorés.",
-  "arcadiaguard.flag.apotheosis-fly.description": "[Apotheosis] Bloque le vol accordé par les affixes Apotheosis.",
+  "arcadiaguard.flag.apotheosis-fly.description": "[Apotheosis] Bloque le vol via attribut neoforge:creative_flight (affixe unbound).",
   "arcadiaguard.flag.heal-amount.description": "Points de vie r\u00e9g\u00e9n\u00e9r\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9).",
   "arcadiaguard.flag.feed-amount.description": "Points de nourriture restaur\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9)."
 }

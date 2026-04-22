@@ -101,7 +101,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag ARS_ADDITIONS_SCROLL = new BooleanFlag("ars-additions-scroll", false, "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",         "ars_additions");
     public static final BooleanFlag CHUNKLOAD            = new BooleanFlag("chunkload",          false, "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).");
     public static final BooleanFlag FLY                  = new BooleanFlag("fly",                false, "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignores.");
-    public static final BooleanFlag APOTHEOSIS_FLY       = new BooleanFlag("apotheosis-fly",     false, "[Apotheosis] Bloque le vol accorde par les affixes Apotheosis.",                              "apotheosis");
+    public static final BooleanFlag APOTHEOSIS_FLY       = new BooleanFlag("apotheosis-fly",     false, "[Apotheosis] Bloque le vol via attribut neoforge:creative_flight (affixe unbound).",          "apotheosis");
 
     // --- Zone configuration ---
     public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");
