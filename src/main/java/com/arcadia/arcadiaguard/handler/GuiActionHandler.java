@@ -254,7 +254,7 @@ public final class GuiActionHandler {
 
     private static void postSetFlag(ServerPlayer player, String zoneName,
             String flagId, Object value, boolean reset) {
-        var event = new ZoneLifecycleEvent.SetFlag(player, player.serverLevel(), zoneName, flagId, value, reset);
+        var event = new ZoneLifecycleEvent.SetFlag(player, resolveZoneLevel(player, zoneName), zoneName, flagId, value, reset);
         NeoForge.EVENT_BUS.post(event);
         if (event.isSuccess()) ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
         else player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
@@ -271,7 +271,12 @@ public final class GuiActionHandler {
 
     private static void postModify(ServerPlayer player, String zoneName,
             ZoneLifecycleEvent.ModifyZone.Kind kind, Object arg1, Object arg2) {
-        var event = new ZoneLifecycleEvent.ModifyZone(player, player.serverLevel(), zoneName, kind, arg1, arg2);
+        // S-H18/S-H20 : resoudre le level reel de la zone cross-dim, sinon
+        // internal.setXxx(level, zoneName) ne trouve pas la zone et echoue
+        // silencieusement (bug: cliquer +/x sur items bloques depuis l'overworld
+        // pour une zone du nether ne faisait rien).
+        Level targetLevel = resolveZoneLevel(player, zoneName);
+        var event = new ZoneLifecycleEvent.ModifyZone(player, targetLevel, zoneName, kind, arg1, arg2);
         NeoForge.EVENT_BUS.post(event);
         if (event.isSuccess()) {
             ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
@@ -279,10 +284,21 @@ public final class GuiActionHandler {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
             // Re-push le detail pour que le client resynchronise son UI à l'état serveur réel
             // (sinon un échec de validation laisse l'UI cliente avec une valeur fantôme).
-            if (ArcadiaGuard.zoneManager().get(player.serverLevel(), zoneName).isPresent()) {
+            if (ArcadiaGuard.zoneManager().get(targetLevel, zoneName).isPresent()) {
                 ArcadiaGuard.zoneManager().sendDetailToPlayer(player, zoneName);
             }
         }
+    }
+
+    /** Retourne le {@link Level} de la zone (cross-dim), ou celui du joueur en fallback. */
+    private static Level resolveZoneLevel(ServerPlayer player, String zoneName) {
+        var server = player.getServer();
+        if (server != null) {
+            for (var lvl : server.getAllLevels()) {
+                if (ArcadiaGuard.zoneManager().get(lvl, zoneName).isPresent()) return lvl;
+            }
+        }
+        return player.serverLevel();
     }
 
     private static void whitelistAction(ServerPlayer player, GuiActionPayload p, boolean add) {

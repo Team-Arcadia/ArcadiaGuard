@@ -1326,6 +1326,19 @@ public final class ZoneDetailScreen extends Screen {
             }
             if (popup instanceof PopupState.FlagPicker) { closePicker(); return true; }
             if (popup instanceof PopupState.ConfirmDelete) { popup = new PopupState.None(); return true; }
+            if (popup instanceof PopupState.ItemBlocksPicker) {
+                popup = new PopupState.None();
+                if (itemSearchBox != null) {
+                    itemSearchBox.setVisible(false);
+                    itemSearchBox.setValue("");
+                }
+                return true;
+            }
+            if (popup instanceof PopupState.CoordsEditor) { popup = new PopupState.None(); return true; }
+            if (popup instanceof PopupState.WhitelistInput || popup instanceof PopupState.ParentInput) {
+                popup = new PopupState.None();
+                return true;
+            }
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
