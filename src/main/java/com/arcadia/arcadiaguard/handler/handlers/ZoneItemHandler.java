@@ -195,6 +195,21 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         }
     }
 
+    /** Tester feedback: bloque aussi l'attaque sur entite (epee/outil banni) dans la zone. */
+    public void onAttack(net.neoforged.neoforge.event.entity.player.AttackEntityEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        ItemStack stack = sp.getMainHandItem();
+        if (stack.isEmpty()) return;
+        BlockPos pos = sp.blockPosition();
+        if (isItemBlockedAt(sp, pos, stack)) {
+            String actionName = "item_use:" + itemId(stack);
+            if (guardService.blockIfProtected(sp, pos, actionName, "dynamic_item",
+                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
     /** Returns true if the item is a mob-releasing bucket (fish, axolotl, tadpole, etc.). */
     private static boolean isMobBucket(ItemStack stack) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());

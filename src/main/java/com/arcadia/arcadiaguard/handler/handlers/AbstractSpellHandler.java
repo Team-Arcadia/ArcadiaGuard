@@ -134,6 +134,13 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                 String hit = glyphs.stream().filter(blacklist::contains).findFirst()
                     .orElseGet(() -> blacklist.contains(spellId) ? spellId : null);
                 if (hit != null) {
+                    // DEBUG : log sur premier match pour aider au diagnostic "tous les sorts bloques"
+                    if (!DEBUG_LOGGED) {
+                        DEBUG_LOGGED = true;
+                        com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+                            "[ArcadiaGuard] Spell blacklist first hit: spellId='{}', glyphs={}, blacklist={}, matched='{}'",
+                            spellId, glyphs, blacklist, hit);
+                    }
                     player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
                     guardService.auditDenied(player, zone.name(), player.blockPosition(), castFlag, hit + "_blacklisted");
                     cancel(event);
@@ -141,6 +148,8 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
             }
         }
     }
+
+    private static volatile boolean DEBUG_LOGGED = false;
 
     private static void cancel(Event event) {
         if (event instanceof ICancellableEvent c) c.setCanceled(true);

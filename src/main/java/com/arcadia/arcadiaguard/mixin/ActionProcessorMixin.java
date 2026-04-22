@@ -16,6 +16,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "com.alrex.parcool.common.action.ActionProcessor", remap = false)
 public abstract class ActionProcessorMixin {
 
+    static {
+        com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+            "[ArcadiaGuard] ActionProcessorMixin class init — mixin will be applied to ParCool ActionProcessor.");
+    }
+
     private static boolean WARNED = false;
     private static boolean LOADED_LOGGED = false;
 
