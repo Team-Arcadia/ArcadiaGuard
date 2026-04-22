@@ -27,7 +27,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * Blocks leads, spawn eggs, mob buckets, dynamic items, and NPC interactions
  * in protected zones.
  */
-public final class ZoneItemHandler implements RightClickItemHandler, RightClickBlockHandler, EntityInteractHandler {
+public final class ZoneItemHandler implements RightClickItemHandler, RightClickBlockHandler, EntityInteractHandler,
+        com.arcadia.arcadiaguard.handler.HandlerRegistry.BlockBreakHandler {
 
     private final GuardService guardService;
     private final DynamicItemBlockList dynamicList;
@@ -176,6 +177,21 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             sp.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 ArcadiaGuardConfig.MESSAGE_LEAD.get()).withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
+        }
+    }
+
+    /** S-H20 / tester feedback : bloque aussi le clic gauche (break block) avec un item banni par zone. */
+    @Override
+    public void handle(net.neoforged.neoforge.event.level.BlockEvent.BreakEvent event) {
+        if (!(event.getPlayer() instanceof ServerPlayer sp)) return;
+        ItemStack stack = sp.getMainHandItem();
+        if (stack.isEmpty()) return;
+        if (isItemBlockedAt(sp, event.getPos(), stack)) {
+            String actionName = "item_use:" + itemId(stack);
+            if (guardService.blockIfProtected(sp, event.getPos(), actionName, "dynamic_item",
+                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                event.setCanceled(true);
+            }
         }
     }
 

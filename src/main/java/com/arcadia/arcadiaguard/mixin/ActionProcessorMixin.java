@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ActionProcessorMixin {
 
     private static boolean WARNED = false;
+    private static boolean LOADED_LOGGED = false;
 
     @Inject(
         method = "onTick(Lnet/neoforged/neoforge/event/tick/PlayerTickEvent$Post;)V",
@@ -25,6 +26,11 @@ public abstract class ActionProcessorMixin {
         remap = false
     )
     private void arcadiaguard$maybeCancelParcoolTick(Object event, CallbackInfo ci) {
+        if (!LOADED_LOGGED) {
+            LOADED_LOGGED = true;
+            com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+                "[ArcadiaGuard] ParCool ActionProcessor mixin loaded (first tick).");
+        }
         try {
             if (ClientParcoolState.isBlocked()) {
                 ci.cancel();
@@ -36,5 +42,23 @@ public abstract class ActionProcessorMixin {
                     "[ArcadiaGuard] PARCOOL_ACTIONS client mixin inoperant: {}", t.toString());
             }
         }
+    }
+
+    /**
+     * ParCool a plusieurs points d'entree pour triggerer les actions (KeyInput, ClientTick).
+     * On intercepte aussi processAction pour catch les cas ou l'action bypasse onTick.
+     */
+    @Inject(
+        method = "processAction",
+        at = @At("HEAD"),
+        cancellable = true,
+        remap = false,
+        require = 0
+    )
+    private void arcadiaguard$maybeCancelProcessAction(Object player, Object parkour,
+            Object entries, boolean isClient, Object action, CallbackInfo ci) {
+        try {
+            if (ClientParcoolState.isBlocked()) ci.cancel();
+        } catch (Throwable t) { /* fallback silent */ }
     }
 }

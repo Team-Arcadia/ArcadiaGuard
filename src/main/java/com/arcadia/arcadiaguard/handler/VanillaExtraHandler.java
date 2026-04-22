@@ -95,16 +95,24 @@ public final class VanillaExtraHandler {
         guard.auditDenied(player, zone.name(), pos, flag, action);
     }
 
-    /** SCOOP_FLUIDS (seau vide -> rempli) + PLACE_FLUIDS (seau rempli -> pose). */
+    /** SCOOP_FLUIDS (seau vide -> rempli) + PLACE_FLUIDS (seau rempli -> pose).
+     * Handle via RightClickBlock (raytrace fluide touche le bloc cible) ET RightClickItem
+     * (clic dans le vide, seau fait son propre raytrace). Covers both paths cote NeoForge 1.21.1. */
     public void onBucketUse(PlayerInteractEvent.RightClickBlock event) {
-        if (event.isCanceled()) return;
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        handleBucket(event.getEntity(), event.getItemStack(), event.getPos(), event);
+    }
+
+    public void onBucketUseItem(PlayerInteractEvent.RightClickItem event) {
+        handleBucket(event.getEntity(), event.getItemStack(), event.getEntity().blockPosition(), event);
+    }
+
+    private void handleBucket(net.minecraft.world.entity.player.Player p, ItemStack stack, BlockPos pos,
+                              net.neoforged.neoforge.event.entity.player.PlayerInteractEvent event) {
+        if (!(p instanceof ServerPlayer player)) return;
         Level level = player.level();
         if (level.isClientSide()) return;
-        ItemStack stack = event.getItemStack();
         if (!(stack.getItem() instanceof BucketItem)) return;
         if (guard.shouldBypass(player)) return;
-        BlockPos pos = event.getPos();
         var zoneOpt = guard.zoneManager().findZoneContaining(level, pos);
         if (zoneOpt.isEmpty()) return;
         ProtectedZone zone = (ProtectedZone) zoneOpt.get();
@@ -113,7 +121,14 @@ public final class VanillaExtraHandler {
         boolean empty = stack.is(Items.BUCKET);
         BooleanFlag flag = empty ? BuiltinFlags.SCOOP_FLUIDS : BuiltinFlags.PLACE_FLUIDS;
         if (!guard.isZoneDenying(zone, flag, level)) return;
-        event.setCanceled(true);
+        // Cancel + FAIL result pour empecher BucketItem.use() de s'executer dans tous les cas.
+        if (event instanceof PlayerInteractEvent.RightClickBlock rcb) {
+            rcb.setCanceled(true);
+            rcb.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+        } else if (event instanceof PlayerInteractEvent.RightClickItem rci) {
+            rci.setCanceled(true);
+            rci.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+        }
         String action = empty ? "scoop_fluids" : "place_fluids";
         sendDeny(player, action);
         guard.auditDenied(player, zone.name(), pos, flag, action);
@@ -152,11 +167,12 @@ public final class VanillaExtraHandler {
         if (guard.isZoneMember(player, zone)) return;
 
         String rawCmd = event.getParseResults().getReader().getString();
+        String firstToken = extractCommandToken(rawCmd);
         // Exception : toujours autoriser les commandes ArcadiaGuard (anti lock-out admin).
-        if (rawCmd.startsWith("/ag") || rawCmd.startsWith("/arcadiaguard")) return;
+        // Le rawCmd peut ou non avoir le "/" prefix selon le contexte NeoForge -> utiliser le token.
+        if (firstToken.equals("ag") || firstToken.equals("arcadiaguard")) return;
 
         boolean denyAll = guard.isZoneDenying(zone, BuiltinFlags.EXEC_COMMAND, level);
-        String firstToken = extractCommandToken(rawCmd);
 
         if (denyAll) {
             event.setCanceled(true);
