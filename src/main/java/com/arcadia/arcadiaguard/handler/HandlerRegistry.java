@@ -51,6 +51,7 @@ public final class HandlerRegistry {
     private final EntityEventHandler entityEventHandler;
     private final PlayerEventHandler playerEventHandler;
     private final FlagEventHandler flagEventHandler;
+    private final VanillaExtraHandler vanillaExtraHandler;
     private final MutantMonstersHandler mutantMonstersHandler;
     private final TwilightForestHandler twilightForestHandler;
     private final SophisticatedStorageHandler sophisticatedStorageHandler;
@@ -75,6 +76,7 @@ public final class HandlerRegistry {
         this.simplySwordsHandlerRef = simplySwordsHandler;
         ApotheosisCharmHandler charmHandler = new ApotheosisCharmHandler(guardService);
         this.playerEventHandler = new PlayerEventHandler(guardService, charmHandler);
+        this.vanillaExtraHandler = new VanillaExtraHandler(guardService);
         this.handlers = List.of(
             this.playerEventHandler,
             new IronsSpellbooksHandler(guardService),
@@ -126,6 +128,13 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent.class, EasterEggHandler::onPlayerLogin);
         NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent.class, EasterEggHandler::onPlayerLogout);
         NeoForge.EVENT_BUS.addListener(net.neoforged.neoforge.event.tick.ServerTickEvent.Post.class, EasterEggHandler::onServerTick);
+        // VanillaExtraHandler : flags vanilla additionnels
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, PlayerTickEvent.Post.class, vanillaExtraHandler::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, true, net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent.class, vanillaExtraHandler::onTravelDim);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, BlockEvent.BlockToolModificationEvent.class, vanillaExtraHandler::onBlockToolModification);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, PlayerInteractEvent.RightClickBlock.class, vanillaExtraHandler::onBucketUse);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.ServerChatEvent.class, vanillaExtraHandler::onChat);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.CommandEvent.class, vanillaExtraHandler::onCommand);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingIncomingDamageEvent.class, entityEventHandler::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingFallEvent.class, entityEventHandler::onLivingFall);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawnEvent.class, entityEventHandler::onMobSpawn);

@@ -247,6 +247,7 @@ public final class GuardService implements IGuardService {
     @SuppressWarnings("unchecked")
     public boolean isZoneDenying(ProtectedZone zone, BooleanFlag flag, Level level) {
         if (!zone.enabled()) return false;
+        if (isFrequencyDisabled(flag)) return false;
         Function<String, Optional<ProtectedZone>> lookup = name ->
             (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(level, name);
         Function<String, java.util.Map<String, Object>> dimLookup = dim -> this.dimFlagStore.flags(dim);
@@ -254,10 +255,35 @@ public final class GuardService implements IGuardService {
     }
 
     /**
+     * Retourne true si la frequence de ce flag est desactivee globalement via la config
+     * (kill-switch admin : {@code disabled_flag_frequencies} dans arcadiaguard-common.toml).
+     * Cache le set apres le premier appel pour eviter de re-lire la config a chaque check.
+     */
+    private static volatile java.util.Set<com.arcadia.arcadiaguard.api.flag.FlagFrequency> DISABLED_FREQS_CACHE;
+    public boolean isFrequencyDisabled(com.arcadia.arcadiaguard.api.flag.Flag<?> flag) {
+        java.util.Set<com.arcadia.arcadiaguard.api.flag.FlagFrequency> cache = DISABLED_FREQS_CACHE;
+        if (cache == null) {
+            try {
+                cache = java.util.EnumSet.noneOf(com.arcadia.arcadiaguard.api.flag.FlagFrequency.class);
+                for (String s : ArcadiaGuardConfig.DISABLED_FLAG_FREQUENCIES.get()) {
+                    try { cache.add(com.arcadia.arcadiaguard.api.flag.FlagFrequency.valueOf(s.toUpperCase(java.util.Locale.ROOT))); }
+                    catch (IllegalArgumentException ignored) {}
+                }
+                DISABLED_FREQS_CACHE = cache;
+            } catch (Throwable t) { return false; }
+        }
+        return cache.contains(flag.frequency());
+    }
+
+    /** Invalide le cache des frequences desactivees (appel apres reload config si expose). */
+    public static void invalidateFrequencyCache() { DISABLED_FREQS_CACHE = null; }
+
+    /**
      * Returns true if the given {@code flag} is denied at {@code pos} in {@code level}.
      * Used by entity event handlers where no player is directly involved.
      */
     public boolean isZoneDenying(Level level, BlockPos pos, BooleanFlag flag) {
+        if (isFrequencyDisabled(flag)) return false;
         Optional<IZone> zoneIZoneOpt = this.zoneManager.findZoneContaining(level, pos);
         Optional<Boolean> resolved;
         if (zoneIZoneOpt.isPresent()) {

@@ -1,6 +1,7 @@
 package com.arcadia.arcadiaguard.flag;
 
 import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
+import com.arcadia.arcadiaguard.api.flag.FlagFrequency;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
 
@@ -51,19 +52,19 @@ public final class BuiltinFlags {
     public static final BooleanFlag BLOCK_EXPLOSION    = new BooleanFlag("block-explosion",    false, "Autorise/refuse les explosions générées par des blocs.");
     public static final BooleanFlag FIRE_SPREAD        = new BooleanFlag("fire-spread",        false, "Autorise/refuse la propagation du feu sur les blocs.");
     public static final BooleanFlag LAVA_FIRE          = new BooleanFlag("lava-fire",          false, "Autorise/refuse l'allumage de feux par la lave.");
-    public static final BooleanFlag LAVA_SPREAD        = new BooleanFlag("lava-spread",        false, "Autorise/refuse l'écoulement de la lave.");
-    public static final BooleanFlag WATER_SPREAD       = new BooleanFlag("water-spread",       false, "Autorise/refuse l'écoulement de l'eau.");
-    public static final BooleanFlag LEAF_DECAY         = new BooleanFlag("leaf-decay",         false, "Autorise/refuse la dégradation naturelle des feuilles.");
+    public static final BooleanFlag LAVA_SPREAD        = new BooleanFlag("lava-spread",        false, "Autorise/refuse l'écoulement de la lave.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag WATER_SPREAD       = new BooleanFlag("water-spread",       false, "Autorise/refuse l'écoulement de l'eau.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag LEAF_DECAY         = new BooleanFlag("leaf-decay",         false, "Autorise/refuse la dégradation naturelle des feuilles.", FlagFrequency.VERY_HIGH);
 
     // --- Environment ---
     public static final BooleanFlag CROP_GROWTH        = new BooleanFlag("crop-growth",        false, "Autorise/refuse la pousse des cultures (blé, carottes…).");
     public static final BooleanFlag TREE_GROWTH        = new BooleanFlag("tree-growth",        false, "Autorise/refuse la pousse des arbres depuis des plants.");
     public static final BooleanFlag FARMLAND_TRAMPLE   = new BooleanFlag("farmland-trample",   false, "Autorise/refuse le piétinement des terres cultivées.");
-    public static final BooleanFlag GRASS_SPREAD       = new BooleanFlag("grass-spread",       false, "Autorise/refuse la propagation de l'herbe sur la terre.");
-    public static final BooleanFlag VINE_GROWTH        = new BooleanFlag("vine-growth",        false, "Autorise/refuse la propagation des lianes.");
-    public static final BooleanFlag SCULK_SPREAD       = new BooleanFlag("sculk-spread",       false, "Autorise/refuse la propagation des blocs Sculk.");
-    public static final BooleanFlag SNOW_MELT          = new BooleanFlag("snow-melt",          false, "Autorise/refuse la fonte de la neige.");
-    public static final BooleanFlag ICE_MELT           = new BooleanFlag("ice-melt",           false, "Autorise/refuse la fonte de la glace.");
+    public static final BooleanFlag GRASS_SPREAD       = new BooleanFlag("grass-spread",       false, "Autorise/refuse la propagation de l'herbe sur la terre.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag VINE_GROWTH        = new BooleanFlag("vine-growth",        false, "Autorise/refuse la propagation des lianes.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag SCULK_SPREAD       = new BooleanFlag("sculk-spread",       false, "Autorise/refuse la propagation des blocs Sculk.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag SNOW_MELT          = new BooleanFlag("snow-melt",          false, "Autorise/refuse la fonte de la neige.", FlagFrequency.VERY_HIGH);
+    public static final BooleanFlag ICE_MELT           = new BooleanFlag("ice-melt",           false, "Autorise/refuse la fonte de la glace.", FlagFrequency.VERY_HIGH);
 
     // --- Items ---
     public static final BooleanFlag ITEM_DROP          = new BooleanFlag("item-drop",          false, "Autorise/refuse le lâcher d'objets par les joueurs.");
@@ -102,6 +103,17 @@ public final class BuiltinFlags {
     public static final BooleanFlag CHUNKLOAD            = new BooleanFlag("chunkload",          false, "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).");
     public static final BooleanFlag FLY                  = new BooleanFlag("fly",                false, "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignores.");
     public static final BooleanFlag APOTHEOSIS_FLY       = new BooleanFlag("apotheosis-fly",     false, "[Apotheosis] Bloque le vol via attribut neoforge:creative_flight (affixe unbound).",          "apotheosis");
+
+    // --- Vanilla flags additionnels (parite YAWP) ---
+    public static final BooleanFlag USE_ELYTRA           = new BooleanFlag("use-elytra",         false, "Bloque l'utilisation de l'elytra (vol/planage) dans la zone.");
+    public static final BooleanFlag USE_PORTAL           = new BooleanFlag("use-portal",         false, "Bloque le changement de dimension via portail depuis/vers la zone.");
+    public static final BooleanFlag TILL_FARMLAND        = new BooleanFlag("till-farmland",      false, "Bloque le labour de la terre avec la houe.");
+    public static final BooleanFlag STRIP_WOOD           = new BooleanFlag("strip-wood",         false, "Bloque l'ecorcage du bois avec la hache.");
+    public static final BooleanFlag SHOVEL_PATH          = new BooleanFlag("shovel-path",        false, "Bloque la creation de chemin avec la pelle.");
+    public static final BooleanFlag SCOOP_FLUIDS         = new BooleanFlag("scoop-fluids",       false, "Bloque la collecte de fluides avec un seau vide.");
+    public static final BooleanFlag PLACE_FLUIDS         = new BooleanFlag("place-fluids",       false, "Bloque le placement de fluides depuis un seau.");
+    public static final BooleanFlag SEND_CHAT            = new BooleanFlag("send-chat",          false, "Bloque l'envoi de messages dans le chat depuis la zone.");
+    public static final BooleanFlag EXEC_COMMAND         = new BooleanFlag("exec-command",       false, "Bloque l'execution de commandes slash depuis la zone.");
 
     // --- Zone configuration ---
     public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");

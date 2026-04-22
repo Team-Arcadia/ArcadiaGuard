@@ -21,4 +21,10 @@ public interface Flag<T> {
      * Returns an empty string if the flag is always visible (no mod dependency).
      */
     default String requiredMod() { return ""; }
+
+    /**
+     * Classe de frequence utilisee par l'admin pour desactiver des classes entieres de flags
+     * via la config. Defaut {@link FlagFrequency#NORMAL}.
+     */
+    default FlagFrequency frequency() { return FlagFrequency.NORMAL; }
 }
