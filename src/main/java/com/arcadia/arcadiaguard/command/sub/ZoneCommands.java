@@ -75,11 +75,18 @@ public final class ZoneCommands {
     }
 
     private static int createFromWand(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        String name;
-        try { name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT); }
+        String raw;
+        try { raw = StringArgumentType.getString(ctx, "name"); }
         catch (IllegalArgumentException e) {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.usage_create"));
             return 0;
+        }
+        String name = com.arcadia.arcadiaguard.ArcadiaGuardPaths.normalizeZoneName(raw);
+        if (!raw.equals(name) && !name.isEmpty()) {
+            final String normalized = name;
+            ctx.getSource().sendSuccess(() -> Component.translatable(
+                "arcadiaguard.command.zone.name_normalized", raw, normalized)
+                .withStyle(net.minecraft.ChatFormatting.YELLOW), false);
         }
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         BlockPos p1 = WandItem.getPos1(player.getUUID());
@@ -92,8 +99,8 @@ public final class ZoneCommands {
             ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.coords_out_of_bounds"));
             return 0;
         }
-        if (!VALID_NAME.matcher(name).matches()) {
-            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", name));
+        if (name.isEmpty() || !VALID_NAME.matcher(name).matches()) {
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", raw));
             return 0;
         }
         ProtectedZone zone = new ProtectedZone(name, DimensionUtils.keyOf(ctx.getSource().getLevel()), p1, p2);
@@ -108,10 +115,17 @@ public final class ZoneCommands {
     }
 
     private static int add(CommandContext<CommandSourceStack> ctx) {
-        String name = StringArgumentType.getString(ctx, "name").toLowerCase(java.util.Locale.ROOT);
+        String raw = StringArgumentType.getString(ctx, "name");
+        String name = com.arcadia.arcadiaguard.ArcadiaGuardPaths.normalizeZoneName(raw);
         if (!VALID_NAME.matcher(name).matches()) {
-            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", name));
+            ctx.getSource().sendFailure(Component.translatable("arcadiaguard.command.zone.invalid_name", raw));
             return 0;
+        }
+        if (!raw.equals(name)) {
+            final String normalized = name;
+            ctx.getSource().sendSuccess(() -> Component.translatable(
+                "arcadiaguard.command.zone.name_normalized", raw, normalized)
+                .withStyle(net.minecraft.ChatFormatting.YELLOW), false);
         }
         int x1 = IntegerArgumentType.getInteger(ctx, "x1");
         int y1 = IntegerArgumentType.getInteger(ctx, "y1");

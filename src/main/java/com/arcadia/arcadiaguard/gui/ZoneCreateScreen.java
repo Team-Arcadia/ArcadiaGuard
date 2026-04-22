@@ -66,17 +66,11 @@ public final class ZoneCreateScreen extends Screen {
     }
 
     private void tryCreate() {
+        // Envoi du nom RAW : le serveur le normalisera (espaces, accents, majuscules).
+        // Seul check client : non vide apres trim.
         String name = nameBox.getValue().trim();
         if (name.isEmpty()) {
             errorMsg = Component.translatable("arcadiaguard.gui.zonecreate.error.empty").getString();
-            return;
-        }
-        if (!name.matches("[a-z0-9_\\-]+")) {
-            errorMsg = Component.translatable("arcadiaguard.gui.zonecreate.error.invalid").getString();
-            return;
-        }
-        if (name.length() > 64) {
-            errorMsg = Component.translatable("arcadiaguard.gui.zonecreate.error.toolong").getString();
             return;
         }
         PacketDistributor.sendToServer(GuiActionPayload.createZone(
@@ -100,10 +94,9 @@ public final class ZoneCreateScreen extends Screen {
         renderForm(g, mx, my);
         renderFooterDivider(g);
 
-        // Update create button state
+        // Update create button state : on accepte tout nom non-vide, le serveur normalisera.
         boolean canCreate = pos1 != null && pos2 != null
-            && nameBox.getValue().matches("[a-z0-9_\\-]+")
-            && !nameBox.getValue().isEmpty()
+            && !nameBox.getValue().trim().isEmpty()
             && nameBox.getValue().length() <= 64;
         createBtn.active = canCreate;
 

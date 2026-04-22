@@ -222,10 +222,16 @@ public final class GuiActionHandler {
     // ── Event-driven zone write operations ────────────────────────────────────────
 
     private static void createZone(ServerPlayer player, GuiActionPayload p) {
-        String name = p.zoneName().trim();
-        if (!ArcadiaGuardPaths.isValidZoneName(name)) {
+        String raw = p.zoneName();
+        String name = ArcadiaGuardPaths.normalizeZoneName(raw);
+        if (name.isEmpty() || !ArcadiaGuardPaths.isValidZoneName(name)) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_name_invalid").withStyle(ChatFormatting.RED));
             return;
+        }
+        // Informer le joueur si son nom a ete normalise (espaces/majuscules/accents).
+        if (!name.equals(raw.trim())) {
+            player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_name_normalized", raw.trim(), name)
+                .withStyle(ChatFormatting.YELLOW));
         }
         Level level = player.serverLevel();
         int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight() - 1;

@@ -236,7 +236,9 @@
   "arcadiaguard.wand.hud.view_count": "  [eye %1$s]",
 
   "arcadiaguard.gui.action.coords_out_of_bounds": "Coordinates out of world bounds.",
-  "arcadiaguard.gui.action.zone_name_invalid": "Invalid zone name — use a-z, 0-9, _, - (max 64).",
+  "arcadiaguard.gui.action.zone_name_invalid": "Invalid zone name — use letters, digits, spaces or _- (max 64).",
+  "arcadiaguard.gui.action.zone_name_normalized": "Name normalized: \"%1$s\" → \"%2$s\".",
+  "arcadiaguard.command.zone.name_normalized": "Name normalized: \"%1$s\" → \"%2$s\".",
   "arcadiaguard.gui.action.bounds_updated": "Bounds of %1$s updated.",
   "arcadiaguard.gui.action.zone_not_found": "Zone not found: %1$s",
   "arcadiaguard.gui.action.zone_created": "Zone %1$s created.",
