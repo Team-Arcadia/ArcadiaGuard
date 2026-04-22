@@ -77,7 +77,9 @@ public final class ArcadiaGuardClient {
                 } else {
                     mc.setScreen(new ZoneLogsScreen(mc.screen, payload));
                 }
-            })
+            }),
+            // ZoneRemovedPayload : purge du cache de rendu quand une zone est supprimee serveur
+            (payload, ctx) -> ctx.enqueueWork(() -> ClientZoneCache.remove(payload.zoneName()))
         );
     }
 }

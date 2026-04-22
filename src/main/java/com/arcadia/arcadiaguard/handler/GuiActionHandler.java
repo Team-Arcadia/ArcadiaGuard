@@ -252,6 +252,12 @@ public final class GuiActionHandler {
         NeoForge.EVENT_BUS.post(event);
         if (event.isSuccess()) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_deleted", zoneName).withStyle(ChatFormatting.GREEN));
+            // Purge le cache de rendu client (ZoneRenderer) chez TOUS les joueurs connectes,
+            // sinon une zone "Voir : ON" reste dessinee apres suppression.
+            var payload = new com.arcadia.arcadiaguard.network.gui.ZoneRemovedPayload(zoneName);
+            for (ServerPlayer sp : player.getServer().getPlayerList().getPlayers()) {
+                net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(sp, payload);
+            }
             ArcadiaGuard.zoneManager().sendRefreshedList(player);
         } else {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", zoneName).withStyle(ChatFormatting.RED));
