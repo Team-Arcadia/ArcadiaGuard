@@ -37,6 +37,8 @@ public final class ArcadiaGuardConfig {
     public static final ModConfigSpec.IntValue ASYNC_WRITER_CAPACITY;
     public static final ModConfigSpec.ConfigValue<String> ASYNC_WRITER_POLICY;
 
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> DISABLED_FLAG_FREQUENCIES;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
@@ -82,6 +84,18 @@ public final class ArcadiaGuardConfig {
         ASYNC_WRITER_POLICY   = builder.define("async_writer_policy", "BLOCK",
             v -> v instanceof String s && (s.equalsIgnoreCase("BLOCK")
                 || s.equalsIgnoreCase("FAIL_FAST") || s.equalsIgnoreCase("DROP")));
+        builder.pop();
+
+        builder.push("performance");
+        builder.comment("Classes de frequence de flags a desactiver globalement (kill-switch).",
+            "Valeurs acceptees: NEGLIGIBLE, LOW, NORMAL, HIGH, VERY_HIGH.",
+            "Exemple: [\"VERY_HIGH\"] desactive leaf-decay, water-spread, sculk-spread, etc.");
+        DISABLED_FLAG_FREQUENCIES = builder.defineList("disabled_flag_frequencies",
+            java.util.List.of(),
+            () -> "NORMAL",
+            v -> v instanceof String s && (s.equalsIgnoreCase("NEGLIGIBLE")
+                || s.equalsIgnoreCase("LOW") || s.equalsIgnoreCase("NORMAL")
+                || s.equalsIgnoreCase("HIGH") || s.equalsIgnoreCase("VERY_HIGH")));
         builder.pop();
 
         SPEC = builder.build();

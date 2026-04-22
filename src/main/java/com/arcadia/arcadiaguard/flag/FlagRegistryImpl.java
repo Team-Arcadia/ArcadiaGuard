@@ -122,6 +122,15 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.CHUNKLOAD);
         register(BuiltinFlags.FLY);
         register(BuiltinFlags.APOTHEOSIS_FLY);
+        register(BuiltinFlags.USE_ELYTRA);
+        register(BuiltinFlags.USE_PORTAL);
+        register(BuiltinFlags.TILL_FARMLAND);
+        register(BuiltinFlags.STRIP_WOOD);
+        register(BuiltinFlags.SHOVEL_PATH);
+        register(BuiltinFlags.SCOOP_FLUIDS);
+        register(BuiltinFlags.PLACE_FLUIDS);
+        register(BuiltinFlags.SEND_CHAT);
+        register(BuiltinFlags.EXEC_COMMAND);
         // Zone configuration
         register(BuiltinFlags.HEAL_AMOUNT);
         register(BuiltinFlags.FEED_AMOUNT);
