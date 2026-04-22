@@ -335,7 +335,7 @@ public final class DimDetailScreen extends Screen {
             int[] b = pickerBounds();
             int searchY = b[1] + 24;
             pickerSearch.setX(b[0] + 8);
-            pickerSearch.setY(searchY + 5);
+            pickerSearch.setY(searchY + 6);
             pickerSearch.setWidth(b[2] - 16);
             pickerSearch.setValue("");
             pickerSearch.setVisible(true);
