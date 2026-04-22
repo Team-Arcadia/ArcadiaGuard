@@ -42,8 +42,8 @@ public final class PlayerEventHandler
     private final Map<UUID, Boolean> playerParcoolBlocked = new ConcurrentHashMap<>();
     /** Dernier etat envoye au client pour emote_use (verifier client-side Emotecraft). */
     private final Map<UUID, Boolean> playerEmoteBlocked = new ConcurrentHashMap<>();
-    /** Derniere valeur APOTHEOSIS_FLY pour message one-shot a la transition. */
-    private final Map<UUID, Boolean> playerApothFlyBlocked = new ConcurrentHashMap<>();
+    /** Derniere valeur FLY pour message one-shot a la transition. */
+    private final Map<UUID, Boolean> playerFlyBlocked = new ConcurrentHashMap<>();
     /** Derniere fois qu'on a affiche un message parcool/emote a ce joueur (throttle cooldown). */
     private final Map<UUID, Long> lastParcoolMsgAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastEmoteMsgAt = new ConcurrentHashMap<>();
@@ -97,7 +97,7 @@ public final class PlayerEventHandler
         lastSafePos.remove(id);
         playerParcoolBlocked.remove(id);
         playerEmoteBlocked.remove(id);
-        playerApothFlyBlocked.remove(id);
+        playerFlyBlocked.remove(id);
         lastParcoolMsgAt.remove(id);
         lastEmoteMsgAt.remove(id);
         // Cleanup: retirer le modifier creative_flight si joueur se deco en zone bloquante.
@@ -243,50 +243,34 @@ public final class PlayerEventHandler
             }
         }
 
-        // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone.
-        // Les DEUX flags appliquent le AttributeModifier negatif sur 'neoforge:creative_flight'
-        // ET coupent mayfly directement. C'est necessaire car NeoForge re-set mayfly=true a chaque
-        // tick depuis l'attribut (Apotheosis, Curios Flight Trinket, Mahou Tsukai, etc. utilisent
-        // TOUS l'attribut standard neoforge:creative_flight). Sans modifier, notre cut clignote.
-        //
-        // FLY = superset (tout vol coupe). APOTHEOSIS_FLY = subset utile pour autoriser mayfly
-        // creative mais bloquer les mods-attributs (cas d'usage: admin en creative flight dans
-        // une zone ou les affixes mythic sont bannis).
-        boolean inZone = zoneOpt.isPresent()
+        // FLY : bloque mayfly + attribut neoforge:creative_flight dans la zone.
+        // Applique un AttributeModifier negatif (-1000) sur creative_flight en plus de couper mayfly.
+        // Necessaire car NeoForge re-set mayfly=true a chaque tick depuis l'attribut (Apotheosis,
+        // Curios Flight Trinket, Mahou Tsukai, etc. utilisent TOUS cet attribut). Sans modifier,
+        // le cut mayfly clignote.
+        boolean denyFly = zoneOpt.isPresent()
             && !guard.shouldBypass(player)
             && !guard.isZoneMember(player, zoneOpt.get())
             && !player.isCreative()
-            && !player.isSpectator();
+            && !player.isSpectator()
+            && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.FLY, player.serverLevel());
 
-        boolean denyFly = inZone && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.FLY, player.serverLevel());
-        boolean denyApothFly = inZone && !denyFly
-            && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel());
-
-        // Modifier negatif applique dans LES DEUX cas (FLY ou APOTHEOSIS_FLY).
-        applyCreativeFlightModifier(player, denyFly || denyApothFly);
+        applyCreativeFlightModifier(player, denyFly);
 
         if (denyFly) {
-            // Cut immediat en plus du modifier, + message one-shot a la transition.
             if (player.getAbilities().mayfly || player.getAbilities().flying) {
                 player.getAbilities().mayfly = false;
                 player.getAbilities().flying = false;
                 player.onUpdateAbilities();
             }
-            Boolean prev = playerApothFlyBlocked.put(id, Boolean.TRUE);
+            Boolean prev = playerFlyBlocked.put(id, Boolean.TRUE);
             if (prev == null || !prev) {
                 player.displayClientMessage(
                     Component.translatable("arcadiaguard.message.fly").withStyle(net.minecraft.ChatFormatting.RED), true);
                 guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.FLY, "fly");
             }
-        } else if (denyApothFly) {
-            Boolean prev = playerApothFlyBlocked.put(id, Boolean.TRUE);
-            if (prev == null || !prev) {
-                player.displayClientMessage(
-                    Component.translatable("arcadiaguard.message.apotheosis_fly").withStyle(net.minecraft.ChatFormatting.RED), true);
-                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.APOTHEOSIS_FLY, "apotheosis_fly");
-            }
         } else {
-            playerApothFlyBlocked.remove(id);
+            playerFlyBlocked.remove(id);
         }
 
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)

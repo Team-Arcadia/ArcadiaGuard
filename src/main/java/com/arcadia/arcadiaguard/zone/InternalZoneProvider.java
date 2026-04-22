@@ -403,16 +403,6 @@ public final class InternalZoneProvider implements ZoneProvider {
         return ((long) cx << 32) | (cz & 0xFFFFFFFFL);
     }
 
-    private void rebuildIndex() {
-        this.chunkIndex.clear();
-        this.globalZones.clear();
-        for (Map.Entry<String, Map<String, ProtectedZone>> entry : this.zonesByDimension.entrySet()) {
-            for (ProtectedZone zone : entry.getValue().values()) {
-                indexZone(entry.getKey(), zone);
-            }
-        }
-    }
-
     private void rebuildDimIndex(String dim) {
         this.chunkIndex.remove(dim);
         this.globalZones.remove(dim);

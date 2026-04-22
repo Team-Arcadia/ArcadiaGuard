@@ -122,7 +122,6 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.ARS_WARP_SCROLL);
         register(BuiltinFlags.CHUNKLOAD);
         register(BuiltinFlags.FLY);
-        register(BuiltinFlags.APOTHEOSIS_FLY);
         register(BuiltinFlags.USE_ELYTRA);
         register(BuiltinFlags.USE_PORTAL);
         register(BuiltinFlags.TILL_FARMLAND);
