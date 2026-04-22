@@ -118,6 +118,6 @@ public final class BuiltinFlags {
     public static final ListFlag    EXEC_COMMAND_BLACKLIST = new ListFlag("exec-command-blacklist",                "Liste de commandes interdites (ignore si exec-command=deny bloque deja tout).");
 
     // --- Zone configuration ---
-    public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");
-    public static final IntFlag     FEED_AMOUNT        = new IntFlag("feed-amount",            0,    "Points de nourriture restaurés par seconde dans la zone (0 = désactivé).");
+    public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0, 0, 20, "Points de vie régénérés par seconde dans la zone (0 = désactivé, max 20).");
+    public static final IntFlag     FEED_AMOUNT        = new IntFlag("feed-amount",            0, 0, 20, "Points de nourriture restaurés par seconde dans la zone (0 = désactivé, max 20).");
 }
