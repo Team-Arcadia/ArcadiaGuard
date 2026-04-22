@@ -29,14 +29,25 @@ public final class EasterEggHandler {
             "FuFu te cherche partout... planque-toi vite !",
             "FuFu a encore perdu sa Fricadelle",
             "Alerte : FuFu est en mode recherche active",
-            "Le bacon veille sur Arcadia...",
-            "Une Fricadelle sauvage apparait !"
+            "Le bacon veille sur Arcadia",
+            "Une Fricadelle sauvage apparait !",
+            "Odeur de grillade detectee dans la zone",
+            "Chef cuisinier d'Arcadia, bienvenue",
+            "FuFu radote : 'mais ou est passee ma Fricadelle ?'",
+            "Tu sens ce parfum de bacon ? C'est toi",
+            "FuFu a active le sonar a Fricadelle",
+            "Briefing Fricadelle : mission infiltration",
+            "Le chasseur de Fricadelle approche"
         ),
         NOKHXYR, List.of(
-            "Le Nokh rode dans les zones...",
+            "Le Nokh rode dans les zones",
             "Chasseur de bugs detecte",
             "Un testeur legendaire vient de spawn",
-            "L'ombre de NokhXyr plane sur Arcadia"
+            "L'ombre de NokhXyr plane sur Arcadia",
+            "Mode debug : activation automatique",
+            "Les bugs tremblent a ton arrivee",
+            "NokhXyr, architecte de chaos",
+            "Sonde de stabilite : Nokh detecte"
         )
     );
 

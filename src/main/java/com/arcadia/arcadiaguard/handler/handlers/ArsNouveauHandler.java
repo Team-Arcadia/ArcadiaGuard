@@ -53,6 +53,24 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
             .map(s -> java.util.Objects.toString(s, "unknown")).orElse("unknown").toLowerCase(java.util.Locale.ROOT);
     }
 
+    /**
+     * Decompose la Spell Ars Nouveau en ses glyphs individuels (via Spell.serializeRecipe()).
+     * Retourne la liste des ResourceLocation toString, lowercase.
+     * Permet au blacklist/whitelist de matcher chaque glyph plutot que la composition entiere.
+     */
+    @Override
+    protected java.util.List<String> extractSpellGlyphs(Event event, ServerPlayer player) {
+        Object spell = ReflectionHelper.field(event, "spell").orElse(null);
+        if (spell == null) return java.util.List.of();
+        Object serialized = ReflectionHelper.invoke(spell, "serializeRecipe", new Class<?>[0]).orElse(null);
+        if (!(serialized instanceof java.util.List<?> list)) return java.util.List.of();
+        java.util.List<String> out = new java.util.ArrayList<>(list.size());
+        for (Object o : list) {
+            if (o instanceof ResourceLocation rl) out.add(rl.toString().toLowerCase(java.util.Locale.ROOT));
+        }
+        return out;
+    }
+
     @Override
     public void handle(PlayerInteractEvent.RightClickItem event) {
         if (!ArcadiaGuardConfig.ENABLE_ARS_NOUVEAU.get()) return;

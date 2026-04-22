@@ -42,6 +42,8 @@ public final class PlayerEventHandler
     private final Map<UUID, Boolean> playerParcoolBlocked = new ConcurrentHashMap<>();
     /** Dernier etat envoye au client pour emote_use (verifier client-side Emotecraft). */
     private final Map<UUID, Boolean> playerEmoteBlocked = new ConcurrentHashMap<>();
+    /** Derniere valeur APOTHEOSIS_FLY pour message one-shot a la transition. */
+    private final Map<UUID, Boolean> playerApothFlyBlocked = new ConcurrentHashMap<>();
 
     public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
@@ -91,6 +93,9 @@ public final class PlayerEventHandler
         lastSafePos.remove(id);
         playerParcoolBlocked.remove(id);
         playerEmoteBlocked.remove(id);
+        playerApothFlyBlocked.remove(id);
+        // Cleanup: retirer le modifier creative_flight si joueur se deco en zone bloquante.
+        if (event.getEntity() instanceof ServerPlayer spLogout) applyCreativeFlightModifier(spLogout, false);
         GuiActionHandler.onPlayerLogout(id);
         WandItem.clearSelection(id);
         com.arcadia.arcadiaguard.ArcadiaGuard.guardService().clearDebug(id);
@@ -222,35 +227,41 @@ public final class PlayerEventHandler
             }
         }
 
-        // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone. Creative/spectator/bypass ignores.
-        // APOTHEOSIS_FLY detecte specifiquement l'attribut 'neoforge:creative_flight' utilise
-        // par l'affixe Apotheosis 'unbound' (et autres mods partageant cet attribut).
-        if (zoneOpt.isPresent()
-                && !guard.shouldBypass(player)
-                && !guard.isZoneMember(player, zoneOpt.get())
-                && !player.isCreative()
-                && !player.isSpectator()
-                && player.getAbilities().mayfly) {
-            ProtectedZone zone = zoneOpt.get();
-            com.arcadia.arcadiaguard.api.flag.BooleanFlag denyFlag = null;
-            String actionName = null;
-            if (guard.isZoneDenying(zone, BuiltinFlags.FLY, player.serverLevel())) {
-                denyFlag = BuiltinFlags.FLY;
-                actionName = "fly";
-            } else if (guard.isZoneDenying(zone, BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel())
-                    && hasCreativeFlightAttribute(player)) {
-                denyFlag = BuiltinFlags.APOTHEOSIS_FLY;
-                actionName = "apotheosis_fly";
-            }
-            if (denyFlag != null) {
-                player.getAbilities().mayfly = false;
-                player.getAbilities().flying = false;
-                player.onUpdateAbilities();
+        // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone.
+        // APOTHEOSIS_FLY applique un AttributeModifier negatif sur 'neoforge:creative_flight'
+        // (sinon NeoForge re-set mayfly=true a chaque tick depuis l'attribut de l'affixe).
+        // FLY coupe directement mayfly (plus simple, pas d'attribut externe en jeu).
+        boolean inZone = zoneOpt.isPresent()
+            && !guard.shouldBypass(player)
+            && !guard.isZoneMember(player, zoneOpt.get())
+            && !player.isCreative()
+            && !player.isSpectator();
+
+        boolean denyFly = inZone && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.FLY, player.serverLevel());
+        boolean denyApothFly = inZone && !denyFly
+            && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel());
+
+        // APOTHEOSIS_FLY via attribute modifier — stateful (add/remove selon presence en zone).
+        applyCreativeFlightModifier(player, denyApothFly);
+
+        // FLY simple cut + message (re-applique chaque 10 ticks si besoin).
+        if (denyFly && player.getAbilities().mayfly) {
+            player.getAbilities().mayfly = false;
+            player.getAbilities().flying = false;
+            player.onUpdateAbilities();
+            player.displayClientMessage(
+                Component.translatable("arcadiaguard.message.fly").withStyle(net.minecraft.ChatFormatting.RED), true);
+            guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.FLY, "fly");
+        } else if (denyApothFly) {
+            // Message + audit uniquement sur transition (le modifier fait le travail, pas besoin de spam).
+            Boolean prev = playerApothFlyBlocked.put(id, Boolean.TRUE);
+            if (prev == null || !prev) {
                 player.displayClientMessage(
-                    Component.translatable("arcadiaguard.message." + actionName)
-                        .withStyle(net.minecraft.ChatFormatting.RED), true);
-                guard.auditDenied(player, zone.name(), pos, denyFlag, actionName);
+                    Component.translatable("arcadiaguard.message.apotheosis_fly").withStyle(net.minecraft.ChatFormatting.RED), true);
+                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.APOTHEOSIS_FLY, "apotheosis_fly");
             }
+        } else {
+            playerApothFlyBlocked.remove(id);
         }
 
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)
@@ -293,6 +304,36 @@ public final class PlayerEventHandler
         }
         var inst = player.getAttributes().getInstance(holder);
         return inst != null && inst.getValue() > 0.0D;
+    }
+
+    /** ID du modifier negatif qu'on applique pour annuler neoforge:creative_flight en zone. */
+    private static final net.minecraft.resources.ResourceLocation APOTH_FLY_MODIFIER_ID =
+        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("arcadiaguard", "apoth_fly_block");
+
+    /**
+     * Applique ou retire un AttributeModifier negatif sur neoforge:creative_flight pour
+     * annuler tout bonus Apotheosis (affixe unbound) quand {@code active} est true.
+     * Stateful et idempotent : add seulement si absent, remove seulement si present.
+     */
+    private static void applyCreativeFlightModifier(ServerPlayer player, boolean active) {
+        if (CREATIVE_FLIGHT_MISSING) return;
+        var holder = CREATIVE_FLIGHT_ATTR;
+        if (holder == null) {
+            // Lazy-init via le meme path que hasCreativeFlightAttribute.
+            if (!hasCreativeFlightAttribute(player)) { /* force init */ }
+            holder = CREATIVE_FLIGHT_ATTR;
+            if (holder == null) return;
+        }
+        var inst = player.getAttributes().getInstance(holder);
+        if (inst == null) return;
+        boolean has = inst.getModifier(APOTH_FLY_MODIFIER_ID) != null;
+        if (active && !has) {
+            inst.addTransientModifier(new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+                APOTH_FLY_MODIFIER_ID, -1000.0D,
+                net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE));
+        } else if (!active && has) {
+            inst.removeModifier(APOTH_FLY_MODIFIER_ID);
+        }
     }
 
     /** Finds the lowest Y inside [minY, maxY] where two consecutive non-solid blocks sit above a solid one. */
