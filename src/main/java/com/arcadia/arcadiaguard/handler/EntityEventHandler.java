@@ -147,13 +147,46 @@ public final class EntityEventHandler {
             flag = BuiltinFlags.BLOCK_EXPLOSION;
         }
 
-        // R2 : retirer les blocs ET les entites de la zone d'effet pour que
-        // l'explosion n'endommage ni les blocs ni les joueurs/mobs proteges.
-        // On reutilise la meme classification de flag (creeper/tnt/block).
+        // R2 + perf : pre-resoudre la zone a la position d'origine de l'explosion.
+        // Si toute la bbox d'explosion est contenue dans cette zone, 1 seul check
+        // vs N check par bloc (gros gain sur mega-TNT = 10k+ blocs affectes).
         final BooleanFlag finalFlag = flag;
+        net.minecraft.world.phys.Vec3 origin = explosion.center();
+        net.minecraft.core.BlockPos originPos = net.minecraft.core.BlockPos.containing(origin);
+        var originZoneOpt = guard.zoneManager().findZoneContaining(level, originPos);
+        if (originZoneOpt.isPresent()
+                && originZoneOpt.get() instanceof ProtectedZone originZone
+                && explosionBboxInsideZone(affected, affectedEntities, originZone)) {
+            // Fast-path : toute l'explosion est dans la meme zone, 1 seul check.
+            if (guard.isZoneDenying(originZone, finalFlag, level)) {
+                affected.clear();
+                affectedEntities.clear();
+            }
+            return;
+        }
+        // Slow-path : zones multiples ou explosion chevauchante.
         affected.removeIf(pos -> guard.isZoneDenying(level, pos, finalFlag));
         affectedEntities.removeIf(entity ->
             guard.isZoneDenying(level, entity.blockPosition(), finalFlag));
+    }
+
+    /** Renvoie true si tous les blocs+entites affectes sont contenus dans la bbox de la zone. */
+    private static boolean explosionBboxInsideZone(
+            java.util.List<net.minecraft.core.BlockPos> affected,
+            java.util.List<Entity> affectedEntities,
+            ProtectedZone zone) {
+        for (var pos : affected) {
+            if (pos.getX() < zone.minX() || pos.getX() > zone.maxX()
+             || pos.getY() < zone.minY() || pos.getY() > zone.maxY()
+             || pos.getZ() < zone.minZ() || pos.getZ() > zone.maxZ()) return false;
+        }
+        for (var e : affectedEntities) {
+            var p = e.blockPosition();
+            if (p.getX() < zone.minX() || p.getX() > zone.maxX()
+             || p.getY() < zone.minY() || p.getY() > zone.maxY()
+             || p.getZ() < zone.minZ() || p.getZ() > zone.maxZ()) return false;
+        }
+        return true;
     }
 
     public void onAnimalJoinLevel(EntityJoinLevelEvent event) {

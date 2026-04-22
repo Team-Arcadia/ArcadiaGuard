@@ -317,6 +317,8 @@ public final class GuiActionHandler {
             ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] ProfileCache lookup timed out for '{}'", targetName);
             return Optional.<GameProfile>empty();
         }).thenAcceptAsync(optProfile -> {
+            // Re-check: le joueur a pu se deconnecter pendant le lookup async.
+            if (player.hasDisconnected() || !player.isAlive()) return;
             if (optProfile == null || optProfile.isEmpty()) {
                 player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
                 return;

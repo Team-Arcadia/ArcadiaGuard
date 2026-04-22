@@ -116,9 +116,16 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
             Object posValue = ReflectionHelper.invoke(optionalPos, "get", new Class<?>[0]).orElse(null);
             return posValue instanceof BlockPos bp ? bp : null;
         } catch (Throwable t) {
+            if (!WARN_WARP_LOGGED) {
+                WARN_WARP_LOGGED = true;
+                com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.warn(
+                    "[ArcadiaGuard] Ars Nouveau warp scroll reflection failed (logged once): {}", t.toString());
+            }
             return null;
         }
     }
+
+    private static boolean WARN_WARP_LOGGED = false;
 
     private static ResourceLocation itemKey(ItemStack stack) {
         ResourceKey<Item> k = stack.getItemHolder().getKey();

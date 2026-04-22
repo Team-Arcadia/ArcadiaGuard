@@ -15,7 +15,7 @@ public final class AsyncZoneWriter {
 
     public enum Policy { FAIL_FAST, BLOCK, DROP }
 
-    private BlockingQueue<Runnable> queue;
+    private volatile BlockingQueue<Runnable> queue;
     private volatile Policy policy = Policy.BLOCK;
     private volatile boolean running = false;
     private Thread thread;
@@ -59,11 +59,13 @@ public final class AsyncZoneWriter {
      * DROP — drop silently and increment counter.
      */
     public void schedule(Runnable task) {
-        if (queue == null) { task.run(); return; }
+        // Snapshot volatile ref une seule fois pour eviter race stop()/schedule().
+        BlockingQueue<Runnable> q = this.queue;
+        if (q == null) { task.run(); return; }
         switch (policy) {
             case BLOCK -> {
                 try {
-                    if (!queue.offer(task, 5L, TimeUnit.SECONDS)) {
+                    if (!q.offer(task, 5L, TimeUnit.SECONDS)) {
                         dropped.incrementAndGet();
                         ArcadiaGuard.LOGGER.error(
                             "[ArcadiaGuard] AsyncZoneWriter queue full after 5 s — write dropped. Check disk/threading.");
@@ -74,14 +76,14 @@ public final class AsyncZoneWriter {
                 }
             }
             case FAIL_FAST -> {
-                if (!queue.offer(task)) {
+                if (!q.offer(task)) {
                     dropped.incrementAndGet();
                     ArcadiaGuard.LOGGER.error(
                         "[ArcadiaGuard] AsyncZoneWriter queue full — write dropped (FAIL_FAST). Data may be lost!");
                 }
             }
             case DROP -> {
-                if (!queue.offer(task)) dropped.incrementAndGet();
+                if (!q.offer(task)) dropped.incrementAndGet();
             }
         }
     }
