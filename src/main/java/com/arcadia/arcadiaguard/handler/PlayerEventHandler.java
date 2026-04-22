@@ -221,6 +221,35 @@ public final class PlayerEventHandler
             }
         }
 
+        // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone. Creative/spectator/bypass ignores.
+        if (zoneOpt.isPresent()
+                && !guard.shouldBypass(player)
+                && !guard.isZoneMember(player, zoneOpt.get())
+                && !player.isCreative()
+                && !player.isSpectator()
+                && player.getAbilities().mayfly) {
+            ProtectedZone zone = zoneOpt.get();
+            com.arcadia.arcadiaguard.api.flag.BooleanFlag denyFlag = null;
+            String actionName = null;
+            if (guard.isZoneDenying(zone, BuiltinFlags.FLY, player.serverLevel())) {
+                denyFlag = BuiltinFlags.FLY;
+                actionName = "fly";
+            } else if (net.neoforged.fml.ModList.get().isLoaded("apotheosis")
+                    && guard.isZoneDenying(zone, BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel())) {
+                denyFlag = BuiltinFlags.APOTHEOSIS_FLY;
+                actionName = "apotheosis_fly";
+            }
+            if (denyFlag != null) {
+                player.getAbilities().mayfly = false;
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+                player.displayClientMessage(
+                    Component.translatable("arcadiaguard.message." + actionName)
+                        .withStyle(net.minecraft.ChatFormatting.RED), true);
+                guard.auditDenied(player, zone.name(), pos, denyFlag, actionName);
+            }
+        }
+
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)
         if (zoneOpt.isPresent() && tick % 20 == 0) {
             ProtectedZone zone = zoneOpt.get();

@@ -52,6 +52,8 @@
   "arcadiaguard.message.waystone_use": "Vous ne pouvez pas utiliser les waystones ici.",
   "arcadiaguard.message.rechiseled_use": "Vous ne pouvez pas utiliser les blocs Rechiseled ici.",
   "arcadiaguard.message.ars_additions_scroll": "Vous ne pouvez pas utiliser ce parchemin ici.",
+  "arcadiaguard.message.fly": "Le vol est désactivé dans cette zone.",
+  "arcadiaguard.message.apotheosis_fly": "Le vol Apotheosis est désactivé dans cette zone.",
 
   "arcadiaguard.gui.zone_list.title": "ArcadiaGuard — Zones",
   "arcadiaguard.gui.zone_list.search_placeholder": "Rechercher…",
@@ -425,6 +427,8 @@
   "arcadiaguard.flag.rechiseled-use.description": "[Rechiseled] Autorise/refuse l'utilisation des blocs Rechiseled dans la zone.",
   "arcadiaguard.flag.ars-additions-scroll.description": "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",
   "arcadiaguard.flag.chunkload.description": "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).",
+  "arcadiaguard.flag.fly.description": "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignorés.",
+  "arcadiaguard.flag.apotheosis-fly.description": "[Apotheosis] Bloque le vol accordé par les affixes Apotheosis.",
   "arcadiaguard.flag.heal-amount.description": "Points de vie r\u00e9g\u00e9n\u00e9r\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9).",
   "arcadiaguard.flag.feed-amount.description": "Points de nourriture restaur\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9)."
 }
