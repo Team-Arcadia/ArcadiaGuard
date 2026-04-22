@@ -91,6 +91,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
         if (movementFlag != null && !movementSpells.isEmpty() && movementSpells.contains(spellId)) {
             if (!guardService.isFlagAllowedOrUnset(zone, movementFlag, player.serverLevel())) {
                 player.displayClientMessage(Component.translatable(movementMessageKey).withStyle(ChatFormatting.RED), true);
+                guardService.auditDenied(player, zone.name(), player.blockPosition(), movementFlag, spellId);
                 cancel(event);
                 return;
             }
@@ -106,6 +107,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                 }
             }
             player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
+            guardService.auditDenied(player, zone.name(), player.blockPosition(), castFlag, spellId);
             cancel(event);
             return;
         }
@@ -116,6 +118,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                 List<String> blacklist = blList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
                 if (blacklist.contains(spellId)) {
                     player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
+                    guardService.auditDenied(player, zone.name(), player.blockPosition(), castFlag, spellId + "_blacklisted");
                     cancel(event);
                 }
             }

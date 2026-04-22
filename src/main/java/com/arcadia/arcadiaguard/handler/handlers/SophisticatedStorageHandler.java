@@ -46,8 +46,10 @@ public final class SophisticatedStorageHandler {
         String ns = blockId.getNamespace();
         if (!"sophisticatedstorage".equals(ns) && !"sophisticatedbackpacks".equals(ns)) return;
 
-        if (guardService.isZoneDenying(level, pos, BuiltinFlags.CONTAINER_ACCESS)) {
+        var zoneOpt = guardService.zoneManager().findZoneContaining(level, pos);
+        if (zoneOpt.isPresent() && guardService.isZoneDenying((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get(), BuiltinFlags.CONTAINER_ACCESS, level)) {
             event.setCanceled(true);
+            guardService.auditDenied(player, ((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get()).name(), pos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
         }
     }
 
@@ -67,8 +69,11 @@ public final class SophisticatedStorageHandler {
         if (!isContainerEntity) return;
         Level level = player.level();
         if (level.isClientSide()) return;
-        if (guardService.isZoneDenying(level, target.blockPosition(), BuiltinFlags.CONTAINER_ACCESS)) {
+        BlockPos tpos = target.blockPosition();
+        var zoneOpt = guardService.zoneManager().findZoneContaining(level, tpos);
+        if (zoneOpt.isPresent() && guardService.isZoneDenying((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get(), BuiltinFlags.CONTAINER_ACCESS, level)) {
             event.setCanceled(true);
+            guardService.auditDenied(player, ((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get()).name(), tpos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
         }
     }
 }

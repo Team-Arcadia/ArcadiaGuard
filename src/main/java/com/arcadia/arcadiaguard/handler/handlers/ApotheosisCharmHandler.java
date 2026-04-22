@@ -63,6 +63,7 @@ public final class ApotheosisCharmHandler implements RightClickItemHandler {
         event.setCanceled(true);
         sp.displayClientMessage(
             Component.translatable("arcadiaguard.message.charm_use").withStyle(ChatFormatting.RED), true);
+        guardService.auditDenied(sp, zoneOpt.get().name(), sp.blockPosition(), BuiltinFlags.CHARM_USE, "charm_use");
     }
 
     /** Call when a player enters a zone with CHARM_USE=deny. Deactivates all active charms. */

@@ -85,6 +85,7 @@ public final class OccultismHandler implements RightClickItemHandler, RightClick
         player.displayClientMessage(
             net.minecraft.network.chat.Component.translatable(ArcadiaGuardConfig.MESSAGE_OCCULTISM.get())
                 .withStyle(net.minecraft.ChatFormatting.RED), true);
+        guardService.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.OCCULTISM_USE, "occultism_use");
         return true;
     }
 
