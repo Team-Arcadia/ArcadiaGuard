@@ -42,6 +42,8 @@ public final class EmotecraftHandler {
                     if (server == null) return pass();
                     ServerPlayer player = server.getPlayerList().getPlayer(userId);
                     if (player == null) return pass();
+                    ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] Emote verify for {} bypass={}",
+                        player.getGameProfile().getName(), guardService.shouldBypass(player));
                     if (guardService.shouldBypass(player)) return pass();
                     var zoneOpt = guardService.zoneManager().checkZone(player, player.blockPosition());
                     if (zoneOpt.isEmpty()) return pass();
@@ -53,8 +55,9 @@ public final class EmotecraftHandler {
             );
             // Call register(verifier)
             eventClass.getMethod("register", Object.class).invoke(verificationEvent, verifier);
+            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Emotecraft verifier registered on ServerEmoteEvents.EMOTE_VERIFICATION");
         } catch (Exception e) {
-            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Could not register Emotecraft integration: {}", e.getMessage());
+            ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Could not register Emotecraft integration: {}", e.toString(), e);
         }
     }
 
