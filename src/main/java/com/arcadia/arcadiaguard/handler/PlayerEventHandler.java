@@ -244,9 +244,14 @@ public final class PlayerEventHandler
         }
 
         // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone.
-        // APOTHEOSIS_FLY applique un AttributeModifier negatif sur 'neoforge:creative_flight'
-        // (sinon NeoForge re-set mayfly=true a chaque tick depuis l'attribut de l'affixe).
-        // FLY coupe directement mayfly (plus simple, pas d'attribut externe en jeu).
+        // Les DEUX flags appliquent le AttributeModifier negatif sur 'neoforge:creative_flight'
+        // ET coupent mayfly directement. C'est necessaire car NeoForge re-set mayfly=true a chaque
+        // tick depuis l'attribut (Apotheosis, Curios Flight Trinket, Mahou Tsukai, etc. utilisent
+        // TOUS l'attribut standard neoforge:creative_flight). Sans modifier, notre cut clignote.
+        //
+        // FLY = superset (tout vol coupe). APOTHEOSIS_FLY = subset utile pour autoriser mayfly
+        // creative mais bloquer les mods-attributs (cas d'usage: admin en creative flight dans
+        // une zone ou les affixes mythic sont bannis).
         boolean inZone = zoneOpt.isPresent()
             && !guard.shouldBypass(player)
             && !guard.isZoneMember(player, zoneOpt.get())
@@ -257,19 +262,23 @@ public final class PlayerEventHandler
         boolean denyApothFly = inZone && !denyFly
             && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel());
 
-        // APOTHEOSIS_FLY via attribute modifier — stateful (add/remove selon presence en zone).
-        applyCreativeFlightModifier(player, denyApothFly);
+        // Modifier negatif applique dans LES DEUX cas (FLY ou APOTHEOSIS_FLY).
+        applyCreativeFlightModifier(player, denyFly || denyApothFly);
 
-        // FLY simple cut + message (re-applique chaque 10 ticks si besoin).
-        if (denyFly && player.getAbilities().mayfly) {
-            player.getAbilities().mayfly = false;
-            player.getAbilities().flying = false;
-            player.onUpdateAbilities();
-            player.displayClientMessage(
-                Component.translatable("arcadiaguard.message.fly").withStyle(net.minecraft.ChatFormatting.RED), true);
-            guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.FLY, "fly");
+        if (denyFly) {
+            // Cut immediat en plus du modifier, + message one-shot a la transition.
+            if (player.getAbilities().mayfly || player.getAbilities().flying) {
+                player.getAbilities().mayfly = false;
+                player.getAbilities().flying = false;
+                player.onUpdateAbilities();
+            }
+            Boolean prev = playerApothFlyBlocked.put(id, Boolean.TRUE);
+            if (prev == null || !prev) {
+                player.displayClientMessage(
+                    Component.translatable("arcadiaguard.message.fly").withStyle(net.minecraft.ChatFormatting.RED), true);
+                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.FLY, "fly");
+            }
         } else if (denyApothFly) {
-            // Message + audit uniquement sur transition (le modifier fait le travail, pas besoin de spam).
             Boolean prev = playerApothFlyBlocked.put(id, Boolean.TRUE);
             if (prev == null || !prev) {
                 player.displayClientMessage(
