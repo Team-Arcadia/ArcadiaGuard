@@ -677,16 +677,31 @@ public final class ZoneDetailScreen extends Screen {
                 int bx = cx + cw - 34;
                 int rx = bx - 16;
                 final FlagEntry ff = f;
-                hit(rx, iy + 4, 14, FLAG_H - 8, () ->
-                    PacketDistributor.sendToServer(GuiActionPayload.resetFlag(detail.name(), ff.id())));
+                // Bouton Reset (X) affiche uniquement pour les overrides locaux.
+                // Pour les flags herites (DIM/PARENT), il n'y a pas d'override zone a retirer.
+                boolean isOwn = (f.source() == FlagEntry.SOURCE_ZONE_OWN);
+                if (isOwn) {
+                    hit(rx, iy + 4, 14, FLAG_H - 8, () ->
+                        PacketDistributor.sendToServer(GuiActionPayload.resetFlag(detail.name(), ff.id())));
+                }
 
                 if (f.type() == FlagEntry.TYPE_BOOL) {
-                    boolean protectionOn = !f.value();
-                    int badgeColor = protectionOn ? Colors.GOOD : Colors.DANGER;
-                    int badgeBg    = badgeColor & 0xFFFFFF | 0x20000000;
+                    int badgeColor;
+                    String badgeText;
+                    if (isOwn) {
+                        boolean protectionOn = !f.value();
+                        badgeColor = protectionOn ? Colors.GOOD : Colors.DANGER;
+                        badgeText  = protectionOn ? "ON" : "OFF";
+                    } else {
+                        // Herite : badge INH en gris pour distinguer clairement l'origine.
+                        badgeColor = Colors.TEXT_MUTE;
+                        badgeText  = "INH";
+                    }
+                    int badgeBg = badgeColor & 0xFFFFFF | 0x20000000;
                     g.fill(bx, iy + 4, bx + 30, iy + FLAG_H - 4, badgeBg);
                     g.fill(bx, iy + 4, bx + 30, iy + 5, badgeColor);
-                    g.drawCenteredString(font, protectionOn ? "ON" : "OFF", bx + 15, iy + 7, badgeColor);
+                    g.drawCenteredString(font, badgeText, bx + 15, iy + 7, badgeColor);
+                    // Clic sur badge = override local avec valeur opposee (cree un own flag).
                     hit(bx, iy + 4, 30, FLAG_H - 8, () ->
                         PacketDistributor.sendToServer(GuiActionPayload.setFlag(detail.name(), ff.id(), !ff.value())));
                 } else {
@@ -709,11 +724,15 @@ public final class ZoneDetailScreen extends Screen {
                     });
                 }
 
-                boolean rhov = mx >= rx && mx < rx + 14 && my >= iy + 4 && my < iy + FLAG_H - 4;
-                g.fill(rx, iy + 4, rx + 14, iy + FLAG_H - 4, rhov
-                    ? Colors.DANGER & 0xFFFFFF | 0x50000000 : Colors.BG_2);
-                g.drawCenteredString(font, "✕", rx + 7, iy + 7,
-                    rhov ? Colors.DANGER : Colors.TEXT_MUTE);
+                // Le bouton reset (X) n'est dessine que pour les overrides locaux
+                // (pas de sens pour les flags herites : rien a reset cote zone).
+                if (isOwn) {
+                    boolean rhov = mx >= rx && mx < rx + 14 && my >= iy + 4 && my < iy + FLAG_H - 4;
+                    g.fill(rx, iy + 4, rx + 14, iy + FLAG_H - 4, rhov
+                        ? Colors.DANGER & 0xFFFFFF | 0x50000000 : Colors.BG_2);
+                    g.drawCenteredString(font, "✕", rx + 7, iy + 7,
+                        rhov ? Colors.DANGER : Colors.TEXT_MUTE);
+                }
 
                 GuiTextures.dividerH(g, cx, iy + FLAG_H - 1, cw);
             }
