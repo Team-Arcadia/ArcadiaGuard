@@ -25,6 +25,35 @@ public final class ArcadiaGuardPaths {
         return VALID_ZONE_NAME.matcher(zoneName.toLowerCase()).matches();
     }
 
+    /**
+     * Normalise un nom de zone saisi par l'utilisateur pour le rendre file-system-safe :
+     * trim, lowercase, espaces/tabs/accents -> underscore, caracteres invalides supprimes.
+     * Exemple : "Ma Super Zone !" -> "ma_super_zone".
+     * Apres normalisation, {@link #isValidZoneName} doit etre true pour un input non vide.
+     */
+    public static String normalizeZoneName(String raw) {
+        if (raw == null) return "";
+        String trimmed = raw.trim();
+        if (trimmed.isEmpty()) return "";
+        // Remplace les accents par leur equivalent ASCII (e.g. 'é' -> 'e')
+        String ascii = java.text.Normalizer.normalize(trimmed, java.text.Normalizer.Form.NFD)
+            .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        StringBuilder sb = new StringBuilder(ascii.length());
+        for (int i = 0; i < ascii.length(); i++) {
+            char c = ascii.charAt(i);
+            if (Character.isWhitespace(c)) { sb.append('_'); continue; }
+            char lc = Character.toLowerCase(c);
+            if ((lc >= 'a' && lc <= 'z') || (lc >= '0' && lc <= '9') || lc == '_' || lc == '-') {
+                sb.append(lc);
+            }
+            // Sinon : caractere ignore (emojis, ponctuation exotique, etc.)
+        }
+        // Collapse les underscores consecutifs + trim des separateurs en bordure
+        String collapsed = sb.toString().replaceAll("_+", "_").replaceAll("^[_-]+|[_-]+$", "");
+        if (collapsed.length() > 64) collapsed = collapsed.substring(0, 64);
+        return collapsed;
+    }
+
     public static String commonConfigSpecPath() {
         return "arcadia/ArcadiaGuard/arcadiaguard-common.toml";
     }
