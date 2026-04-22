@@ -83,21 +83,21 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
         String path = key.getPath();
         if (!"warp_scroll".equals(path) && !"stable_warp_scroll".equals(path)) return;
 
-        BlockPos destination = warpScrollDestination(stack);
-        if (destination != null) {
-            if (guardService.blockIfFlagDenied(player, destination, BuiltinFlags.ARS_SPELL_CAST,
-                    key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
-                event.setCanceled(true);
-                return;
-            }
+        // Bloque TOUJOURS le warp scroll si ARS_SPELL_CAST=deny a la pos joueur
+        // (avant: seulement si shift OU destination, ce qui laissait passer le tp normal).
+        BlockPos playerPos = player.blockPosition();
+        if (guardService.blockIfFlagDenied(player, playerPos, BuiltinFlags.ARS_SPELL_CAST,
+                key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
+            event.setCanceled(true);
+            return;
         }
 
-        if (player.isShiftKeyDown()) {
-            BlockPos pos = player.blockPosition();
-            if (guardService.blockIfFlagDenied(player, pos, BuiltinFlags.ARS_SPELL_CAST,
+        // Check egalement la destination si le scroll a une pos enregistree.
+        BlockPos destination = warpScrollDestination(stack);
+        if (destination != null
+                && guardService.blockIfFlagDenied(player, destination, BuiltinFlags.ARS_SPELL_CAST,
                     key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
-                event.setCanceled(true);
-            }
+            event.setCanceled(true);
         }
     }
 

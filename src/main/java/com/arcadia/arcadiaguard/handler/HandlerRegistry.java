@@ -155,6 +155,12 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickBlock.class, flagEventHandler::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickItem.class, flagEventHandler::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, AttackEntityEvent.class, flagEventHandler::onAttackEntity);
+        // Per-zone banned items : bloque aussi l'attaque (epee bannie dans la zone ne doit pas frapper)
+        ZoneItemHandler zoneItems = this.handlers.stream()
+            .filter(ZoneItemHandler.class::isInstance).map(ZoneItemHandler.class::cast).findFirst().orElse(null);
+        if (zoneItems != null) {
+            NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, AttackEntityEvent.class, zoneItems::onAttack);
+        }
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ItemTossEvent.class, flagEventHandler::onItemToss);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ItemEntityPickupEvent.Pre.class, flagEventHandler::onItemPickup);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, LivingExperienceDropEvent.class, flagEventHandler::onExpDrop);
