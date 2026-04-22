@@ -247,7 +247,8 @@ public final class GuiActionHandler {
     }
 
     private static void deleteZone(ServerPlayer player, String zoneName) {
-        var event = new ZoneLifecycleEvent.DeleteZone(player, player.serverLevel(), zoneName);
+        // S-H18 : resoudre le level reel de la zone (cross-dim), pas celui du joueur.
+        var event = new ZoneLifecycleEvent.DeleteZone(player, resolveZoneLevel(player, zoneName), zoneName);
         NeoForge.EVENT_BUS.post(event);
         if (event.isSuccess()) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_deleted", zoneName).withStyle(ChatFormatting.GREEN));
