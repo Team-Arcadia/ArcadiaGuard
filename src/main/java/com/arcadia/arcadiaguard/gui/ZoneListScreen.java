@@ -763,7 +763,10 @@ public final class ZoneListScreen extends Screen {
         if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
         // F / Ctrl+F → focus search box. Ignore les combinaisons avec Alt/Shift
         // pour laisser passer d'éventuels autres raccourcis (AZERTY, mods tiers).
-        if (keyCode == 70 && searchBox != null && !hasAltDown() && !hasShiftDown()) {
+        // IMPORTANT : ne pas capturer F si searchBox a DEJA le focus, sinon la
+        // lettre 'f' ne peut jamais etre tapee dans la barre de recherche.
+        if (keyCode == 70 && searchBox != null && getFocused() != searchBox
+                && !hasAltDown() && !hasShiftDown()) {
             setFocused(searchBox);
             searchBox.setFocused(true);
             // Consomme le prochain charTyped('f'/'F') pour que la lettre ne soit pas
