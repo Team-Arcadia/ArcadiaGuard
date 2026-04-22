@@ -600,11 +600,11 @@ public final class ZoneListScreen extends Screen {
         String zoneName = filteredZones.get(selectedIndex).name();
         g.fill(gx, gy, gx + GUI_W, gy + GUI_H, 0x80000000);
 
-        // Popup plus large pour accueillir les noms de zone longs.
-        int pw = Math.min(360, GUI_W - 20);
-        int ph = 92;
-        int px = gx + (GUI_W - pw) / 2;
-        int py = gy + (GUI_H - ph) / 2;
+        int[] dims = deleteOverlayDims();
+        int pw = dims[0], ph = dims[1], px = dims[2], py = dims[3];
+        int textWidth = pw - 24;
+        java.util.List<net.minecraft.util.FormattedCharSequence> lines = font.split(
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName), textWidth);
 
         g.fill(px - 2, py - 2, px + pw + 2, py + ph + 2, Colors.DANGER & 0xFFFFFF | 0xFF000000);
         g.fill(px, py, px + pw, py + ph, Colors.BG_1);
@@ -612,15 +612,17 @@ public final class ZoneListScreen extends Screen {
         g.drawCenteredString(font,
             Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.title").getString(),
             px + pw / 2, py + 10, Colors.TEXT);
-        g.drawCenteredString(font,
-            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName).getString(),
-            px + pw / 2, py + 22, Colors.TEXT_MUTE);
+        int msgY = py + 24;
+        for (var line : lines) {
+            g.drawCenteredString(font, line, px + pw / 2, msgY, Colors.TEXT_MUTE);
+            msgY += 10;
+        }
         g.drawCenteredString(font,
             Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_warn2").getString(),
-            px + pw / 2, py + 33, Colors.TEXT_MUTE);
+            px + pw / 2, msgY + 2, Colors.TEXT_MUTE);
 
         // Bouton Annuler (gauche)
-        int cancelX = px + 10, btY = py + 54;
+        int cancelX = px + 10, btY = py + ph - 30;
         boolean cancelHov = mx >= cancelX && mx < cancelX + 100 && my >= btY && my < btY + 22;
         g.fill(cancelX, btY, cancelX + 100, btY + 22, cancelHov ? Colors.accentTint(0x40) : Colors.BG_2);
         g.drawCenteredString(font,
@@ -636,11 +638,29 @@ public final class ZoneListScreen extends Screen {
             okX + 50, btY + 7, Colors.DANGER);
     }
 
+    /**
+     * Calcule les dimensions (pw, ph, px, py) du popup delete en fonction du nom
+     * de zone (wrap dynamique pour noms longs). Factorise pour que render et
+     * click-handling utilisent la meme geometrie.
+     */
+    private int[] deleteOverlayDims() {
+        String zoneName = filteredZones.get(selectedIndex).name();
+        int pw = Math.min(360, GUI_W - 20);
+        int textWidth = pw - 24;
+        int lineCount = font.split(
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName),
+            textWidth).size();
+        int ph = 62 + lineCount * 10 + 30;
+        int px = gx + (GUI_W - pw) / 2;
+        int py = gy + (GUI_H - ph) / 2;
+        return new int[]{pw, ph, px, py};
+    }
+
     private boolean handleDeleteConfirmClick(int imx, int imy) {
         if (!confirmDeleteOpen || selectedIndex < 0 || selectedIndex >= filteredZones.size()) return false;
-        int pw = Math.min(360, GUI_W - 20), ph = 92;
-        int px = gx + (GUI_W - pw) / 2, py = gy + (GUI_H - ph) / 2;
-        int btY = py + 54;
+        int[] dims = deleteOverlayDims();
+        int pw = dims[0], ph = dims[1], px = dims[2], py = dims[3];
+        int btY = py + ph - 30;
         if (imx >= px + 10 && imx < px + 110 && imy >= btY && imy < btY + 22) {
             confirmDeleteOpen = false; return true;
         }
