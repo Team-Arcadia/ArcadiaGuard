@@ -49,9 +49,14 @@ public final class ZoneManager implements IZoneManager {
     // ── Client response helpers ──────────────────────────────────────────────────
 
     public void sendDetailToPlayer(ServerPlayer player, String zoneName) {
-        Level level = player.serverLevel();
+        // S-H18 : chercher la zone cross-dimension (sinon impossible d'ouvrir le
+        // detail d'une zone depuis une autre dimension).
+        var server = player.getServer();
         @SuppressWarnings("unchecked")
-        Optional<ProtectedZone> opt = (Optional<ProtectedZone>)(Optional<?>) this.internal.get(level, zoneName);
+        Optional<ProtectedZone> opt = (Optional<ProtectedZone>)(Optional<?>)
+            java.util.stream.StreamSupport.stream(server.getAllLevels().spliterator(), false)
+                .flatMap(lvl -> this.internal.get(lvl, zoneName).stream())
+                .findFirst();
         if (opt.isEmpty()) {
             player.sendSystemMessage(
                 net.minecraft.network.chat.Component.translatable(
@@ -60,7 +65,11 @@ public final class ZoneManager implements IZoneManager {
             return;
         }
         ProtectedZone zone = opt.get();
-        MinecraftServer server = player.getServer();
+        // Resoudre le level reel de la zone pour les checks suivants (heritage, flagValues)
+        Level resolvedLevel = server.getLevel(net.minecraft.resources.ResourceKey.create(
+            net.minecraft.core.registries.Registries.DIMENSION,
+            net.minecraft.resources.ResourceLocation.parse(zone.dimension())));
+        final Level level = resolvedLevel != null ? resolvedLevel : player.serverLevel();
         List<FlagEntry> flags = new ArrayList<>();
         for (Flag<?> flag : this.flagRegistry.all()) {
             String mod = flag.requiredMod();
