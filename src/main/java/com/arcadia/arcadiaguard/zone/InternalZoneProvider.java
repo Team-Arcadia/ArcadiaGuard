@@ -36,6 +36,14 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>All disk writes are delegated to {@link com.arcadia.arcadiaguard.persist.AsyncZoneWriter}.
  * Corrupted files are logged and skipped — other zones continue loading normally.
+ *
+ * <p><b>DEV RULE — persistence contract:</b> every public/package method that mutates
+ * zone state (add, remove, setFlag, whitelist, parent, enabled, priority, members, bounds…)
+ * <b>MUST</b> end with a call to {@link #scheduleWrite(ProtectedZone)} or
+ * {@link #scheduleDeletion(String, String)} before returning. Forgetting this leaves
+ * the state in memory only — it will be lost on restart / reload. The async writer
+ * coalesces bursts on a shared key per zone, so calling scheduleWrite in a tight loop
+ * is cheap.
  */
 public final class InternalZoneProvider implements ZoneProvider {
 
@@ -443,7 +451,9 @@ public final class InternalZoneProvider implements ZoneProvider {
         snapshot.setEnabled(zone.enabled());
         snapshot.setInheritDimFlags(zone.inheritDimFlags());
         Path file = ArcadiaGuardPaths.zoneFile(zone.dimension(), zone.name());
-        this.asyncZoneWriter.schedule(() -> {
+        // Cle coalescing partagee write/delete : la derniere operation pour la meme zone gagne.
+        String key = "zone|" + zone.dimension() + "|" + zone.name();
+        this.asyncZoneWriter.schedule(key, () -> {
             try {
                 ZoneSerializer.write(snapshot, file);
             } catch (IOException e) {
@@ -454,7 +464,8 @@ public final class InternalZoneProvider implements ZoneProvider {
 
     private void scheduleDeletion(String dimKey, String name) {
         Path file = ArcadiaGuardPaths.zoneFile(dimKey, name);
-        this.asyncZoneWriter.schedule(() -> {
+        String key = "zone|" + dimKey + "|" + name;
+        this.asyncZoneWriter.schedule(key, () -> {
             try {
                 Files.deleteIfExists(file);
             } catch (IOException e) {
