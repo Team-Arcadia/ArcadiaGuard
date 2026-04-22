@@ -106,6 +106,51 @@ public final class InternalZoneProvider implements ZoneProvider {
         this.globalZones = newGlobalZones;
         // Invalidate mixin cache for all dimensions (B2).
         FlagMixinHelper.invalidateAll();
+        // Cleanup dossiers de dim orphelins (empty) + warn si dim avec zones absente du serveur.
+        cleanupOrphanDimDirectories(server, zonesRoot, newZones);
+    }
+
+    /**
+     * Post-reload cleanup des dossiers de dimensions qui n'existent plus dans le serveur
+     * (ex. pocket dim Ars Nouveau supprimee, mod retire). Pour securite :
+     *  - supprime SEULEMENT les dossiers vides (pas de .json)
+     *  - log un WARN si un dossier non-vide correspond a une dim absente du serveur,
+     *    pour que l'admin decide (pocket dim chargee plus tard ? mod desinstalle ?).
+     * Ne touche jamais a un fichier zone — zero risque de perte de donnees.
+     */
+    private void cleanupOrphanDimDirectories(MinecraftServer server, Path zonesRoot,
+                                             Map<String, Map<String, ProtectedZone>> loadedZones) {
+        if (!Files.exists(zonesRoot)) return;
+        // Liste des dim keys actives, sanitizees pour matcher les noms de dossiers.
+        java.util.Set<String> liveDimDirs = new java.util.HashSet<>();
+        for (var level : server.getAllLevels()) {
+            liveDimDirs.add(ArcadiaGuardPaths.sanitizeDimKey(level.dimension().location().toString()));
+        }
+        try (var dimDirs = Files.list(zonesRoot)) {
+            dimDirs.filter(Files::isDirectory).forEach(dimDir -> {
+                String dirName = dimDir.getFileName().toString();
+                if (liveDimDirs.contains(dirName)) return; // dim active, rien a faire
+                // Dim absente du serveur : check si le dossier contient des zones.
+                try (var files = Files.list(dimDir)) {
+                    boolean hasJson = files.anyMatch(p -> p.toString().endsWith(".json"));
+                    if (hasJson) {
+                        ArcadiaGuard.LOGGER.warn(
+                            "[ArcadiaGuard] Dossier de dimension orphelin '{}' contient des zones mais la dim n'est pas enregistree dans le serveur. "
+                            + "La dim est peut-etre chargee plus tard (pocket dim) ou un mod a ete desinstalle. "
+                            + "Supprimer manuellement si confirme inutile.", dirName);
+                    } else {
+                        try { Files.delete(dimDir); }
+                        catch (IOException e) {
+                            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Failed to delete empty orphan dim directory '{}': {}", dirName, e.toString());
+                        }
+                    }
+                } catch (IOException e) {
+                    ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Failed to inspect orphan dim directory '{}': {}", dirName, e.toString());
+                }
+            });
+        } catch (IOException e) {
+            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Failed to scan zones root for orphan cleanup: {}", e.toString());
+        }
     }
 
     private void loadZoneFile(Path file, Map<String, Map<String, ProtectedZone>> target) {
