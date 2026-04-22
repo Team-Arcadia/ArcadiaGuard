@@ -48,10 +48,6 @@ public final class PlayerEventHandler
     private final Map<UUID, Long> lastParcoolMsgAt = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastEmoteMsgAt = new ConcurrentHashMap<>();
     private static final long MSG_THROTTLE_MS = 10_000L;
-    /** Tick serveur ou le message parcool a ete envoye — pour force-clear apres 60 ticks (3s)
-     *  si FancyMenu ou un autre mod bloque le fade naturel de l'actionbar. */
-    private final Map<UUID, Integer> parcoolMsgTick = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> emoteMsgTick = new ConcurrentHashMap<>();
 
     public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
@@ -104,8 +100,6 @@ public final class PlayerEventHandler
         playerFlyBlocked.remove(id);
         lastParcoolMsgAt.remove(id);
         lastEmoteMsgAt.remove(id);
-        parcoolMsgTick.remove(id);
-        emoteMsgTick.remove(id);
         // Cleanup: retirer le modifier creative_flight si joueur se deco en zone bloquante.
         if (event.getEntity() instanceof ServerPlayer spLogout) applyCreativeFlightModifier(spLogout, false);
         GuiActionHandler.onPlayerLogout(id);
@@ -211,27 +205,19 @@ public final class PlayerEventHandler
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                 player,
                 new com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload(parcoolBlocked));
-            // Message one-shot a la transition + throttle 10s pour securite (edge cases frontiere zone).
+            // Message one-shot via CHAT (pas actionbar — actionbar MC 1.21 avec FancyMenu
+            // installe ne fade pas correctement et reste affiche en permanence).
             if (parcoolBlocked) {
                 long now = System.currentTimeMillis();
                 Long last = lastParcoolMsgAt.get(id);
                 if (last == null || now - last >= MSG_THROTTLE_MS) {
                     lastParcoolMsgAt.put(id, now);
-                    parcoolMsgTick.put(id, player.tickCount);
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("arcadiaguard.message.parcool_actions")
-                            .withStyle(net.minecraft.ChatFormatting.RED), true);
+                            .withStyle(net.minecraft.ChatFormatting.RED));
                     guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.PARCOOL_ACTIONS, "parcool_actions");
                 }
             }
-        }
-
-        // Force-clear de l'actionbar apres 60 ticks (~3s) si FancyMenu ou un autre mod
-        // bloque le fade naturel. Envoie une chaine vide en actionbar.
-        Integer parcoolSentTick = parcoolMsgTick.get(id);
-        if (parcoolSentTick != null && player.tickCount - parcoolSentTick >= 60) {
-            player.displayClientMessage(Component.literal(""), true);
-            parcoolMsgTick.remove(id);
         }
 
         // Meme pattern pour Emotecraft (verifier client-side).
@@ -250,18 +236,12 @@ public final class PlayerEventHandler
                 Long last = lastEmoteMsgAt.get(id);
                 if (last == null || now - last >= MSG_THROTTLE_MS) {
                     lastEmoteMsgAt.put(id, now);
-                    emoteMsgTick.put(id, player.tickCount);
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable("arcadiaguard.message.emote_use")
-                            .withStyle(net.minecraft.ChatFormatting.RED), true);
+                            .withStyle(net.minecraft.ChatFormatting.RED));
                     guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.EMOTE_USE, "emote_use");
                 }
             }
-        }
-        Integer emoteSentTick = emoteMsgTick.get(id);
-        if (emoteSentTick != null && player.tickCount - emoteSentTick >= 60) {
-            player.displayClientMessage(Component.literal(""), true);
-            emoteMsgTick.remove(id);
         }
 
         // FLY : bloque mayfly + attribut neoforge:creative_flight dans la zone.

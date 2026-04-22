@@ -113,7 +113,7 @@ public final class ZoneDetailScreen extends Screen {
         int col3X = gx + COL1_W + COL2_W + 4;
         int col3W  = GUI_W - COL1_W - COL2_W - 8;
 
-        whitelistBox = new EditBox(font, col3X + 4, gy + HEADER_H + 28, col3W - 10, 14,
+        whitelistBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, col3X + 4, gy + HEADER_H + 28, col3W - 10, 14,
             Component.translatable("arcadiaguard.gui.zone_detail.player_hint"));
         whitelistBox.setMaxLength(40);
         whitelistBox.setBordered(false);
@@ -123,7 +123,7 @@ public final class ZoneDetailScreen extends Screen {
         whitelistBox.setVisible(false);
         addRenderableWidget(whitelistBox);
 
-        parentBox = new EditBox(font, col3X + 4, gy + HEADER_H + 28, col3W - 10, 14,
+        parentBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, col3X + 4, gy + HEADER_H + 28, col3W - 10, 14,
             Component.translatable("arcadiaguard.gui.zone_detail.parent_hint"));
         parentBox.setMaxLength(60);
         parentBox.setBordered(false);
@@ -133,7 +133,7 @@ public final class ZoneDetailScreen extends Screen {
         parentBox.setVisible(false);
         addRenderableWidget(parentBox);
 
-        flagSearchBox = new EditBox(font, 0, 0, 100, 14,
+        flagSearchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, 0, 0, 100, 14,
             Component.translatable("arcadiaguard.gui.zone_detail.flag_search_hint"));
         flagSearchBox.setMaxLength(40);
         flagSearchBox.setBordered(false);
@@ -144,7 +144,7 @@ public final class ZoneDetailScreen extends Screen {
         addRenderableWidget(flagSearchBox);
 
         // S-H20 : search box pour l'ItemBlocksPicker
-        itemSearchBox = new EditBox(font, 0, 0, 100, 14,
+        itemSearchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, 0, 0, 100, 14,
             Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.search_hint"));
         itemSearchBox.setMaxLength(80);
         itemSearchBox.setBordered(false);
@@ -165,7 +165,7 @@ public final class ZoneDetailScreen extends Screen {
         };
         coordBoxes = new EditBox[6];
         for (int i = 0; i < 6; i++) {
-            coordBoxes[i] = new EditBox(font, 0, 0, 60, 14, Component.translatable(coordHintKeys[i]));
+            coordBoxes[i] = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, 0, 0, 60, 14, Component.translatable(coordHintKeys[i]));
             coordBoxes[i].setMaxLength(12);
             coordBoxes[i].setBordered(false);
             coordBoxes[i].setTextColor(Colors.TEXT);

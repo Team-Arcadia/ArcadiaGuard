@@ -82,7 +82,7 @@ public final class FlagConfigScreen extends Screen {
         gy = (height - GUI_H) / 2;
 
         if (flagType == FlagType.INT) {
-            input = new EditBox(font, gx + 16, gy + 74, GUI_W - 32, 18, Component.translatable("arcadiaguard.gui.flag_config.value_hint"));
+            input = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 16, gy + 74, GUI_W - 32, 18, Component.translatable("arcadiaguard.gui.flag_config.value_hint"));
             input.setMaxLength(12);
             input.setBordered(false);
             input.setTextColor(Colors.TEXT);
@@ -92,7 +92,7 @@ public final class FlagConfigScreen extends Screen {
             addRenderableWidget(input);
             setFocused(input);
         } else {
-            listAddBox = new EditBox(font, gx + 16, gy + GUI_H - 58, GUI_W - 80, 18, Component.translatable("arcadiaguard.gui.flag_config.add_hint"));
+            listAddBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 16, gy + GUI_H - 58, GUI_W - 80, 18, Component.translatable("arcadiaguard.gui.flag_config.add_hint"));
             listAddBox.setMaxLength(64);
             listAddBox.setBordered(false);
             listAddBox.setTextColor(Colors.TEXT);
