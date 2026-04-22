@@ -44,6 +44,10 @@ public final class PlayerEventHandler
     private final Map<UUID, Boolean> playerEmoteBlocked = new ConcurrentHashMap<>();
     /** Derniere valeur APOTHEOSIS_FLY pour message one-shot a la transition. */
     private final Map<UUID, Boolean> playerApothFlyBlocked = new ConcurrentHashMap<>();
+    /** Derniere fois qu'on a affiche un message parcool/emote a ce joueur (throttle cooldown). */
+    private final Map<UUID, Long> lastParcoolMsgAt = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastEmoteMsgAt = new ConcurrentHashMap<>();
+    private static final long MSG_THROTTLE_MS = 10_000L;
 
     public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
@@ -94,6 +98,8 @@ public final class PlayerEventHandler
         playerParcoolBlocked.remove(id);
         playerEmoteBlocked.remove(id);
         playerApothFlyBlocked.remove(id);
+        lastParcoolMsgAt.remove(id);
+        lastEmoteMsgAt.remove(id);
         // Cleanup: retirer le modifier creative_flight si joueur se deco en zone bloquante.
         if (event.getEntity() instanceof ServerPlayer spLogout) applyCreativeFlightModifier(spLogout, false);
         GuiActionHandler.onPlayerLogout(id);
@@ -199,12 +205,17 @@ public final class PlayerEventHandler
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                 player,
                 new com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload(parcoolBlocked));
-            // Message one-shot a la transition (pas de spam car envoye seulement sur changement).
+            // Message one-shot a la transition + throttle 10s pour securite (edge cases frontiere zone).
             if (parcoolBlocked) {
-                player.displayClientMessage(
-                    Component.translatable("arcadiaguard.message.parcool_actions")
-                        .withStyle(net.minecraft.ChatFormatting.RED), true);
-                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.PARCOOL_ACTIONS, "parcool_actions");
+                long now = System.currentTimeMillis();
+                Long last = lastParcoolMsgAt.get(id);
+                if (last == null || now - last >= MSG_THROTTLE_MS) {
+                    lastParcoolMsgAt.put(id, now);
+                    player.displayClientMessage(
+                        Component.translatable("arcadiaguard.message.parcool_actions")
+                            .withStyle(net.minecraft.ChatFormatting.RED), true);
+                    guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.PARCOOL_ACTIONS, "parcool_actions");
+                }
             }
         }
 
@@ -220,10 +231,15 @@ public final class PlayerEventHandler
                 player,
                 new com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload(emoteBlocked));
             if (emoteBlocked) {
-                player.displayClientMessage(
-                    Component.translatable("arcadiaguard.message.emote_use")
-                        .withStyle(net.minecraft.ChatFormatting.RED), true);
-                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.EMOTE_USE, "emote_use");
+                long now = System.currentTimeMillis();
+                Long last = lastEmoteMsgAt.get(id);
+                if (last == null || now - last >= MSG_THROTTLE_MS) {
+                    lastEmoteMsgAt.put(id, now);
+                    player.displayClientMessage(
+                        Component.translatable("arcadiaguard.message.emote_use")
+                            .withStyle(net.minecraft.ChatFormatting.RED), true);
+                    guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.EMOTE_USE, "emote_use");
+                }
             }
         }
 
