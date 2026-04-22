@@ -41,8 +41,13 @@ public final class GuiActionHandler {
     private GuiActionHandler() {}
 
     // C1: Token-bucket rate-limiter per player UUID (capacity=20, refill=20/s).
-    // TODO v2: add LRU eviction (currently unbounded, safe for ~50 concurrent players).
+    // Cleanup au logout via onPlayerLogout (cap hard 500 en fallback si hook rate).
     private static final ConcurrentHashMap<UUID, RateLimiter> RATE_LIMITERS = new ConcurrentHashMap<>();
+
+    /** Appele depuis PlayerEventHandler.onPlayerLogout pour eviter l'accumulation memoire. */
+    public static void onPlayerLogout(UUID playerId) {
+        RATE_LIMITERS.remove(playerId);
+    }
 
     /** Simple token-bucket rate-limiter. Thread-safe. */
     private static final class RateLimiter {
