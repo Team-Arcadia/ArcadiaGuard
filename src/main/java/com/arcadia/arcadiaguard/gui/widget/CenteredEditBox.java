@@ -8,18 +8,21 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 /**
- * EditBox vanilla dont le TEXTE INTERIEUR est centre verticalement dans la box.
+ * EditBox dont le texte est visuellement centre verticalement dans la box.
  *
- * <p>Minecraft {@link EditBox#renderWidget} dessine le texte a {@code y + 4} fixe
- * (quasi top-aligned dans une box de hauteur > 8). Pour une box de 14-20px,
- * le rendu apparait visuellement top-heavy (3-5px d'espace en bas).
+ * <p>Vanilla {@link EditBox} dessine deja le texte a {@code y + (h-8)/2} (mathematiquement
+ * centre), mais la font Minecraft a un ascender plus grand que le descender, donnant une
+ * illusion optique de texte "trop haut". Cette sous-classe ajoute +1px de decalage vers
+ * le bas pour compenser, sans bouger le cadre.
  *
- * <p>Cette sous-classe decale le canvas de rendu d'un offset calcule pour que le
- * texte soit centre verticalement dans la hauteur declaree — sans toucher a la
- * position ou taille de la box elle-meme.
+ * <p>Technique : on dessine le cadre nous-memes, on desactive le cadre vanilla, puis on
+ * laisse super.renderWidget dessiner le texte avec un {@code pose().translate} applique
+ * a la position texte voulue.
  */
 @OnlyIn(Dist.CLIENT)
 public class CenteredEditBox extends EditBox {
+
+    private static final float BASELINE_CORRECTION = 1.0f;
 
     public CenteredEditBox(Font font, int x, int y, int width, int height, Component placeholder) {
         super(font, x, y, width, height, placeholder);
@@ -27,14 +30,33 @@ public class CenteredEditBox extends EditBox {
 
     @Override
     public void renderWidget(GuiGraphics g, int mx, int my, float partialTick) {
-        // Vanilla Minecraft EditBox draws text at internal y+4 (approx). For centered visual
-        // inside a box of this.getHeight(), we want text top at y + (h - 8) / 2.
-        // Offset Y = desired - current = ((h-8)/2) - 4.
-        int offsetY = (this.getHeight() - 8) / 2 - 4;
-        if (offsetY == 0) { super.renderWidget(g, mx, my, partialTick); return; }
-        g.pose().pushPose();
-        g.pose().translate(0.0f, (float) offsetY, 0.0f);
-        super.renderWidget(g, mx, my - offsetY, partialTick);
-        g.pose().popPose();
+        if (!this.isVisible()) return;
+        boolean bordered = this.isBordered();
+        // Cas 1: bordered=false — vanilla dessine texte a y brut (top-aligned).
+        // On translate pour centrer verticalement dans la hauteur de l'EditBox.
+        if (!bordered) {
+            float dy = (getHeight() - 8) / 2.0f + BASELINE_CORRECTION;
+            g.pose().pushPose();
+            g.pose().translate(0.0f, dy, 0.0f);
+            super.renderWidget(g, mx, my - (int) dy, partialTick);
+            g.pose().popPose();
+            return;
+        }
+        // Cas 2: bordered=true — on dessine le cadre nous-memes, puis on desactive
+        // le cadre vanilla et on translate le texte pour centrer visuellement.
+        int borderColor = this.isFocused() ? -1 : -6250336;
+        g.fill(getX() - 1, getY() - 1, getX() + getWidth() + 1, getY() + getHeight() + 1, borderColor);
+        g.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), -16777216);
+        this.setBordered(false);
+        try {
+            float dx = 4.0f;
+            float dy = (getHeight() - 8) / 2.0f + BASELINE_CORRECTION;
+            g.pose().pushPose();
+            g.pose().translate(dx, dy, 0.0f);
+            super.renderWidget(g, mx - (int) dx, my - (int) dy, partialTick);
+            g.pose().popPose();
+        } finally {
+            this.setBordered(true);
+        }
     }
 }
