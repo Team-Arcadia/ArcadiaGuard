@@ -8,7 +8,6 @@
     "PacketChiselBlocksMixin",
     "PacketChiselAllMixin",
     "ReinforcedPressurePlateBlockMixin",
-    "ActionStatePayloadMixin",
     "MagnetUpgradeWrapperMixin"
   ],
   "server": [],

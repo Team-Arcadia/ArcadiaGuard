@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MagnetUpgradeWrapperMixin {
 
     @Inject(
-        method = "tryToInsertItem",
+        method = "tryToInsertItem(Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/entity/item/ItemEntity;)Z",
         at = @At("HEAD"),
         cancellable = true,
         remap = false
