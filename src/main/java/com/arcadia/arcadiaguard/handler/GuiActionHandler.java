@@ -335,25 +335,34 @@ public final class GuiActionHandler {
                 player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", p.zoneName()).withStyle(ChatFormatting.RED));
                 return;
             }
-            // Iteration sur memberRoles (Map<UUID, Role>) avec resolution du nom via ProfileCache
-            // best-effort (si le cache connaît le nom, on match). Sinon fallback sur comparaison
-            // par UUID string si l'admin a entre un UUID brut.
+            // 1) Essayer UUID direct (cas le plus frequent : GUI envoie l'UUID du membre).
+            //    On check contre whitelistedPlayers qui agrege memberRoles + whitelist explicite,
+            //    pour ne pas rater un joueur whitelist-only (pas de role).
             UUID matchedUuid = null;
             String matchedName = targetName;
-            var cache = server.getProfileCache();
-            if (cache != null) {
-                for (UUID uuid : zoneOpt.get().memberRoles().keySet()) {
-                    var name = cache.get(uuid).map(GameProfile::getName).orElse(null);
-                    if (name != null && name.equalsIgnoreCase(targetName)) {
-                        matchedUuid = uuid;
-                        matchedName = name;
-                        break;
+            try {
+                UUID asUuid = UUID.fromString(targetName);
+                if (zoneOpt.get().whitelistedPlayers().contains(asUuid)) {
+                    matchedUuid = asUuid;
+                    var cache0 = server.getProfileCache();
+                    if (cache0 != null) {
+                        matchedName = cache0.get(asUuid).map(GameProfile::getName).orElse(asUuid.toString());
                     }
                 }
-            }
-            // Fallback: essayer de parser targetName comme UUID direct
+            } catch (IllegalArgumentException ignored) {}
+            // 2) Fallback : recherche par nom via ProfileCache (admin tape un pseudo en CLI).
             if (matchedUuid == null) {
-                try { matchedUuid = UUID.fromString(targetName); } catch (IllegalArgumentException ignored) {}
+                var cache = server.getProfileCache();
+                if (cache != null) {
+                    for (UUID uuid : zoneOpt.get().whitelistedPlayers()) {
+                        var name = cache.get(uuid).map(GameProfile::getName).orElse(null);
+                        if (name != null && name.equalsIgnoreCase(targetName)) {
+                            matchedUuid = uuid;
+                            matchedName = name;
+                            break;
+                        }
+                    }
+                }
             }
             if (matchedUuid == null) {
                 player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
