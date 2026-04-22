@@ -65,16 +65,27 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
     /** Extracts and normalises the spell/ability ID from a mod event. */
     protected abstract String extractSpellId(Event event, ServerPlayer player);
 
+    /**
+     * Extracts ALL individual glyph/effect IDs from the spell (multi-part spells).
+     * Default: singleton list from {@link #extractSpellId}. Override for mods with
+     * composable spells (Ars Nouveau) to return each spell-part ID separately —
+     * needed for blacklist/whitelist/movement checks to match individual glyphs.
+     */
+    protected List<String> extractSpellGlyphs(Event event, ServerPlayer player) {
+        return List.of(extractSpellId(event, player));
+    }
+
     @Override
     public final void handle(Event event) {
         if (!enabled.get()) return;
         ServerPlayer player = extractPlayer(event);
         if (player == null) return;
         String spellId = extractSpellId(event, player);
-        handleSpell(event, player, spellId);
+        List<String> glyphs = extractSpellGlyphs(event, player);
+        handleSpell(event, player, spellId, glyphs);
     }
 
-    private void handleSpell(Event event, ServerPlayer player, String spellId) {
+    private void handleSpell(Event event, ServerPlayer player, String spellId, List<String> glyphs) {
         if (guardService.shouldBypass(player)) return;
         // Check the player's position first; if not in a zone, also check the targeted block
         // (prevents casting spells from outside a zone that affect blocks inside it)
@@ -88,7 +99,9 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
         if (zoneOpt.isEmpty()) return;
         ProtectedZone zone = zoneOpt.get();
 
-        if (movementFlag != null && !movementSpells.isEmpty() && movementSpells.contains(spellId)) {
+        // Movement check: any glyph/spell-id matches the movement set
+        if (movementFlag != null && !movementSpells.isEmpty()
+                && glyphs.stream().anyMatch(movementSpells::contains)) {
             if (!guardService.isFlagAllowedOrUnset(zone, movementFlag, player.serverLevel())) {
                 player.displayClientMessage(Component.translatable(movementMessageKey).withStyle(ChatFormatting.RED), true);
                 guardService.auditDenied(player, zone.name(), player.blockPosition(), movementFlag, spellId);
@@ -103,7 +116,8 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                 Object rawWl = zone.flagValues().getOrDefault(whitelistFlag.id(), List.of());
                 if (rawWl instanceof List<?> wlList) {
                     List<String> whitelist = wlList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
-                    if (whitelist.contains(spellId)) return;
+                    // Whitelist : si ANY glyph est whitelisted, on autorise.
+                    if (glyphs.stream().anyMatch(whitelist::contains) || whitelist.contains(spellId)) return;
                 }
             }
             player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
@@ -116,9 +130,12 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
             Object rawBl = zone.flagValues().getOrDefault(blacklistFlag.id(), List.of());
             if (rawBl instanceof List<?> blList) {
                 List<String> blacklist = blList.stream().filter(String.class::isInstance).map(String.class::cast).toList();
-                if (blacklist.contains(spellId)) {
+                // Blacklist : si ANY glyph de la composition est blackliste, on bloque.
+                String hit = glyphs.stream().filter(blacklist::contains).findFirst()
+                    .orElseGet(() -> blacklist.contains(spellId) ? spellId : null);
+                if (hit != null) {
                     player.displayClientMessage(Component.literal("\u00a7c" + castMessage.get()), true);
-                    guardService.auditDenied(player, zone.name(), player.blockPosition(), castFlag, spellId + "_blacklisted");
+                    guardService.auditDenied(player, zone.name(), player.blockPosition(), castFlag, hit + "_blacklisted");
                     cancel(event);
                 }
             }
