@@ -7,6 +7,7 @@ import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
 import com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneLogsPayload;
+import com.arcadia.arcadiaguard.network.gui.ZoneRemovedPayload;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -34,23 +35,26 @@ public final class PacketHandler {
     }
 
     // Handlers S→C injectés par ArcadiaGuardClient.init() (CLIENT dist uniquement)
-    private static BiConsumer<ZoneDataPayload,   IPayloadContext> clientZoneData   = defaultHandler("ZoneDataPayload");
-    private static BiConsumer<OpenGuiPayload,    IPayloadContext> clientOpenGui    = defaultHandler("OpenGuiPayload");
-    private static BiConsumer<ZoneDetailPayload, IPayloadContext> clientZoneDetail = defaultHandler("ZoneDetailPayload");
-    private static BiConsumer<DimFlagsPayload,   IPayloadContext> clientDimFlags   = defaultHandler("DimFlagsPayload");
-    private static BiConsumer<ZoneLogsPayload,   IPayloadContext> clientZoneLogs   = defaultHandler("ZoneLogsPayload");
+    private static BiConsumer<ZoneDataPayload,    IPayloadContext> clientZoneData    = defaultHandler("ZoneDataPayload");
+    private static BiConsumer<OpenGuiPayload,     IPayloadContext> clientOpenGui     = defaultHandler("OpenGuiPayload");
+    private static BiConsumer<ZoneDetailPayload,  IPayloadContext> clientZoneDetail  = defaultHandler("ZoneDetailPayload");
+    private static BiConsumer<DimFlagsPayload,    IPayloadContext> clientDimFlags    = defaultHandler("DimFlagsPayload");
+    private static BiConsumer<ZoneLogsPayload,    IPayloadContext> clientZoneLogs    = defaultHandler("ZoneLogsPayload");
+    private static BiConsumer<ZoneRemovedPayload, IPayloadContext> clientZoneRemoved = defaultHandler("ZoneRemovedPayload");
 
     public static void setClientHandlers(
-            BiConsumer<ZoneDataPayload,   IPayloadContext> zoneData,
-            BiConsumer<OpenGuiPayload,    IPayloadContext> openGui,
-            BiConsumer<ZoneDetailPayload, IPayloadContext> zoneDetail,
-            BiConsumer<DimFlagsPayload,   IPayloadContext> dimFlags,
-            BiConsumer<ZoneLogsPayload,   IPayloadContext> zoneLogs) {
-        clientZoneData   = zoneData;
-        clientOpenGui    = openGui;
-        clientZoneDetail = zoneDetail;
-        clientDimFlags   = dimFlags;
-        clientZoneLogs   = zoneLogs;
+            BiConsumer<ZoneDataPayload,    IPayloadContext> zoneData,
+            BiConsumer<OpenGuiPayload,     IPayloadContext> openGui,
+            BiConsumer<ZoneDetailPayload,  IPayloadContext> zoneDetail,
+            BiConsumer<DimFlagsPayload,    IPayloadContext> dimFlags,
+            BiConsumer<ZoneLogsPayload,    IPayloadContext> zoneLogs,
+            BiConsumer<ZoneRemovedPayload, IPayloadContext> zoneRemoved) {
+        clientZoneData    = zoneData;
+        clientOpenGui     = openGui;
+        clientZoneDetail  = zoneDetail;
+        clientDimFlags    = dimFlags;
+        clientZoneLogs    = zoneLogs;
+        clientZoneRemoved = zoneRemoved;
     }
 
     public static void register(IEventBus modBus) {
@@ -83,6 +87,10 @@ public final class PacketHandler {
         reg.playToClient(com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.TYPE,
             com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.STREAM_CODEC,
             (p, c) -> com.arcadia.arcadiaguard.client.ClientEmoteBlockedState.setBlocked(p.blocked()));
+
+        // Zone deleted S->C : purge du ClientZoneCache (rendu)
+        reg.playToClient(ZoneRemovedPayload.TYPE, ZoneRemovedPayload.STREAM_CODEC,
+            (p, c) -> clientZoneRemoved.accept(p, c));
 
         reg.playToServer(GuiActionPayload.TYPE,  GuiActionPayload.STREAM_CODEC,
             GuiActionHandler::handle);
