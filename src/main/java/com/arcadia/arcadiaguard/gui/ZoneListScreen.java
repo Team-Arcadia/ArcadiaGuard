@@ -262,6 +262,7 @@ public final class ZoneListScreen extends Screen {
         }
 
         super.render(g, mx, my, delta);
+        renderDeleteConfirmOverlay(g, mx, my);
     }
 
     // ── Header ──────────────────────────────────────────────────────────────────
@@ -590,26 +591,77 @@ public final class ZoneListScreen extends Screen {
     private long lastClickAt = 0;
     private int  lastClickIdx = -1;
 
+    /** Popup overlay de confirmation suppression (meme style que ZoneDetailScreen). */
+    private boolean confirmDeleteOpen = false;
+
     private void openDeleteConfirm() {
         if (selectedIndex < 0 || selectedIndex >= filteredZones.size()) return;
+        confirmDeleteOpen = true;
+    }
+
+    private void renderDeleteConfirmOverlay(GuiGraphics g, int mx, int my) {
+        if (!confirmDeleteOpen || selectedIndex < 0 || selectedIndex >= filteredZones.size()) return;
         String zoneName = filteredZones.get(selectedIndex).name();
-        minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(
-            confirmed -> {
-                minecraft.setScreen(this);
-                if (confirmed) {
-                    PacketDistributor.sendToServer(GuiActionPayload.deleteZone(zoneName));
-                    selectedIndex = -1;
-                }
-            },
-            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.title"),
-            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName),
-            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.yes"),
-            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.no")
-        ));
+        g.fill(gx, gy, gx + GUI_W, gy + GUI_H, 0x80000000);
+
+        int pw = Math.min(270, GUI_W - 10);
+        int ph = 86;
+        int px = gx + (GUI_W - pw) / 2;
+        int py = gy + (GUI_H - ph) / 2;
+
+        g.fill(px - 2, py - 2, px + pw + 2, py + ph + 2, Colors.DANGER & 0xFFFFFF | 0xFF000000);
+        g.fill(px, py, px + pw, py + ph, Colors.BG_1);
+
+        g.drawCenteredString(font,
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.title").getString(),
+            px + pw / 2, py + 10, Colors.TEXT);
+        g.drawCenteredString(font,
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName).getString(),
+            px + pw / 2, py + 22, Colors.TEXT_MUTE);
+        g.drawCenteredString(font,
+            Component.translatable("arcadiaguard.gui.zonedetail.confirm_delete_warn2").getString(),
+            px + pw / 2, py + 33, Colors.TEXT_MUTE);
+
+        // Bouton Annuler (gauche)
+        int cancelX = px + 10, btY = py + 54;
+        boolean cancelHov = mx >= cancelX && mx < cancelX + 100 && my >= btY && my < btY + 22;
+        g.fill(cancelX, btY, cancelX + 100, btY + 22, cancelHov ? Colors.accentTint(0x40) : Colors.BG_2);
+        g.drawCenteredString(font,
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.no").getString(),
+            cancelX + 50, btY + 7, Colors.TEXT_DIM);
+
+        // Bouton Supprimer (droite)
+        int okX = px + pw - 110;
+        boolean okHov = mx >= okX && mx < okX + 100 && my >= btY && my < btY + 22;
+        g.fill(okX, btY, okX + 100, btY + 22, okHov ? Colors.DANGER & 0xFFFFFF | 0x40000000 : Colors.BG_2);
+        g.drawCenteredString(font,
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.yes").getString(),
+            okX + 50, btY + 7, Colors.DANGER);
+    }
+
+    private boolean handleDeleteConfirmClick(int imx, int imy) {
+        if (!confirmDeleteOpen || selectedIndex < 0 || selectedIndex >= filteredZones.size()) return false;
+        int pw = Math.min(270, GUI_W - 10), ph = 86;
+        int px = gx + (GUI_W - pw) / 2, py = gy + (GUI_H - ph) / 2;
+        int btY = py + 54;
+        if (imx >= px + 10 && imx < px + 110 && imy >= btY && imy < btY + 22) {
+            confirmDeleteOpen = false; return true;
+        }
+        if (imx >= px + pw - 110 && imx < px + pw - 10 && imy >= btY && imy < btY + 22) {
+            String zoneName = filteredZones.get(selectedIndex).name();
+            PacketDistributor.sendToServer(GuiActionPayload.deleteZone(zoneName));
+            selectedIndex = -1;
+            confirmDeleteOpen = false;
+            return true;
+        }
+        // Click en dehors ignore mais on bloque la propagation (overlay modal)
+        return true;
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // L'overlay delete-confirm est modal : intercepte tous les clics en priorite.
+        if (confirmDeleteOpen) return handleDeleteConfirmClick((int) mx, (int) my);
         if (super.mouseClicked(mx, my, button)) return true;
         int imx = (int) mx, imy = (int) my;
 
@@ -683,6 +735,8 @@ public final class ZoneListScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Esc ferme l'overlay de confirmation en priorite
+        if (keyCode == 256 && confirmDeleteOpen) { confirmDeleteOpen = false; return true; }
         // H-U4: Esc unfocuses EditBox
         if (keyCode == 256 && getFocused() instanceof EditBox eb) {
             eb.setFocused(false);
