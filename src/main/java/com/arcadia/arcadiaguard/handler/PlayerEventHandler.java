@@ -40,6 +40,8 @@ public final class PlayerEventHandler
     private final Map<UUID, BlockPos> lastSafePos = new ConcurrentHashMap<>();
     /** S-H21 : dernier etat envoye au client pour parcool_actions. */
     private final Map<UUID, Boolean> playerParcoolBlocked = new ConcurrentHashMap<>();
+    /** Dernier etat envoye au client pour emote_use (verifier client-side Emotecraft). */
+    private final Map<UUID, Boolean> playerEmoteBlocked = new ConcurrentHashMap<>();
 
     public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
@@ -187,6 +189,19 @@ public final class PlayerEventHandler
             net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
                 player,
                 new com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload(parcoolBlocked));
+        }
+
+        // Meme pattern pour Emotecraft (verifier client-side).
+        boolean emoteBlocked = false;
+        if (zoneOpt.isPresent() && !guard.shouldBypass(player) && !guard.isZoneMember(player, zoneOpt.get())) {
+            emoteBlocked = guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.EMOTE_USE, player.serverLevel());
+        }
+        Boolean wasEmoteBlocked = playerEmoteBlocked.get(id);
+        if (wasEmoteBlocked == null || wasEmoteBlocked != emoteBlocked) {
+            playerEmoteBlocked.put(id, emoteBlocked);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                player,
+                new com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload(emoteBlocked));
         }
 
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)

@@ -79,6 +79,11 @@ public final class PacketHandler {
         reg.playToClient(ParcoolBlockedPayload.TYPE, ParcoolBlockedPayload.STREAM_CODEC,
             (p, c) -> com.arcadia.arcadiaguard.client.ClientParcoolState.setBlocked(p.blocked()));
 
+        // Emotecraft : emote blocked state S->C
+        reg.playToClient(com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.TYPE,
+            com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.STREAM_CODEC,
+            (p, c) -> com.arcadia.arcadiaguard.client.ClientEmoteBlockedState.setBlocked(p.blocked()));
+
         reg.playToServer(GuiActionPayload.TYPE,  GuiActionPayload.STREAM_CODEC,
             GuiActionHandler::handle);
     }

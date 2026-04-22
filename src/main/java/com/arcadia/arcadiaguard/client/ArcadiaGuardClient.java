@@ -21,6 +21,11 @@ public final class ArcadiaGuardClient {
         NeoForge.EVENT_BUS.addListener(ZoneRenderer::onRenderLevel);
         NeoForge.EVENT_BUS.addListener(WandHudRenderer::onRenderGui);
 
+        // S-H21 / S-H22 : enregistrer le verifier client-side d'Emotecraft
+        // (necessaire car le verifier server-side natif depend d'une config externe
+        // validateEmote qui peut etre desactivee).
+        ClientEmotecraftHook.register();
+
         // Injection des handlers S→C (lambdas dans cette classe @OnlyIn(CLIENT))
         PacketHandler.setClientHandlers(
             (payload, ctx) -> ctx.enqueueWork(() -> ClientZoneCache.update(payload.zones())),
