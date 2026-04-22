@@ -126,12 +126,17 @@ public final class FlagEventHandler {
         // ARS_ADDITIONS_SCROLL : parchemins Ars Additions utilisés sur un bloc (use() overridé côté serveur).
         // Vérifié AVANT BLOCK_INTERACT générique pour garantir le message spécifique
         // et la prise en compte du flag même quand block_interact=true.
+        // Check a la FOIS la pos cliquee ET la pos joueur (cas ou scroll crée un portail
+        // a une pos hors zone mais le joueur est dans la zone).
         ItemStack stack = event.getItemStack();
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        if (itemId != null && "ars_additions".equals(itemId.getNamespace())
-                && deny(player, pos, BuiltinFlags.ARS_ADDITIONS_SCROLL, "ars_additions_scroll")) {
-            event.setCanceled(true);
-            return;
+        if (itemId != null && "ars_additions".equals(itemId.getNamespace())) {
+            if (deny(player, pos, BuiltinFlags.ARS_ADDITIONS_SCROLL, "ars_additions_scroll")
+                || deny(player, player.blockPosition(), BuiltinFlags.ARS_ADDITIONS_SCROLL, "ars_additions_scroll")) {
+                event.setCanceled(true);
+                event.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+                return;
+            }
         }
 
         // Conteneurs : block entity qui expose Container ou MenuProvider.
