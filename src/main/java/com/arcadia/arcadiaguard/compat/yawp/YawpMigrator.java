@@ -4,10 +4,6 @@ import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.ArcadiaGuardPaths;
 import com.arcadia.arcadiaguard.util.ReflectionHelper;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,15 +30,8 @@ public final class YawpMigrator {
 
     private YawpMigrator() {}
 
-    private static final String MIGRATION_MARKER = ".yawp-migrated";
-
     public static List<ProtectedZone> migrate(MinecraftServer server) {
         List<ProtectedZone> result = new ArrayList<>();
-        Path marker = ArcadiaGuardPaths.configRoot().resolve(MIGRATION_MARKER);
-        if (Files.exists(marker)) {
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP migration already completed — skipping. Delete {} to re-run.", marker);
-            return result;
-        }
         try {
             Class<?> rdmCls;
             try {
@@ -83,8 +72,7 @@ public final class YawpMigrator {
                 }
             }
 
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP migration: {} / {} zone(s) imported.", result.size(), totalRegions);
-            writeMarker(marker, result.size());
+            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP scan: {} zone(s) convertible sur {} region(s) totales.", result.size(), totalRegions);
         } catch (Throwable t) {
             ArcadiaGuard.LOGGER.error("[ArcadiaGuard] YAWP migration failed", t);
         }
@@ -120,15 +108,4 @@ public final class YawpMigrator {
             new HashSet<>());
     }
 
-    private static void writeMarker(Path marker, int importedCount) {
-        try {
-            Files.createDirectories(marker.getParent());
-            Files.writeString(marker,
-                "migrated=" + java.time.Instant.now() + System.lineSeparator()
-                    + "zones=" + importedCount + System.lineSeparator(),
-                StandardCharsets.UTF_8);
-        } catch (IOException io) {
-            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Could not write YAWP migration marker: {}", io.getMessage());
-        }
-    }
 }
