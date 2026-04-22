@@ -178,23 +178,23 @@ public final class ZoneDetailScreen extends Screen {
 
         viewZone = ClientZoneCache.zones().stream().anyMatch(z -> z.name().equals(detail.name()));
 
-        btW1 = 60; btW2 = 80; btW3 = 90; btW4 = 80; btW5 = 90;
-        int totalBtns = btW1 + btW2 + btW3 + btW4 + btW5;
+        // Footer compact: 3 boutons (Back / Set Parent / Item Blocks). +Player et Delete
+        // ont ete retires (+ inline dans Members, delete via main menu).
+        btW1 = 60; btW3 = 90; btW4 = 90;
+        btW2 = 0; btW5 = 0;
+        int totalBtns = btW1 + btW3 + btW4;
         int usable = GUI_W - 16;
-        if (usable < totalBtns + 16) {
-            int avail = Math.max(usable - 16, 80);
+        if (usable < totalBtns + 12) {
+            int avail = Math.max(usable - 12, 80);
             btW1 = avail * 60 / totalBtns;
-            btW2 = avail * 80 / totalBtns;
             btW3 = avail * 90 / totalBtns;
-            btW4 = avail * 80 / totalBtns;
-            btW5 = avail - btW1 - btW2 - btW3 - btW4;
+            btW4 = avail - btW1 - btW3;
         }
-        int gap = Math.max(4, (usable - btW1 - btW2 - btW3 - btW4 - btW5) / 4);
+        int gap = Math.max(6, (usable - btW1 - btW3 - btW4) / 2);
         btX1 = gx + 8;
-        btX2 = btX1 + btW1 + gap;
-        btX3 = btX2 + btW2 + gap;
+        btX3 = btX1 + btW1 + gap;
         btX4 = btX3 + btW3 + gap;
-        btX5 = btX4 + btW4 + gap;
+        btX2 = btX1; btX5 = btX4;
 
         int bfy = gy + GUI_H - FOOTER_H + 6;
         boolean isWhitelist = popup instanceof PopupState.WhitelistInput;
