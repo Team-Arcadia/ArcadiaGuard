@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadiaGuard S-H15 — Re-test des corrections</title>
+<style>
+  :root {
+    --bg: #0f1117; --bg2: #181c26; --bg3: #1e2333; --bg4: #252b3d;
+    --border: #2e3650; --text: #d4d8e8; --text-dim: #7a82a0; --text-bright: #eef0f8;
+    --accent: #5b7cfa; --accent2: #7c5bfa;
+    --green: #3ecf6e; --green-bg: #0d2a1a;
+    --red: #f05555; --red-bg: #2a0d0d;
+    --yellow: #f5c842; --yellow-bg: #2a220a;
+    --mod-color: #a78bfa; --mod-bg: #1e1535;
+    --radius: 8px; --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6; min-height: 100vh;
+  }
+  .page-header {
+    background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px; position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text-bright); margin-bottom: 4px; }
+  .page-header h1 span { color: var(--accent); }
+  .page-header .subtitle { font-size: 13px; color: var(--text-dim); }
+  .header-row { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 14px; }
+  .meta-fields { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; }
+  .meta-field { display: flex; flex-direction: column; gap: 4px; }
+  .meta-field label {
+    font-size: 11px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+  }
+  .meta-field input {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text-bright); padding: 6px 10px; font-size: 13px; width: 180px;
+    outline: none; transition: border-color .2s;
+  }
+  .meta-field input:focus { border-color: var(--accent); }
+  .progress-block { min-width: 280px; }
+  .progress-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-label strong { color: var(--text-bright); }
+  .progress-bar-outer { height: 8px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+  .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .4s ease; }
+  .progress-counts { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; }
+  .cnt { display: flex; align-items: center; gap: 5px; }
+  .cnt .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 120px; }
+
+  .intro-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-left: 4px solid var(--accent2); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 20px; font-size: 13px; line-height: 1.7;
+  }
+  .intro-box strong { color: var(--text-bright); }
+  .intro-box kbd, .kbd {
+    background: var(--bg4); border: 1px solid var(--border); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 6px;
+    font-family: 'Consolas', monospace; font-size: 11px; color: var(--text-bright);
+  }
+
+  .commit-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 28px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .commit-box code { color: var(--accent); }
+
+  .section {
+    margin-bottom: 20px; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .section-header {
+    background: var(--bg3); padding: 14px 20px; cursor: pointer;
+    display: flex; align-items: center; gap: 12px; user-select: none;
+    transition: background .15s;
+  }
+  .section-header:hover { background: var(--bg4); }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .section-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-weight: 400; }
+  .section-badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 99px;
+    background: var(--bg4); border: 1px solid var(--border);
+    color: var(--text-dim); white-space: nowrap;
+  }
+  .chevron { color: var(--text-dim); transition: transform .2s; font-size: 13px; flex-shrink: 0; }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+
+  .test-card {
+    border-top: 1px solid var(--border); padding: 18px 20px;
+    background: var(--bg2); transition: background .15s;
+  }
+  .test-card:hover { background: #181c28; }
+  .test-card.status-pass { border-left: 3px solid var(--green); }
+  .test-card.status-fail { border-left: 3px solid var(--red); }
+  .test-card.status-skip { border-left: 3px solid var(--text-dim); }
+
+  .test-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .test-number {
+    font-size: 11px; color: var(--text-dim); background: var(--bg4);
+    padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0; margin-top: 2px;
+  }
+  .test-title { font-size: 14px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 99px;
+    font-weight: 600; white-space: nowrap; margin-top: 2px;
+  }
+  .tag-flag { background: rgba(91,124,250,.15); color: var(--accent); border: 1px solid rgba(91,124,250,.3); }
+  .tag-mod { background: var(--mod-bg); color: var(--mod-color); border: 1px solid rgba(167,139,250,.3); }
+  .tag-req { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,200,66,.3); }
+  .tag-new { background: rgba(124,91,250,.15); color: var(--accent2); border: 1px solid rgba(124,91,250,.3); }
+
+  .test-body { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:700px) { .test-body { grid-template-columns: 1fr; } }
+
+  .test-steps { grid-column: 1 / -1; }
+  .subsection-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-dim); font-weight: 700; margin-bottom: 6px;
+  }
+  .steps-list { list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 5px; }
+  .steps-list li {
+    counter-increment: step; display: flex; gap: 10px;
+    font-size: 13px; color: var(--text); background: var(--bg3);
+    padding: 7px 10px; border-radius: 5px; border: 1px solid var(--border);
+  }
+  .steps-list li::before {
+    content: counter(step); display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; min-width: 20px; background: var(--accent);
+    border-radius: 50%; font-size: 11px; font-weight: 700; color: #fff; margin-top: 1px;
+  }
+  code {
+    background: var(--bg4); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 5px; font-family: 'Consolas', monospace; font-size: 12px; color: #93c5fd;
+  }
+  .gui-path { color: var(--accent2); font-weight: 600; }
+
+  .expected-box {
+    background: rgba(62,207,110,.07); border: 1px solid rgba(62,207,110,.25);
+    border-radius: var(--radius); padding: 10px 12px; font-size: 13px;
+  }
+  .expected-box .subsection-label { color: var(--green); }
+
+  .regression-box {
+    background: rgba(245,200,66,.06); border: 1px solid rgba(245,200,66,.25);
+    border-radius: var(--radius); padding: 10px 12px; font-size: 12px;
+    grid-column: 1 / -1;
+  }
+  .regression-box .subsection-label { color: var(--yellow); }
+
+  .verdict-row { display: flex; flex-direction: column; gap: 8px; }
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border);
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: all .15s; user-select: none;
+  }
+  .radio-btn input { display: none; }
+  .radio-btn.opt-pass { color: var(--green); }
+  .radio-btn.opt-pass:hover, .radio-btn.opt-pass.selected { background: var(--green-bg); border-color: var(--green); }
+  .radio-btn.opt-fail { color: var(--red); }
+  .radio-btn.opt-fail:hover, .radio-btn.opt-fail.selected { background: var(--red-bg); border-color: var(--red); }
+  .radio-btn.opt-skip { color: var(--text-dim); }
+  .radio-btn.opt-skip:hover, .radio-btn.opt-skip.selected { background: var(--bg4); border-color: var(--text-dim); }
+
+  .notes-area {
+    width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-size: 13px; font-family: inherit; padding: 8px 10px;
+    resize: vertical; min-height: 60px; outline: none; transition: border-color .2s;
+    grid-column: 1 / -1;
+  }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-area::placeholder { color: var(--text-dim); }
+
+  .setup-note {
+    background: var(--yellow-bg); border: 1px solid rgba(245,200,66,.3);
+    border-radius: var(--radius); padding: 8px 12px; font-size: 12px;
+    color: var(--yellow); margin-bottom: 10px; grid-column: 1 / -1;
+  }
+
+  .sticky-footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(15,17,23,.95); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border); padding: 14px 32px;
+    display: flex; gap: 12px; align-items: center; justify-content: flex-end; z-index: 200;
+  }
+  .btn {
+    padding: 9px 20px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 700; cursor: pointer; border: none;
+    transition: all .15s; display: flex; align-items: center; gap: 7px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4a6af0; transform: translateY(-1px); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg4); }
+  .footer-info { font-size: 12px; color: var(--text-dim); flex: 1; }
+  .footer-info strong { color: var(--text); }
+
+  .toast {
+    position: fixed; bottom: 80px; right: 24px;
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 18px; font-size: 13px; color: var(--text-bright);
+    box-shadow: var(--shadow); z-index: 300;
+    opacity: 0; transform: translateY(8px); transition: all .3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🛡️ <span>ArcadiaGuard</span> — Re-test S-H15</h1>
+  <div class="subtitle">Validation ciblée des 10 corrections appliquées suite aux retours NokhXyr + THE_Fricadelle</div>
+  <div class="header-row">
+    <div class="meta-fields">
+      <div class="meta-field"><label>Testeur</label><input type="text" id="meta-tester" placeholder="Votre pseudo"></div>
+      <div class="meta-field"><label>Date</label><input type="date" id="meta-date"></div>
+      <div class="meta-field"><label>Version du mod</label><input type="text" id="meta-version" placeholder="ex: ce81e3e"></div>
+      <div class="meta-field"><label>Serveur</label><input type="text" id="meta-server" placeholder="ex: test"></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-label"><span>Progression</span><strong id="prog-text">0 / 0</strong></div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+      <div class="progress-counts">
+        <span class="cnt"><span class="dot" style="background:var(--green)"></span><span id="cnt-pass">0 succès</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--red)"></span><span id="cnt-fail">0 échecs</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--text-dim)"></span><span id="cnt-skip">0 ignorés</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="intro-box">
+    <strong>🎯 Objectif :</strong> valider UNIQUEMENT les correctifs de la story S-H15. Pas besoin de retester tout le mod — juste les flags corrigés et leurs cas limites.<br><br>
+    <strong>Prérequis :</strong> une zone <code>testzone</code> (tests passés au 1<sup>er</sup> round) + <strong>Mode Debug</strong> activé dans <span class="gui-path">/ag gui → footer → Debug</span>.<br><br>
+    Les tests avec le badge <span class="tag tag-new" style="display:inline">🆕 NEW</span> couvrent de nouveaux cas limites remontés par la code review adversariale.
+  </div>
+
+  <div class="commit-box">
+    <strong>Commit validé :</strong> <code>ce81e3e</code> — fix(S-H15): internal flag bugfixes from tester feedback + code review<br>
+    9 fichiers, +238 / -12, 10 tests unitaires passent
+  </div>
+
+  <div id="sections-root"></div>
+</main>
+
+<div class="sticky-footer">
+  <span class="footer-info">Session sauvegardée automatiquement. <strong>Pense à exporter avant de fermer.</strong></span>
+  <label class="btn btn-secondary" style="cursor:pointer">
+    📂 Charger JSON
+    <input type="file" id="load-input" accept=".json" style="display:none">
+  </label>
+  <button class="btn btn-primary" onclick="saveJSON()">💾 Sauvegarder JSON</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const T = {
+  flag: t => ({c:'flag', t}),
+  mod:  t => ({c:'mod', t}),
+  req:  t => ({c:'req', t}),
+  neu:  t => ({c:'new', t}),
+};
+
+const SECTIONS = [
+
+// ─── PRÉREQUIS ────────────────────────────────────────────────
+{
+  id:'setup', icon:'⚙️', title:'Prérequis',
+  desc:'Setup rapide avant de commencer.',
+  tests:[
+    {
+      id:'setup_debug', title:'Activer Debug mode + zone testzone opérationnelle',
+      tags:[T.req('REQUIS')],
+      steps:[
+        'Ouvrir le GUI : <code>/ag gui</code>',
+        'Vérifier que <code>testzone</code> existe et qu\'elle est accessible.',
+        'Cliquer sur le bouton <strong>Debug</strong> → indicateur vert <strong>"Debug mode ACTIF"</strong>',
+        'Se téléporter dans la zone (<code>/tp</code> ou bouton Téléporter).'
+      ],
+      expected:'Debug mode activé, joueur OP positionné dans la zone, prêt à tester.'
+    }
+  ]
+},
+
+// ─── VINE GROWTH ──────────────────────────────────────────────
+{
+  id:'vine', icon:'🌿', title:'vine_growth — nether & cave vines',
+  desc:'Nouveau mixin GrowingPlantHeadBlock + BonemealEvent pour vines.',
+  tests:[
+    {
+      id:'vine_twisting_random', title:'Twisting vines (Nether) — croissance random-tick bloquée',
+      tags:[T.flag('vine_growth')],
+      steps:[
+        'Se placer dans le Nether dans testzone (ou créer une zone Nether dédiée).',
+        'GUI → testzone → Détails → ajouter <code>vine_growth</code> → OFF (rouge).',
+        'Placer une tête de twisting_vines : <code>/setblock ~ ~1 ~ minecraft:twisting_vines</code>',
+        '<code>/setblock ~ ~ ~ minecraft:warped_nylium</code> sous la vine pour la stabiliser.',
+        'Attendre 2-3 minutes (propagation lente).',
+        'Vérifier la hauteur de la vine.'
+      ],
+      expected:'La twisting_vine ne pousse pas vers le haut. Aucun bloc ajouté.'
+    },
+    {
+      id:'vine_weeping_random', title:'Weeping vines (Nether) — croissance random-tick bloquée',
+      tags:[T.flag('vine_growth')],
+      steps:[
+        'Dans testzone Nether avec <code>vine_growth=false</code>.',
+        '<code>/setblock ~ ~1 ~ minecraft:weeping_vines</code>',
+        '<code>/setblock ~ ~2 ~ minecraft:warped_nylium</code> au-dessus.',
+        'Attendre 2-3 minutes.'
+      ],
+      expected:'La weeping_vine ne pousse pas vers le bas.'
+    },
+    {
+      id:'vine_cave_random', title:'Cave vines — croissance random-tick bloquée',
+      tags:[T.flag('vine_growth')],
+      steps:[
+        'Dans testzone (overworld), placer : <code>/setblock ~ ~3 ~ minecraft:stone</code> au-dessus.',
+        '<code>/setblock ~ ~2 ~ minecraft:cave_vines</code> sous le stone.',
+        'Attendre 2-3 minutes.'
+      ],
+      expected:'La cave_vine ne pousse pas vers le bas.'
+    },
+    {
+      id:'vine_bonemeal_twisting', title:'🆕 Bonemeal sur twisting_vines body — bloqué',
+      tags:[T.flag('vine_growth'), T.neu('NEW')],
+      note:'Couvre le deferred #1 du code review : bonemeal sur body délègue à la head, doit maintenant être bloqué.',
+      steps:[
+        'Setup comme vine_twisting_random (twisting_vines posée, flag OFF).',
+        '<code>/give @s minecraft:bone_meal 16</code>',
+        'Clic droit avec bone meal sur le <strong>body</strong> de la twisting_vine (pas la tête).',
+        'Répéter 5-10 fois.'
+      ],
+      expected:'Le bonemeal est refusé (aucune croissance, bonemeal non consommé côté serveur).'
+    },
+    {
+      id:'vine_normal_growth', title:'Régression : vines hors zone poussent normalement',
+      tags:[T.flag('vine_growth'), T.req('RÉGRESSION')],
+      steps:[
+        'Sortir de testzone (zone avec <code>vine_growth=false</code>).',
+        'Désactiver Debug mode (pour éviter effets de zone).',
+        'Placer une twisting_vine dans le Nether, hors de toute zone.',
+        'Bonemeal + attente random-tick.'
+      ],
+      expected:'La vine pousse normalement hors zone. Aucune régression vanilla.'
+    }
+  ]
+},
+
+// ─── ANIMAL INVINCIBLE ────────────────────────────────────────
+{
+  id:'animal', icon:'🐄', title:'animal_invincible — plus de fenêtre de dégâts',
+  desc:'Throttle 20t + durée 40t + couvre spawn ET traversée de frontière.',
+  tests:[
+    {
+      id:'animal_spawn_immediate', title:'Frapper un animal immédiatement après spawn',
+      tags:[T.flag('animal_invincible')],
+      note:'Anciennement : 2s de fenêtre où l\'animal prenait des dégâts au spawn.',
+      steps:[
+        'GUI → testzone → ajouter <code>animal_invincible</code> → ON (vert).',
+        'Debug mode activé, dans la zone.',
+        '<code>/summon cow ~ ~ ~</code>',
+        'Immédiatement (moins de 1s) : frapper la vache avec une épée diamant (3-4 coups rapides).',
+        'Vérifier la vie de la vache.'
+      ],
+      expected:'La vache ne perd AUCUN point de vie. Effets Resistance+Regen appliqués dès le spawn.'
+    },
+    {
+      id:'animal_crossing', title:'🆕 Animal traverse une frontière de zone',
+      tags:[T.flag('animal_invincible'), T.neu('NEW')],
+      note:'Cas non couvert par EntityJoinLevelEvent — la réduction throttle 40t→20t + durée 40t doit fermer la fenêtre.',
+      steps:[
+        '<code>animal_invincible=true</code> sur testzone. Debug ON.',
+        '<code>/summon cow &lt;coords HORS zone&gt;</code>',
+        'Attraper la vache avec une laisse (ou mettre un champ de blé pour l\'attirer) et la faire entrer dans la zone à pied.',
+        'Dès qu\'elle franchit la frontière, la frapper en continu.',
+        'Observer la vie pendant ~3 secondes.'
+      ],
+      expected:'Aucun dégât ou au maximum 1 tick de 0.5 cœur (fenêtre &lt; 1s). Effets appliqués dès le premier tick de présence en zone.'
+    },
+    {
+      id:'animal_sustained', title:'Protection maintenue sur 30 secondes',
+      tags:[T.flag('animal_invincible')],
+      steps:[
+        'Vache en zone avec <code>animal_invincible=true</code>.',
+        'Frapper la vache en continu pendant 30s.',
+        'Observer si des dégâts passent à un moment.'
+      ],
+      expected:'La vache garde toute sa vie pendant 30s complètes. Pas de fenêtre de dégâts périodique.'
+    }
+  ]
+},
+
+// ─── CROP GROWTH ──────────────────────────────────────────────
+{
+  id:'crop', icon:'🌾', title:'crop_growth — bone meal bloqué',
+  desc:'Nouveau listener BonemealEvent.',
+  tests:[
+    {
+      id:'crop_bonemeal', title:'Bone meal sur blé — refusé',
+      tags:[T.flag('crop_growth')],
+      note:'Anciennement : seul le random-tick était bloqué, le bonemeal passait.',
+      steps:[
+        'Placer de la farmland : <code>/setblock ~ ~ ~ minecraft:farmland[moisture=7]</code>',
+        '<code>/setblock ~ ~1 ~ minecraft:wheat[age=0]</code>',
+        'GUI → testzone → <code>crop_growth</code> → OFF.',
+        'Debug ON. <code>/give @s minecraft:bone_meal 16</code>',
+        'Clic droit sur le blé avec bone meal (5-10 fois).'
+      ],
+      expected:'Le bonemeal est refusé (pas de consommation, aucune croissance, le blé reste à age=0).'
+    },
+    {
+      id:'crop_bonemeal_passes_outside', title:'Régression : bone meal fonctionne hors zone',
+      tags:[T.flag('crop_growth'), T.req('RÉGRESSION')],
+      steps:[
+        'Farmland + blé posés HORS de toute zone.',
+        'Debug OFF (pas nécessaire hors zone).',
+        'Bonemeal sur le blé.'
+      ],
+      expected:'Croissance normale, bone meal consommé. Pas de régression vanilla.'
+    },
+    {
+      id:'crop_random_tick', title:'Random-tick toujours bloqué (non-régression)',
+      tags:[T.flag('crop_growth')],
+      steps:[
+        'Avec <code>crop_growth=false</code> sur testzone, Debug ON.',
+        'Farmland + blé age=0.',
+        'Attendre 5 minutes SANS bonemeal.',
+        'Vérifier age du blé.'
+      ],
+      expected:'Age reste à 0. Random-tick growth toujours bloqué (existant).'
+    }
+  ]
+},
+
+// ─── ARS ADDITIONS SCROLL ─────────────────────────────────────
+{
+  id:'ars', icon:'📜', title:'ars_additions_scroll — priorité + offhand',
+  desc:'Check déplacé avant BLOCK_INTERACT + utilise event.getItemStack() pour offhand.',
+  tests:[
+    {
+      id:'ars_priority', title:'🆕 ars_additions_scroll prime sur block_interact',
+      tags:[T.flag('ars_additions_scroll'), T.mod('Ars Additions'), T.neu('NEW')],
+      note:'Anciennement : le check ars_additions était après block_interact → message générique.',
+      steps:[
+        'GUI → testzone : ajouter <code>block_interact</code> → OFF ET <code>ars_additions_scroll</code> → OFF.',
+        'Debug ON, tenir un scroll Ars Additions en main.',
+        'Clic droit sur un bloc dans la zone.',
+        'Observer le message dans le chat.'
+      ],
+      expected:'Message SPÉCIFIQUE à ars_additions_scroll (pas le message générique de block_interact).'
+    },
+    {
+      id:'ars_offhand_entity', title:'🆕 Scroll en offhand sur entité — bloqué',
+      tags:[T.flag('ars_additions_scroll'), T.mod('Ars Additions'), T.neu('NEW')],
+      note:'Anciennement : tenir un item en mainhand et scroll en offhand = contournement.',
+      steps:[
+        'Debug ON, dans testzone avec <code>ars_additions_scroll=false</code>.',
+        'Tenir une épée (ou n\'importe quel item) en <strong>mainhand</strong>.',
+        'Mettre un scroll Ars Additions en <strong>offhand</strong>.',
+        '<code>/summon villager ~ ~ ~</code>',
+        'Clic droit avec offhand (shift+clic droit ou selon config touches).'
+      ],
+      expected:'Le scroll est bloqué même en offhand. Message d\'avertissement.'
+    },
+    {
+      id:'ars_regular_block', title:'ars_additions_scroll sur bloc — bloqué',
+      tags:[T.flag('ars_additions_scroll'), T.mod('Ars Additions')],
+      steps:[
+        'Debug ON, <code>ars_additions_scroll=false</code>, <code>block_interact=true</code>.',
+        'Tenir un scroll Ars Additions.',
+        'Clic droit sur un bloc neutre (dirt, stone).'
+      ],
+      expected:'Le scroll est bloqué. Action annulée.'
+    }
+  ]
+},
+
+// ─── GUI : CTRL+F ─────────────────────────────────────────────
+{
+  id:'ctrlf', icon:'🔍', title:'Ctrl+F / F — focus search box',
+  desc:'Filtre strict : Alt/Shift ne focus plus.',
+  tests:[
+    {
+      id:'ctrlf_works', title:'Ctrl+F focus la barre de recherche',
+      tags:[],
+      steps:[
+        '<code>/ag gui</code>',
+        'Sans focus sur aucun élément, appuyer <kbd>Ctrl+F</kbd>.',
+        'Vérifier le curseur / le contour de la barre de recherche.'
+      ],
+      expected:'La search box reçoit le focus, prêt à taper.'
+    },
+    {
+      id:'f_alone_works', title:'F seul focus aussi (non-régression)',
+      tags:[],
+      steps:[
+        'GUI ouvert. Appuyer <kbd>F</kbd>.',
+      ],
+      expected:'La search box reçoit le focus.'
+    },
+    {
+      id:'altshift_f_ignored', title:'🆕 Alt+F / Shift+F ne capturent PAS le focus',
+      tags:[T.neu('NEW')],
+      note:'Correction : anciennement toute combinaison avec F focus la search box.',
+      steps:[
+        'GUI ouvert. Essayer <kbd>Alt+F</kbd>.',
+        'Essayer <kbd>Shift+F</kbd>.',
+        'Essayer <kbd>Ctrl+Shift+F</kbd>.'
+      ],
+      expected:'Aucune de ces combinaisons ne focus la search box (libre pour d\'autres raccourcis vanilla/mods).'
+    }
+  ]
+},
+
+// ─── GUI : SET PARENT ─────────────────────────────────────────
+{
+  id:'parent', icon:'🌳', title:'setParent — refresh immédiat',
+  desc:'sendRefreshedList + re-push detail même sur échec.',
+  tests:[
+    {
+      id:'parent_refresh_success', title:'Définir un parent valide — UI rafraîchie immédiatement',
+      tags:[],
+      note:'Anciennement : fallait fermer/rouvrir le GUI pour voir le changement.',
+      steps:[
+        'Créer une zone <code>parentzone</code> via <code>/ag gui</code> → Créer zone.',
+        'GUI → testzone → Détails → bouton <strong>Définir parent</strong> → choisir <code>parentzone</code>.',
+        '<strong>SANS fermer le GUI</strong>, observer la colonne gauche de ZoneDetailScreen.'
+      ],
+      expected:'Le nom de la zone parente <code>parentzone</code> apparaît immédiatement dans la colonne gauche. Liste à gauche aussi rafraîchie.'
+    },
+    {
+      id:'parent_refresh_error', title:'🆕 Parent invalide — UI resync sur erreur',
+      tags:[T.neu('NEW')],
+      note:'Correction : anciennement, sur échec de validation le client gardait une valeur fantôme.',
+      steps:[
+        'GUI → testzone → Détails → Définir parent → saisir un nom <strong>inexistant</strong> (ex: <code>noSuchZone</code>).',
+        'Confirmer.',
+        'Observer le chat ET la colonne gauche du GUI.'
+      ],
+      expected:'Message d\'erreur "zone_not_found" dans le chat. La colonne gauche affiche le parent RÉEL côté serveur (pas la valeur tentée). Pas d\'état fantôme.'
+    },
+    {
+      id:'parent_cycle', title:'🆕 Parent = la zone elle-même (cycle) — refresh après rejet',
+      tags:[T.neu('NEW')],
+      steps:[
+        'GUI → testzone → Détails → Définir parent → saisir <code>testzone</code> (la zone elle-même).',
+        'Confirmer.'
+      ],
+      expected:'Action rejetée avec message. UI resync à l\'état serveur réel (parent inchangé).'
+    }
+  ]
+}
+
+];
+
+// ═══ ÉTAT + RENDU ═════════════════════════════════════════════
+const state = {};
+let testCount = 0;
+let globalIndex = 0;
+
+function buildTag(tag) {
+  const cls = tag.c === 'flag' ? 'tag-flag' : tag.c === 'mod' ? 'tag-mod'
+            : tag.c === 'new' ? 'tag-new' : 'tag-req';
+  const prefix = tag.c === 'mod' ? '🧩 ' : tag.c === 'req' ? '⚠️ ' : tag.c === 'new' ? '🆕 ' : '';
+  return `<span class="tag ${cls}">${prefix}${tag.t}</span>`;
+}
+
+function render() {
+  const root = document.getElementById('sections-root');
+  root.innerHTML = '';
+
+  SECTIONS.forEach((sec, si) => {
+    testCount += sec.tests.length;
+    const el = document.createElement('div');
+    el.className = 'section' + (si < 3 ? ' open' : '');
+    el.id = 'sec-' + sec.id;
+    el.innerHTML = `
+      <div class="section-header" onclick="toggleSection('sec-${sec.id}')">
+        <span style="font-size:18px">${sec.icon}</span>
+        <div style="flex:1">
+          <div class="section-title">${sec.title}</div>
+          <div class="section-desc">${sec.desc}</div>
+        </div>
+        <span class="section-badge" id="badge-${sec.id}">0 / ${sec.tests.length}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="body-${sec.id}"></div>
+    `;
+    root.appendChild(el);
+    const body = el.querySelector('.section-body');
+
+    sec.tests.forEach(test => {
+      globalIndex++;
+      if (!state[test.id]) state[test.id] = { status: '', notes: '' };
+
+      const tags = (test.tags || []).map(buildTag).join(' ');
+      const noteHtml = test.note ? `<div class="setup-note">ℹ️ ${test.note}</div>` : '';
+      const stepsHtml = test.steps.map(s => `<li>${s}</li>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'test-card';
+      card.id = 'card-' + test.id;
+      card.innerHTML = `
+        <div class="test-header">
+          <span class="test-number">#${globalIndex}</span>
+          <span class="test-title">${test.title}</span>
+          ${tags}
+        </div>
+        <div class="test-body">
+          ${noteHtml}
+          <div class="test-steps" style="grid-column:1/-1">
+            <div class="subsection-label">Étapes</div>
+            <ol class="steps-list">${stepsHtml}</ol>
+          </div>
+          <div class="expected-box">
+            <div class="subsection-label">✓ Résultat attendu</div>
+            ${test.expected}
+          </div>
+          <div class="verdict-row">
+            <div class="subsection-label">Verdict</div>
+            <div class="radio-group">
+              <label class="radio-btn opt-pass" id="btn-pass-${test.id}">
+                <input type="radio" name="${test.id}" value="pass" onchange="setStatus('${test.id}','pass')">
+                ✓ Succès
+              </label>
+              <label class="radio-btn opt-fail" id="btn-fail-${test.id}">
+                <input type="radio" name="${test.id}" value="fail" onchange="setStatus('${test.id}','fail')">
+                ✗ Échec
+              </label>
+              <label class="radio-btn opt-skip" id="btn-skip-${test.id}">
+                <input type="radio" name="${test.id}" value="skip" onchange="setStatus('${test.id}','skip')">
+                — Non testé
+              </label>
+            </div>
+          </div>
+          <textarea class="notes-area" placeholder="Notes, comportement observé..."
+            id="notes-${test.id}"
+            oninput="setNotes('${test.id}', this.value)">${state[test.id].notes}</textarea>
+        </div>
+      `;
+      body.appendChild(card);
+      applyStyling(test.id);
+    });
+  });
+  updateProgress();
+}
+
+function toggleSection(id) { document.getElementById(id).classList.toggle('open'); }
+
+function setStatus(testId, val) {
+  state[testId].status = val;
+  applyStyling(testId);
+  updateProgress();
+  autosaveLocal();
+}
+
+function setNotes(testId, val) {
+  state[testId].notes = val;
+  autosaveLocal();
+}
+
+function applyStyling(testId) {
+  const card = document.getElementById('card-' + testId);
+  if (!card) return;
+  const st = state[testId].status;
+  card.classList.remove('status-pass', 'status-fail', 'status-skip');
+  if (st) card.classList.add('status-' + st);
+  ['pass','fail','skip'].forEach(v => {
+    const btn = document.getElementById(`btn-${v}-${testId}`);
+    if (btn) {
+      btn.classList.toggle('selected', st === v);
+      const input = btn.querySelector('input');
+      if (input) input.checked = (st === v);
+    }
+  });
+}
+
+function updateProgress() {
+  let done = 0, pass = 0, fail = 0, skip = 0;
+  for (const id in state) {
+    const s = state[id].status;
+    if (s === 'pass') { done++; pass++; }
+    else if (s === 'fail') { done++; fail++; }
+    else if (s === 'skip') { done++; skip++; }
+  }
+  const total = Object.keys(state).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById('prog-text').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('cnt-pass').textContent = pass + ' succès';
+  document.getElementById('cnt-fail').textContent = fail + ' échec' + (fail > 1 ? 's' : '');
+  document.getElementById('cnt-skip').textContent = skip + ' ignoré' + (skip > 1 ? 's' : '');
+  SECTIONS.forEach(sec => {
+    let secDone = 0;
+    sec.tests.forEach(t => { if (state[t.id] && state[t.id].status) secDone++; });
+    const badge = document.getElementById('badge-' + sec.id);
+    if (badge) badge.textContent = `${secDone} / ${sec.tests.length}`;
+  });
+}
+
+function getMeta() {
+  return {
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    version: document.getElementById('meta-version').value,
+    server: document.getElementById('meta-server').value,
+  };
+}
+
+function saveJSON() {
+  const data = {
+    meta: { ...getMeta(), exportedAt: new Date().toISOString(), tool: 'ArcadiaGuard S-H15 Re-test', story: 'S-H15' },
+    results: {}
+  };
+  for (const id in state) data.results[id] = { ...state[id] };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = getMeta().date || new Date().toISOString().split('T')[0];
+  const tester = getMeta().tester || 'rapport';
+  a.href = url;
+  a.download = `arcadiaguard-sh15_${tester}_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Rapport sauvegardé !');
+}
+
+function loadJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.meta) {
+        if (data.meta.tester) document.getElementById('meta-tester').value = data.meta.tester;
+        if (data.meta.date) document.getElementById('meta-date').value = data.meta.date;
+        if (data.meta.version) document.getElementById('meta-version').value = data.meta.version;
+        if (data.meta.server) document.getElementById('meta-server').value = data.meta.server;
+      }
+      if (data.results) {
+        for (const id in data.results) {
+          if (state[id] !== undefined) {
+            state[id] = { status: data.results[id].status || '', notes: data.results[id].notes || '' };
+          }
+        }
+        for (const id in state) {
+          applyStyling(id);
+          const ta = document.getElementById('notes-' + id);
+          if (ta) ta.value = state[id].notes;
+        }
+        updateProgress();
+      }
+      toast('📂 Rapport chargé !');
+    } catch { toast('❌ Erreur de chargement.'); }
+  };
+  reader.readAsText(file);
+}
+
+function autosaveLocal() {
+  try { localStorage.setItem('ag_sh15_state', JSON.stringify({ state, meta: getMeta() })); } catch {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('ag_sh15_state');
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (saved.state) {
+      for (const id in saved.state) {
+        if (state[id] !== undefined) state[id] = saved.state[id];
+      }
+    }
+    if (saved.meta) {
+      if (saved.meta.tester) document.getElementById('meta-tester').value = saved.meta.tester;
+      if (saved.meta.date) document.getElementById('meta-date').value = saved.meta.date;
+      if (saved.meta.version) document.getElementById('meta-version').value = saved.meta.version;
+      if (saved.meta.server) document.getElementById('meta-server').value = saved.meta.server;
+    }
+    return true;
+  } catch { return false; }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
+document.getElementById('load-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadJSON(e.target.files[0]);
+});
+['meta-tester','meta-date','meta-version','meta-server'].forEach(id => {
+  document.getElementById(id).addEventListener('input', autosaveLocal);
+});
+
+render();
+if (loadLocal()) {
+  for (const id in state) {
+    applyStyling(id);
+    const ta = document.getElementById('notes-' + id);
+    if (ta) ta.value = state[id].notes;
+  }
+  updateProgress();
+  toast('🔄 Session précédente restaurée');
+}
+</script>
+</body>
+</html>

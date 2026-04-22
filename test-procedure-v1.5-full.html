@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ArcadiaGuard v1.5 — Procédure de test complète (2 groupes)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #1a1a1a; color: #e8e8e8; margin: 0; padding: 20px; font-size: 13px; }
+  h1 { color: #e8a84a; border-bottom: 2px solid #e8a84a; padding-bottom: 8px; margin-top: 0; }
+  h2 { color: #e8a84a; margin-top: 0; }
+  .bar { position: sticky; top: 0; background: #222; padding: 10px 16px; margin-bottom: 16px; border: 1px solid #444; border-radius: 4px; z-index: 100; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .bar input[type=text] { background: #1a1a1a; border: 1px solid #555; color: #e8e8e8; padding: 6px 10px; border-radius: 3px; width: 200px; font: inherit; }
+  .bar button { background: #e8a84a; color: #1a1a1a; border: 0; padding: 7px 14px; font-weight: 600; cursor: pointer; border-radius: 3px; font: inherit; }
+  .bar button:hover { background: #f0c070; }
+  .bar .stats { color: #aaa; margin-left: auto; font-size: 12px; }
+  .bar .stats b { color: #e8a84a; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tabs button { flex: 1; background: #333; color: #999; border: 1px solid #444; padding: 10px; cursor: pointer; font-weight: 600; border-radius: 3px 3px 0 0; font: inherit; }
+  .tabs button.active { background: #e8a84a; color: #1a1a1a; }
+  .group { display: none; }
+  .group.active { display: block; }
+  details { background: #242424; border: 1px solid #383838; border-radius: 4px; margin-bottom: 8px; }
+  summary { padding: 10px 14px; cursor: pointer; font-weight: 600; color: #e8a84a; user-select: none; }
+  summary::marker { color: #e8a84a; }
+  summary .cnt { color: #888; font-weight: 400; font-size: 11px; margin-left: 8px; }
+  summary .prog { color: #5ecb5e; font-weight: 400; font-size: 11px; margin-left: 8px; }
+  .tests { padding: 0 14px 10px; }
+  .test { display: grid; grid-template-columns: 1fr 220px 1fr; gap: 8px; padding: 6px 0; border-top: 1px solid #2f2f2f; align-items: center; }
+  .test:first-child { border-top: 0; }
+  .tn { font-weight: 600; color: #d8d8d8; }
+  .td { color: #aaa; font-size: 12px; }
+  .radios { display: flex; gap: 4px; }
+  .radios label { padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 600; background: #333; color: #888; border: 1px solid transparent; }
+  .radios input { display: none; }
+  .radios input:checked + span.ok { background: #2d5f2d; color: #9feb9f; border-color: #5ecb5e; padding: 3px 8px; border-radius: 3px; border: 1px solid #5ecb5e; }
+  .radios input:checked + span.ko { background: #5f2d2d; color: #eb9f9f; border-color: #cb5e5e; padding: 3px 8px; border-radius: 3px; border: 1px solid #cb5e5e; }
+  .radios input:checked + span.sk { background: #5f5f2d; color: #ebeb9f; border-color: #cbcb5e; padding: 3px 8px; border-radius: 3px; border: 1px solid #cbcb5e; }
+  .radios label:hover { background: #404040; }
+  .radios span { padding: 3px 8px; border-radius: 3px; background: #333; color: #aaa; border: 1px solid transparent; }
+  .test input[type=text] { background: #1a1a1a; border: 1px solid #444; color: #e8e8e8; padding: 4px 8px; border-radius: 3px; font: inherit; font-size: 12px; width: 100%; }
+  .intro { background: #2a2520; border-left: 3px solid #e8a84a; padding: 12px 16px; margin-bottom: 16px; color: #ccc; font-size: 12px; line-height: 1.5; }
+  .intro ul { margin: 6px 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<h1>ArcadiaGuard v1.5 — Procédure de test complète</h1>
+<div class="intro">
+  <b>Mode confrontation 2 groupes</b> — 2-3 personnes par groupe. Chaque groupe exécute <b>tous</b> les tests indépendamment. À la fin, on compare les deux JSON exportés pour identifier les divergences (= bugs reproductibles vs cas bords).
+  <ul>
+    <li><b>OK</b> = fonctionne comme attendu. <b>KO</b> = ne fonctionne pas / crash / comportement inattendu (écris le détail dans le commentaire). <b>SKIP</b> = pas testable (mod absent, hors scope, déjà KO en amont).</li>
+    <li>Chaque groupe renseigne son <b>nom</b> + <b>membres</b> en haut avant de commencer.</li>
+    <li>Cliquer "Export JSON" à la fin → fichier téléchargé. Envoyer les 2 JSON pour confrontation.</li>
+  </ul>
+</div>
+
+<div class="bar">
+  <label>Groupe A :</label>
+  <input type="text" id="nameA" placeholder="Membres groupe A (ex: Alice, Bob)">
+  <label>Groupe B :</label>
+  <input type="text" id="nameB" placeholder="Membres groupe B (ex: Carol, Dave, Eve)">
+  <button onclick="exportJson()">📥 Export JSON</button>
+  <span class="stats" id="stats">0 / 0</span>
+</div>
+
+<div class="tabs">
+  <button onclick="tab('A')" id="tabA" class="active">Groupe A</button>
+  <button onclick="tab('B')" id="tabB">Groupe B</button>
+</div>
+
+<div id="groupA" class="group active"></div>
+<div id="groupB" class="group"></div>
+
+<script>
+const TESTS = [
+  ["Flags Blocks", [
+    ["block-break", "Casser un bloc en zone deny → refusé + message"],
+    ["block-place", "Placer un bloc en zone deny → refusé"],
+    ["block-interact", "Clic droit sur bloc interactif (lutrin, etc.) en zone deny → refusé"],
+    ["container-access", "Ouvrir un coffre/baril/hopper en zone deny → refusé"],
+    ["door", "Ouvrir/fermer porte en zone deny → refusé"],
+    ["trapdoor", "Ouvrir trappe en zone deny → refusé"],
+    ["button", "Appuyer bouton en zone deny → refusé"],
+    ["lever", "Basculer levier en zone deny → refusé"],
+    ["pressure-plate", "Marcher sur plaque pression en zone deny → pas de déclenchement"],
+    ["gate", "Ouvrir portail bois en zone deny → refusé"],
+    ["use-portal", "Entrer portail Nether/End en zone deny → téléport bloqué"],
+  ]],
+  ["Flags Combat", [
+    ["pvp", "Frapper un autre joueur en zone deny → refusé"],
+    ["player-damage", "Prendre dégâts (chute/creeper) en zone allow → invulnérable"],
+    ["mob-damage", "Attaquer un mob en zone deny → refusé"],
+    ["fall-damage", "Chuter de haut en zone allow=no damage → pas de dégâts"],
+    ["invincible", "Zone invincible=allow → aucun dégât + pas de knockback"],
+    ["attack-animals", "Frapper vache/mouton en zone deny → refusé"],
+    ["attack-monsters", "Frapper zombie/skeleton en zone deny → refusé"],
+    ["ender-pearl", "Lancer ender pearl en zone deny → téléport bloqué"],
+    ["chorus-fruit", "Manger chorus fruit en zone deny → téléport bloqué"],
+  ]],
+  ["Flags Mobs", [
+    ["mob-spawn", "Attendre spawn naturel tous mobs en zone deny → aucun spawn"],
+    ["animal-spawn", "Attendre spawn animaux passifs en zone deny → aucun"],
+    ["monster-spawn", "Attendre spawn monstres hostiles en zone deny → aucun"],
+    ["villager-spawn", "Breeding villageois en zone deny → refusé"],
+    ["vehicle-place", "Poser bateau/minecart en zone deny → refusé"],
+    ["vehicle-destroy", "Casser bateau/minecart en zone deny → refusé"],
+    ["leash", "Leasher entity en zone deny → refusé"],
+    ["spawn-egg", "Utiliser œuf de spawn en zone deny → refusé"],
+  ]],
+  ["Flags Explosions & Propagation", [
+    ["creeper-explosion", "Faire exploser creeper en zone deny → pas de dégâts blocs"],
+    ["tnt-explosion", "Allumer TNT en zone deny → pas de dégâts"],
+    ["block-explosion", "Respawn anchor explosion en zone deny → bloquée"],
+    ["fire-spread", "Feu en zone deny → ne se propage pas"],
+    ["lava-fire", "Lave proche bois en zone deny → n'enflamme pas"],
+    ["lava-spread", "Lave coule en zone deny → stoppée"],
+    ["water-spread", "Eau coule en zone deny → stoppée"],
+    ["leaf-decay", "Abattre tronc en zone deny leaf-decay → feuilles restent"],
+  ]],
+  ["Flags Environnement", [
+    ["crop-growth", "Planter blé en zone deny crop-growth → ne pousse pas"],
+    ["tree-growth", "Planter sapling + bonemeal en zone deny → pas d'arbre"],
+    ["farmland-trample", "Sauter sur farmland en zone deny → pas de piétinement"],
+    ["grass-spread", "Dirt proche herbe en zone deny → ne devient pas herbe"],
+    ["vine-growth", "Liane en zone deny → ne s'étend pas"],
+    ["sculk-spread", "Sculk catalyst en zone deny → ne se propage pas"],
+    ["snow-melt", "Neige proche lumière/chaleur en zone deny → ne fond pas"],
+    ["ice-melt", "Glace proche chaleur en zone deny → ne fond pas"],
+  ]],
+  ["Flags Items & XP", [
+    ["item-drop", "Q (drop) en zone deny → refusé"],
+    ["item-pickup", "Marcher sur item au sol en zone deny → pas ramassé"],
+    ["item-throw", "Lancer snowball/œuf en zone deny → refusé"],
+    ["exp-drop", "Tuer mob/miner en zone deny → pas de XP"],
+  ]],
+  ["Flags Entry / Exit", [
+    ["entry", "Zone entry=deny → joueur repoussé à l'entrée + message"],
+    ["exit", "Zone exit=deny → joueur ne peut pas sortir"],
+    ["entry-bypass-whitelist", "Joueur whitelisté → peut entrer malgré entry=deny"],
+    ["entry-bypass-op", "OP (bypass level) → peut entrer malgré entry=deny"],
+  ]],
+  ["Flags Vanilla Tools", [
+    ["till-farmland", "Houe sur terre en zone deny → pas de farmland"],
+    ["strip-wood", "Hache sur tronc en zone deny → pas d'écorçage"],
+    ["shovel-path", "Pelle sur herbe en zone deny → pas de chemin"],
+    ["scoop-fluids", "Seau rempli dans eau/lave en zone deny → refusé"],
+    ["place-fluids", "Verser seau eau/lave en zone deny → refusé"],
+    ["use-elytra", "Décoller elytra en zone deny → tombe immédiatement"],
+  ]],
+  ["Flags Chat & Commandes", [
+    ["send-chat", "Envoyer message chat en zone deny → refusé"],
+    ["exec-command", "Taper /kill en zone deny → refusé"],
+    ["exec-command-blacklist", "Liste /tpa → /tpa refusé, /home autorisé"],
+  ]],
+  ["Flags Magic - Ars Nouveau", [
+    ["ars-spell-cast", "Lancer tout sort Ars en zone deny → bloqué + message"],
+    ["ars-spell-blacklist", "Blacklist 'projectile' → sort avec projectile bloqué, autres OK"],
+    ["ars-spell-whitelist", "Whitelist 'projectile' → sort sans projectile bloqué"],
+    ["spell-movement", "Sort avec blink/leap en zone deny spell-movement → bloqué"],
+    ["ars-warp-scroll", "Warp scroll en zone deny → bloqué indépendamment spell-cast"],
+    ["ars-additions-scroll", "Scroll Ars Additions en zone deny → bloqué"],
+  ]],
+  ["Flags Magic - Iron's Spellbooks", [
+    ["irons-spell-cast", "Lancer tout sort ISB en zone deny → bloqué"],
+    ["irons-spell-blacklist", "Blacklist 'iceblock' → spell iceblock bloqué seul"],
+    ["irons-spell-whitelist", "Whitelist 'iceblock' → autres spells bloqués"],
+  ]],
+  ["Flags Mods Combat", [
+    ["simplyswords-ability", "Capacité épée Simply Swords en zone deny → refusée"],
+    ["tf-projectile", "Projectile boss Twilight en zone deny → dégâts bloqués"],
+    ["mutant-mob-spawn", "Mutant spawn en zone deny → aucun spawn"],
+  ]],
+  ["Flags Mods Utilitaires", [
+    ["carryon", "Sneak + main vide sur bloc en zone deny → bloc pas ramassé"],
+    ["carryon-entity", "Sneak + main vide sur mob en zone deny → mob pas ramassé"],
+    ["carryon-forcedrop", "Entrer avec un bloc carry en zone deny → drop forcé"],
+    ["waystone-use", "Utiliser waystone en zone deny → bloqué"],
+    ["charm-use", "Utiliser charm Apotheosis en zone deny → bloqué"],
+    ["occultism-use", "Utiliser gem d'âme Occultism en zone deny → bloqué"],
+    ["supplementaries-throw", "Lancer brique Supp en zone deny → bloqué"],
+    ["rechiseled-use", "Changer style bloc Rechiseled en zone deny → refusé"],
+    ["npc-interact", "Clic NPC custom en zone deny → bloqué"],
+    ["mob-bucket", "Bucket axolotl/fish en zone deny → refusé"],
+  ]],
+  ["Flags Mods Actions", [
+    ["parcool-actions", "Wall-jump/vault ParCool en zone deny → bloqué + message chat (1 fois)"],
+    ["parcool-sync", "Entrer zone deny parcool → message chat apparaît"],
+    ["parcool-no-spam", "Rester 30s en zone deny → message NE se répète PAS"],
+    ["emote-use", "Lancer emote Emotecraft en zone deny → bloqué + message"],
+    ["emote-no-spam", "Rester 30s en zone deny emote → message NE spam pas"],
+  ]],
+  ["Flags Config Numériques / Listes", [
+    ["heal-amount-zero", "HEAL_AMOUNT=0 → pas de régen"],
+    ["heal-amount-value", "HEAL_AMOUNT=10 → régénère 10 HP/sec"],
+    ["feed-amount-zero", "FEED_AMOUNT=0 → pas de restauration"],
+    ["feed-amount-value", "FEED_AMOUNT=10 → restaure 10 saturation/sec"],
+    ["chunkload-on", "CHUNKLOAD=true → s'éloigner, chunks restent chargés"],
+    ["chunkload-off", "CHUNKLOAD=false → chunks unload normalement"],
+    ["fly-deny-survival", "fly=deny + mayfly attribute → vol bloqué, mayfly cut"],
+    ["fly-deny-creative", "Créatif + fly=deny → vol non bloqué (exempt)"],
+    ["fly-deny-spectator", "Spectator + fly=deny → vol non bloqué"],
+    ["invincible-flag", "invincible=allow → joueur no damage + no knockback"],
+    ["animal-invincible", "animal-invincible=allow → animaux zone immunisés"],
+  ]],
+  ["GUI - ZoneListScreen", [
+    ["gui-open-command", "/ag gui → ZoneListScreen s'ouvre"],
+    ["gui-search-filter", "Taper dans search box → liste filtrée live"],
+    ["gui-dim-sidebar", "Cliquer dim sidebar → zones dim affichées"],
+    ["gui-sidebar-scroll", "Beaucoup dims → sidebar scroll OK"],
+    ["gui-pagination", "Beaucoup zones → Prev/Next fonctionnent"],
+    ["gui-select-zone", "Cliquer row zone → highlight + boutons activés"],
+    ["gui-double-click", "Double-clic row zone (< 400ms) → ouvre détails"],
+    ["gui-teleport", "Bouton Teleport → joueur TP vers zone"],
+    ["gui-details-btn", "Bouton Details → ouvre ZoneDetailScreen"],
+    ["gui-delete-btn", "Bouton Delete → popup custom overlay confirm"],
+    ["gui-delete-confirm", "Cliquer OK dans overlay delete → zone supprimée"],
+    ["gui-delete-cancel", "Cliquer Cancel dans overlay → aucune action"],
+    ["gui-wand-display", "Sélectionner pos1/pos2 wand → coords affichées GUI"],
+    ["gui-create-btn", "2 pos wand + cliquer Create → ouvre ZoneCreateScreen"],
+    ["gui-dimflags-btn", "Bouton DimFlags → ouvre DimDetailScreen"],
+    ["gui-editbox-centered", "Texte dans searchBox correctement centré vertical"],
+  ]],
+  ["GUI - ZoneCreateScreen", [
+    ["create-name-input", "Taper nom zone → caractères s'affichent centrés"],
+    ["create-name-empty", "Vide + Create → erreur"],
+    ["create-name-normalize", "Saisir 'Zone Test!!' → normalisé 'zone_test'"],
+    ["create-name-dup", "Nom déjà existant → erreur"],
+    ["create-cancel", "Bouton Cancel → retour ZoneList sans création"],
+    ["create-success", "Nom valide + Create → zone créée + retour liste"],
+    ["create-wand-coords", "Coords wand pos1/pos2 affichées écran"],
+  ]],
+  ["GUI - ZoneDetailScreen", [
+    ["detail-tab-info", "Onglet INFO → nom, dim, coords, priority affichés"],
+    ["detail-tab-flags", "Onglet FLAGS → liste flags avec statuts"],
+    ["detail-tab-members", "Onglet MEMBERS → liste membres"],
+    ["detail-tab-logs", "Onglet LOGS → ouvre ZoneLogsScreen"],
+    ["detail-flag-toggle", "Cliquer boolean flag → allow→deny→inherit→allow"],
+    ["detail-flag-search", "Taper search flag → liste filtrée"],
+    ["detail-flag-intcfg", "Cliquer IntFlag (heal) → ouvre FlagConfigScreen INT"],
+    ["detail-flag-listcfg", "Cliquer ListFlag (blacklist) → ouvre FlagConfigScreen LIST"],
+    ["detail-member-add", "Taper pseudo + '+' → membre ajouté"],
+    ["detail-member-add-enter", "Enter dans whitelist box → confirme"],
+    ["detail-member-add-unknown", "Pseudo inexistant → erreur claire"],
+    ["detail-member-remove-online", "Retirer joueur connecté → OK"],
+    ["detail-member-remove-offline", "Retirer joueur déconnecté → OK"],
+    ["detail-member-remove-unknown", "Retirer pseudo inexistant → OK (par nom)"],
+    ["detail-member-role", "Cliquer rôle → cycle MEMBER/MOD/OWNER"],
+    ["detail-parent-set", "Set parent → popup, entrer nom → OK"],
+    ["detail-parent-clear", "Clear parent → parent retiré"],
+    ["detail-coords-edit", "Bouton Edit coords → popup 6 editbox X/Y/Z"],
+    ["detail-coords-save", "Saisir coords + Save → zone update"],
+    ["detail-itemblocks", "Bouton Item Blocks → ouvre picker"],
+    ["detail-back", "Bouton Back → retour ZoneList"],
+    ["detail-refresh", "Flag changé côté serveur → écran refresh auto"],
+    ["detail-tooltip", "Hover flag → tooltip description"],
+    ["detail-scrolling", "Scroll liste flags/members → scroll OK"],
+    ["detail-editbox-centered", "Tous les editbox : texte centré vertical"],
+  ]],
+  ["GUI - FlagConfigScreen (Int/List)", [
+    ["flagcfg-int-heal", "Ouvrir HEAL_AMOUNT → input numérique"],
+    ["flagcfg-int-validate", "Saisir 15 + Save → HEAL_AMOUNT=15"],
+    ["flagcfg-int-bounds", "Saisir -5 ou 999 → rejeté ou clampé"],
+    ["flagcfg-list-add", "Ars blacklist → entrer 'projectile' + Add → ajouté"],
+    ["flagcfg-list-remove", "Retirer entry via X → disparaît"],
+    ["flagcfg-list-autocomplete", "Taper 'ars_' → suggestions glyphs"],
+    ["flagcfg-reset", "Bouton Reset → flag revient défaut"],
+    ["flagcfg-save", "Bouton Save → flag persisté"],
+    ["flagcfg-editbox-centered", "Input text centré dans la box"],
+  ]],
+  ["GUI - DimDetailScreen", [
+    ["dimdetail-open", "Bouton DimFlags → affiche flags dimension"],
+    ["dimdetail-flags-display", "Flags listés avec valeur héritée/surchargée"],
+    ["dimdetail-flag-toggle", "Cliquer flag → toggle"],
+    ["dimdetail-flag-cfg", "Cliquer int/list flag → FlagConfigScreen"],
+    ["dimdetail-search", "Picker search → filtre live"],
+    ["dimdetail-scroll", "Scroll liste flags OK"],
+    ["dimdetail-back", "Bouton Back → retour"],
+  ]],
+  ["GUI - ZoneLogsScreen", [
+    ["logs-display", "Affiche logs zone (timestamp/player/action/pos)"],
+    ["logs-filter-player", "Filtre joueur → logs joueur seulement"],
+    ["logs-filter-action", "Filtre action → logs action seulement"],
+    ["logs-apply", "Bouton Filter → filtres appliqués"],
+    ["logs-reset", "Bouton Reset → filtres vidés"],
+    ["logs-refresh", "Bouton Refresh → nouvelles données"],
+    ["logs-editbox-centered", "Texte centré dans les 2 filtres"],
+  ]],
+  ["Commandes /ag zone", [
+    ["cmd-zone-list", "/ag zone list → liste paginée"],
+    ["cmd-zone-info", "/ag zone info <nom> → détails"],
+    ["cmd-zone-create", "/ag zone create <nom> (wand) → créée"],
+    ["cmd-zone-add", "/ag zone add <nom> x1 y1 z1 x2 y2 z2 → créée"],
+    ["cmd-zone-remove", "/ag zone remove <nom> → supprimée"],
+    ["cmd-zone-copy", "/ag zone copy <src> <dst> → dupliquée avec flags+membres"],
+    ["cmd-zone-flag", "/ag zone flag <nom> <flag> allow|deny|reset → modif"],
+    ["cmd-zone-parent-set", "/ag zone parent set <enfant> <parent> → lié"],
+    ["cmd-zone-parent-clear", "/ag zone parent clear <enfant> → délié"],
+    ["cmd-zone-whitelist-add", "/ag zone whitelist add <zone> <joueur> → ajouté"],
+    ["cmd-zone-whitelist-remove", "/ag zone whitelist remove ... → retiré"],
+    ["cmd-zone-whitelist-role", "/ag zone whitelist role ... MEMBER|MOD|OWNER → défini"],
+    ["cmd-zone-dim", "/ag zone dimensional <nom> → affiche dimension"],
+  ]],
+  ["Commandes /ag item & logs", [
+    ["cmd-item-block", "/ag item block minecraft:tnt → bloqué global"],
+    ["cmd-item-unblock", "/ag item unblock minecraft:tnt → débloqué"],
+    ["cmd-item-list", "/ag item list → liste items bloqués"],
+    ["cmd-log-all", "/ag log → paginé"],
+    ["cmd-log-zone", "/ag log zone <nom> → logs zone"],
+    ["cmd-log-player", "/ag log player <nom> → logs joueur"],
+  ]],
+  ["Commandes /ag dimflag & admin", [
+    ["cmd-dimflag-list", "/ag dimflag list → tous flags dim"],
+    ["cmd-dimflag-list-dim", "/ag dimflag list minecraft:overworld → spécifique"],
+    ["cmd-dimflag-clear", "/ag dimflag clear <dim> → reset"],
+    ["cmd-dimflag-clear-all", "/ag dimflag clear all → reset toutes"],
+    ["cmd-gui", "/ag gui → ouvre ZoneListScreen"],
+    ["cmd-wand-editor", "/ag wand give editor → wand editor"],
+    ["cmd-wand-viewer", "/ag wand give viewer → wand viewer"],
+    ["cmd-migrate", "/ag migrate yawp → diagnostic + import"],
+    ["cmd-reload", "/ag reload → recharge zones + blocklist"],
+    ["cmd-help", "/ag help → aide"],
+    ["cmd-alias", "/arcadiaguard = /ag"],
+  ]],
+  ["Permissions & Rôles", [
+    ["perm-op-bypass", "OP level ≥ bypass_op_level → toutes actions autorisées"],
+    ["perm-non-op", "Non-OP → actions selon flags"],
+    ["perm-member-role", "Membre MEMBER → peut voir infos zone"],
+    ["perm-moderator-role", "MODERATOR → peut gérer whitelist"],
+    ["perm-owner-role", "OWNER → peut modifier flags + coords"],
+    ["perm-whitelist-bypass", "Whitelist → bypass entry=deny"],
+    ["perm-luckperms-bypass", "Node arcadiaguard.zone.bypass → bypass complet"],
+    ["perm-luckperms-role", "Node arcadiaguard.zone.X.owner → rôle résolu"],
+  ]],
+  ["Migration YAWP", [
+    ["mig-detect", "/ag migrate yawp avec YAWP installé → régions détectées"],
+    ["mig-convert", "Régions cuboid YAWP → zones AG créées"],
+    ["mig-skip-noncuboid", "Régions non-cuboid → skip + warning"],
+    ["mig-report", "Message diagnostic : X importées, Y skipées, Z dimensions"],
+    ["mig-idempotent", "Relancer /ag migrate yawp → ne duplique pas (ou message clair)"],
+    ["mig-gui-refresh", "Après migrate → GUI liste zones refresh"],
+  ]],
+  ["Hiérarchie & Priorité Zones", [
+    ["hier-parent-inherit", "Enfant hérite flags parent (sans override)"],
+    ["hier-child-override", "Enfant override flag → utilise sa valeur"],
+    ["hier-single-parent", "Set parent 2 fois → remplace (max 1 parent)"],
+    ["hier-no-circular", "Set A→B puis B→A → rejeté (cycle)"],
+    ["hier-same-dim", "Parent + enfant dims différentes → rejeté"],
+    ["hier-priority-nest", "2 zones overlappantes non-parent → priority la plus haute gagne"],
+    ["hier-child-removed-on-delete", "Supprimer parent → enfants parent cleared"],
+  ]],
+  ["Audit Logs", [
+    ["audit-zone-create", "Créer zone → log 'create'"],
+    ["audit-zone-delete", "Supprimer zone → log 'delete'"],
+    ["audit-flag-change", "Changer flag → log 'flag' avec old/new"],
+    ["audit-member-add", "Add member → log"],
+    ["audit-member-remove", "Remove member → log"],
+    ["audit-deny", "Action bloquée par flag → log avec player+pos+flag"],
+    ["audit-rotation", "Fichier logs rotationne quotidien"],
+    ["audit-async", "Haute charge logs → pas de lag serveur"],
+  ]],
+  ["Client Sync", [
+    ["sync-parcool-payload", "Entrer zone deny parcool → ParcoolBlockedPayload reçu"],
+    ["sync-parcool-client", "Mixin client vérifie ClientParcoolState.isBlocked()"],
+    ["sync-emote-payload", "Entrer zone deny emote → EmoteBlockedPayload reçu"],
+    ["sync-emote-client", "Verifier Emotecraft bloque si ClientEmoteBlockedState"],
+    ["sync-dimflags", "DimFlagsPayload → cache client mis à jour"],
+    ["sync-items", "ItemBlocksPayload → liste items bloqués cachée côté client"],
+  ]],
+  ["Wand Tool", [
+    ["wand-pos1", "Clic gauche wand → pos1 enregistrée + chat"],
+    ["wand-pos2", "Clic droit wand → pos2 enregistrée + chat"],
+    ["wand-hud", "HUD wand affiche pos1/pos2 overlay"],
+    ["wand-render-zone", "Zone sélectionnée → wireframe quartz 3D"],
+    ["wand-render-redstone", "Coins zone sélectionnée → redstone"],
+    ["wand-editor-mode", "Wand editor → peut create zones"],
+    ["wand-viewer-mode", "Wand viewer → read-only, pas de modif"],
+    ["wand-different-dim", "Pos1 overworld + pos2 nether → erreur"],
+  ]],
+  ["Cross-Dimension & Events", [
+    ["xdim-zone-create", "Créer zone dans nether → stockée correctement"],
+    ["xdim-zone-list", "/ag zone list → inclut toutes dims"],
+    ["xdim-zone-flag", "Modifier flag zone d'une autre dim → OK"],
+    ["xdim-zone-delete", "Delete zone dim différente → OK"],
+    ["event-zone-created", "ZoneCreatedEvent levé (si listener externe)"],
+    ["event-zone-removed", "ZoneRemovedEvent levé"],
+    ["event-flag-changed", "FlagChangedEvent levé"],
+  ]],
+  ["Zone Management & Persistence", [
+    ["persist-json", "Zone créée → fichier JSON disque dans config"],
+    ["persist-reload", "/ag reload → recharge depuis disque"],
+    ["persist-reload-missing", "Supprimer JSON manuellement + reload → zone disparue"],
+    ["persist-orphan-dim", "Dim directory sans zones → nettoyé au reload"],
+    ["persist-enable-disable", "Zone disabled → flags ignorés"],
+    ["persist-inherit-dim", "Zone inherit=true → utilise dim flags"],
+    ["persist-inherit-dim-off", "Zone inherit=false → ignore dim flags"],
+  ]],
+  ["Items Bloqués Per-Zone (S-H20)", [
+    ["itemblock-picker-open", "Ouvrir Item Blocks picker → grid items"],
+    ["itemblock-add", "Sélectionner item → ajouté zone"],
+    ["itemblock-remove", "Deselect item → retiré zone"],
+    ["itemblock-rightclick-item", "Clic droit item bloqué en zone → refusé"],
+    ["itemblock-rightclick-block", "Clic droit bloc avec item bloqué en main → refusé"],
+    ["itemblock-interact-entity", "Clic droit entity avec item bloqué → refusé"],
+    ["itemblock-scoped-per-zone", "Item bloqué zone A → utilisable zone B"],
+    ["itemblock-sync-client", "ItemBlocksPayload reçu → cache client OK"],
+  ]],
+  ["Config & Stabilité", [
+    ["cfg-bypass-op-level", "Config bypass_op_level=4 → seul OP4 bypass"],
+    ["cfg-reload-config", "/ag reload → config rechargée"],
+    ["stab-no-crash-server-start", "Server démarre sans crash avec mod"],
+    ["stab-no-crash-client-start", "Client démarre sans crash avec mod"],
+    ["stab-hot-reload-zones", "Créer/supprimer zone en masse → pas de lag"],
+    ["stab-many-zones", "Créer 100 zones → GUI reste fluide"],
+    ["stab-heavy-flags", "Zone avec tous flags deny → pas de TPS drop"],
+    ["stab-frequency-kill", "Frequency NEGLIGIBLE handler désactivable → config OK"],
+    ["stab-mod-absent", "Mods optionnels absents → pas de crash, warning log only"],
+  ]],
+  ["Messages & i18n", [
+    ["i18n-fr-messages", "Messages deny en français (locale fr_fr)"],
+    ["i18n-en-messages", "Messages deny en anglais (locale en_us)"],
+    ["msg-params", "Messages paramétrés (zone name, flag name) via Component.translatable"],
+    ["msg-throttle", "Message parcool/emote throttlé → pas de spam chat"],
+    ["msg-actionbar-clean", "Pas d'actionbar permanent résiduel (ex parcool)"],
+  ]],
+];
+
+let state = { A: {}, B: {} };
+
+function tab(g) {
+  document.getElementById('groupA').classList.toggle('active', g === 'A');
+  document.getElementById('groupB').classList.toggle('active', g === 'B');
+  document.getElementById('tabA').classList.toggle('active', g === 'A');
+  document.getElementById('tabB').classList.toggle('active', g === 'B');
+}
+
+function render() {
+  for (const g of ['A', 'B']) {
+    const root = document.getElementById('group' + g);
+    root.innerHTML = '';
+    TESTS.forEach(([cat, items], ci) => {
+      const d = document.createElement('details');
+      d.open = ci < 2;
+      const s = document.createElement('summary');
+      s.innerHTML = cat + ' <span class="cnt">(' + items.length + ')</span> <span class="prog" id="prog-' + g + '-' + ci + '"></span>';
+      d.appendChild(s);
+      const box = document.createElement('div');
+      box.className = 'tests';
+      items.forEach(([name, desc]) => {
+        const id = g + ':' + cat + ':' + name;
+        const row = document.createElement('div');
+        row.className = 'test';
+        row.innerHTML =
+          '<div><div class="tn">' + name + '</div><div class="td">' + desc + '</div></div>' +
+          '<div class="radios">' +
+            '<label><input type="radio" name="r-' + id + '" data-id="' + id + '" value="OK"><span class="ok">OK</span></label>' +
+            '<label><input type="radio" name="r-' + id + '" data-id="' + id + '" value="KO"><span class="ko">KO</span></label>' +
+            '<label><input type="radio" name="r-' + id + '" data-id="' + id + '" value="SKIP"><span class="sk">SKIP</span></label>' +
+          '</div>' +
+          '<input type="text" data-id="' + id + '" placeholder="Commentaire (obligatoire si KO)">';
+        box.appendChild(row);
+      });
+      d.appendChild(box);
+      root.appendChild(d);
+    });
+  }
+  root_listeners();
+  updateStats();
+}
+
+function root_listeners() {
+  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', e => {
+    const id = e.target.dataset.id;
+    const [g] = id.split(':');
+    state[g][id] = state[g][id] || {};
+    state[g][id].status = e.target.value;
+    updateStats();
+  }));
+  document.querySelectorAll('input[type=text][data-id]').forEach(i => i.addEventListener('input', e => {
+    const id = e.target.dataset.id;
+    const [g] = id.split(':');
+    state[g][id] = state[g][id] || {};
+    state[g][id].comment = e.target.value;
+  }));
+}
+
+function updateStats() {
+  let totalTests = 0;
+  TESTS.forEach(([, items]) => totalTests += items.length);
+  const all = totalTests * 2;
+  let done = 0;
+  for (const g of ['A', 'B']) {
+    for (const k in state[g]) if (state[g][k].status) done++;
+  }
+  document.getElementById('stats').innerHTML = '<b>' + done + '</b> / ' + all + ' testés';
+  TESTS.forEach(([cat, items], ci) => {
+    for (const g of ['A', 'B']) {
+      let c = 0;
+      items.forEach(([n]) => {
+        if (state[g][g + ':' + cat + ':' + n]?.status) c++;
+      });
+      const el = document.getElementById('prog-' + g + '-' + ci);
+      if (el) el.textContent = c + '/' + items.length;
+    }
+  });
+}
+
+function exportJson() {
+  const out = {
+    meta: {
+      version: 'v1.5',
+      date: new Date().toISOString(),
+      groupA: { testers: document.getElementById('nameA').value },
+      groupB: { testers: document.getElementById('nameB').value },
+    },
+    results: { A: {}, B: {} },
+  };
+  for (const g of ['A', 'B']) {
+    TESTS.forEach(([cat, items]) => {
+      items.forEach(([name]) => {
+        const id = g + ':' + cat + ':' + name;
+        const s = state[g][id] || {};
+        if (!out.results[g][cat]) out.results[g][cat] = {};
+        out.results[g][cat][name] = { status: s.status || null, comment: s.comment || '' };
+      });
+    });
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const nameA = (document.getElementById('nameA').value || 'A').replace(/[^a-z0-9]+/gi, '_');
+  const nameB = (document.getElementById('nameB').value || 'B').replace(/[^a-z0-9]+/gi, '_');
+  a.href = url;
+  a.download = 'arcadiaguard-tests-v1.5-full_' + nameA + '_vs_' + nameB + '_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+render();
+</script>
+</body>
+</html>

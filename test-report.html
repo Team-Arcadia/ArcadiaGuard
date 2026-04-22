@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadiaGuard — Rapport de Tests</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c26;
+    --bg3: #1e2333;
+    --bg4: #252b3d;
+    --border: #2e3650;
+    --text: #d4d8e8;
+    --text-dim: #7a82a0;
+    --text-bright: #eef0f8;
+    --accent: #5b7cfa;
+    --accent2: #7c5bfa;
+    --green: #3ecf6e;
+    --green-bg: #0d2a1a;
+    --red: #f05555;
+    --red-bg: #2a0d0d;
+    --yellow: #f5c842;
+    --yellow-bg: #2a220a;
+    --mod-color: #a78bfa;
+    --mod-bg: #1e1535;
+    --radius: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .page-header h1 span { color: var(--accent); }
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .meta-fields {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .meta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .meta-field label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .meta-field input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-bright);
+    padding: 6px 10px;
+    font-size: 13px;
+    width: 180px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .meta-field input:focus { border-color: var(--accent); }
+
+  .progress-block { min-width: 280px; }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-label strong { color: var(--text-bright); }
+  .progress-bar-outer {
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 99px;
+    transition: width .4s ease;
+  }
+  .progress-counts {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .cnt { display: flex; align-items: center; gap: 5px; }
+  .cnt .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+  }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 120px; }
+
+  .intro-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .intro-box strong { color: var(--text-bright); }
+  .intro-box kbd {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text-bright);
+  }
+
+  .section {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .section-header {
+    background: var(--bg3);
+    padding: 14px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    transition: background .15s;
+  }
+  .section-header:hover { background: var(--bg4); }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .section-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .chevron {
+    color: var(--text-dim);
+    transition: transform .2s;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+
+  .test-card {
+    border-top: 1px solid var(--border);
+    padding: 18px 20px;
+    background: var(--bg2);
+    transition: background .15s;
+  }
+  .test-card:hover { background: #181c28; }
+  .test-card.status-pass { border-left: 3px solid var(--green); }
+  .test-card.status-fail { border-left: 3px solid var(--red); }
+  .test-card.status-skip { border-left: 3px solid var(--text-dim); }
+
+  .test-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .test-number {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .test-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .tag-flag {
+    background: rgba(91,124,250,.15);
+    color: var(--accent);
+    border: 1px solid rgba(91,124,250,.3);
+  }
+  .tag-mod {
+    background: var(--mod-bg);
+    color: var(--mod-color);
+    border: 1px solid rgba(167,139,250,.3);
+  }
+  .tag-req { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,200,66,.3); }
+
+  .test-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media(max-width:700px) { .test-body { grid-template-columns: 1fr; } }
+
+  .test-steps { grid-column: 1 / -1; }
+  .subsection-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .steps-list li {
+    counter-increment: step;
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    padding: 7px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+  }
+  .steps-list li::before {
+    content: counter(step);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    background: var(--accent);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 1px;
+  }
+  code {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #93c5fd;
+  }
+  .kbd {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text-bright);
+  }
+  .gui-path {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .expected-box {
+    background: rgba(62,207,110,.07);
+    border: 1px solid rgba(62,207,110,.25);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .expected-box .subsection-label { color: var(--green); }
+
+  .verdict-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all .15s;
+    user-select: none;
+  }
+  .radio-btn input { display: none; }
+  .radio-btn.opt-pass { color: var(--green); }
+  .radio-btn.opt-pass:hover, .radio-btn.opt-pass.selected {
+    background: var(--green-bg); border-color: var(--green);
+  }
+  .radio-btn.opt-fail { color: var(--red); }
+  .radio-btn.opt-fail:hover, .radio-btn.opt-fail.selected {
+    background: var(--red-bg); border-color: var(--red);
+  }
+  .radio-btn.opt-skip { color: var(--text-dim); }
+  .radio-btn.opt-skip:hover, .radio-btn.opt-skip.selected {
+    background: var(--bg4); border-color: var(--text-dim);
+  }
+
+  .notes-area {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px 10px;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    transition: border-color .2s;
+    grid-column: 1 / -1;
+  }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-area::placeholder { color: var(--text-dim); }
+
+  .setup-note {
+    background: var(--yellow-bg);
+    border: 1px solid rgba(245,200,66,.3);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 10px;
+    grid-column: 1 / -1;
+  }
+
+  .sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,17,23,.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 200;
+  }
+  .btn {
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #4a6af0; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg4); }
+  .footer-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .footer-info strong { color: var(--text); }
+
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text-bright);
+    box-shadow: var(--shadow);
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🛡️ <span>ArcadiaGuard</span> — Rapport de Tests</h1>
+  <div class="header-row">
+    <div class="meta-fields">
+      <div class="meta-field">
+        <label>Testeur</label>
+        <input type="text" id="meta-tester" placeholder="Votre pseudo">
+      </div>
+      <div class="meta-field">
+        <label>Date</label>
+        <input type="date" id="meta-date">
+      </div>
+      <div class="meta-field">
+        <label>Version du mod</label>
+        <input type="text" id="meta-version" placeholder="ex: 1.0.2">
+      </div>
+      <div class="meta-field">
+        <label>Serveur / Modpack</label>
+        <input type="text" id="meta-server" placeholder="ex: ArcadiaRPG v3">
+      </div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-label">
+        <span>Progression globale</span>
+        <strong id="prog-text">0 / 0</strong>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="prog-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-counts">
+        <span class="cnt"><span class="dot" style="background:var(--green)"></span><span id="cnt-pass">0 succès</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--red)"></span><span id="cnt-fail">0 échecs</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--text-dim)"></span><span id="cnt-skip">0 ignorés</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="intro-box">
+    <strong>🎮 Tout passe par l'interface graphique (GUI).</strong><br>
+    Ouvrez le GUI avec <code>/ag gui</code> — toute la configuration se fait là : création de zone, flags, membres, debug mode. <strong>Aucune commande <code>/zone flag set</code> n'est utilisée dans ces tests.</strong><br><br>
+    <strong>🐛 Mode Debug (essentiel) :</strong> dans <span class="gui-path">ZoneListScreen → footer → bouton "Debug"</span>. Quand activé, un indicateur vert <strong>"Debug mode ACTIF"</strong> s'affiche dans le header. Effet : votre compte OP est soumis aux flags comme un joueur normal → <strong>vous pouvez tester seul, sans deuxième compte</strong>.<br><br>
+    <strong>📋 Workflow standard pour chaque flag :</strong><br>
+    1. <code>/ag gui</code> → sélectionner <code>testzone</code> → <strong>Détails</strong><br>
+    2. Colonne <strong>Flags</strong> → bouton <kbd>+</kbd> → rechercher le flag → confirmer<br>
+    3. Clic sur le flag pour le basculer <strong style="color:var(--red)">OFF (rouge)</strong><br>
+    4. <kbd>Échap</kbd> pour fermer, puis activer le <strong>Mode Debug</strong><br>
+    5. Effectuer l'action en jeu et vérifier le résultat<br>
+    6. Revenir dans Détails → bouton <kbd>✕</kbd> à côté du flag pour le <strong>réinitialiser</strong><br><br>
+    Cochez <strong style="color:var(--green)">✓ Succès</strong> si le comportement correspond, <strong style="color:var(--red)">✗ Échec</strong> sinon. Les données sont sauvegardées automatiquement dans le navigateur — cliquez <strong>💾 Sauvegarder JSON</strong> pour exporter.
+  </div>
+  <div id="sections-root"></div>
+</main>
+
+<div class="sticky-footer">
+  <span class="footer-info">Session sauvegardée automatiquement dans le navigateur. <strong>Pensez à exporter régulièrement.</strong></span>
+  <label class="btn btn-secondary" style="cursor:pointer">
+    📂 Charger JSON
+    <input type="file" id="load-input" accept=".json" style="display:none">
+  </label>
+  <button class="btn btn-primary" onclick="saveJSON()">💾 Sauvegarder JSON</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS POUR ÉVITER LA RÉPÉTITION
+// ═══════════════════════════════════════════════════════════════
+// Étapes standards pour tester un flag booléen en mode OFF
+function flagOffSteps(flagName, action, extra) {
+  const steps = [
+    `Ouvrir le GUI : <code>/ag gui</code>`,
+    `Sélectionner <code>testzone</code> → bouton <strong>Détails</strong>`,
+    `Colonne <strong>Flags</strong> → bouton <kbd>+</kbd> → taper "<strong>${flagName}</strong>" → confirmer`,
+    `Cliquer sur le flag <code>${flagName}</code> → il passe sur <strong style="color:#f05555">OFF (rouge)</strong>`,
+    `<kbd>Échap</kbd> pour fermer, puis <code>/ag gui</code> → bouton <strong>Debug</strong> (indicateur vert "Debug mode ACTIF")`,
+    `Entrer dans la zone <code>testzone</code>`,
+    action
+  ];
+  if (extra) steps.push(extra);
+  steps.push(`Revenir dans <span class="gui-path">GUI → testzone → Détails</span> → <kbd>✕</kbd> sur <code>${flagName}</code> pour reset, puis désactiver Debug mode`);
+  return steps;
+}
+
+// Tag raccourcis
+const T = {
+  flag: t => ({c:'flag', t}),
+  mod:  t => ({c:'mod', t}),
+  req:  t => ({c:'req', t}),
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  DONNÉES DES TESTS
+// ═══════════════════════════════════════════════════════════════
+const SECTIONS = [
+
+// ─── PRÉREQUIS ────────────────────────────────────────────────
+{
+  id:'setup', icon:'⚙️', title:'Prérequis & Configuration',
+  desc:'À faire EN PREMIER, avant tous les autres tests.',
+  tests:[
+    {
+      id:'setup_1', title:'Créer la zone de test via le GUI',
+      tags:[],
+      note:'Choisissez un espace dégagé d\'environ 10×10 blocs à plat pour faciliter les tests.',
+      steps:[
+        'Connectez-vous au serveur avec un compte <strong>OP</strong>.',
+        'Obtenez la baguette Zone Editor : <code>/give @s arcadiaguard:zone_editor</code>',
+        '<strong>Clic gauche</strong> sur le bloc en bas à gauche (coin 1) → message <em>"Pos1 définie"</em> dans le chat.',
+        '<strong>Clic droit</strong> sur le bloc en haut à droite (coin 2) → message <em>"Pos2 définie"</em> dans le chat.',
+        'Ouvrir le GUI : <code>/ag gui</code>',
+        'Cliquer sur le bouton <strong>"Créer zone"</strong> dans le footer de ZoneListScreen.',
+        'Saisir le nom <code>testzone</code> dans le champ → confirmer.',
+        'Vérifier que la zone apparaît dans la liste centrale du GUI.'
+      ],
+      expected:'La zone "testzone" apparaît dans la liste. Un clic dessus affiche ses coordonnées et infos dans le panneau de droite.'
+    },
+    {
+      id:'setup_2', title:'Activer le mode Debug (tester seul)',
+      tags:[T.req('CRITIQUE')],
+      note:'Le mode Debug permet à un OP d\'être soumis aux flags de protection. Sans ça, vos flags n\'auront aucun effet visible sur votre personnage OP.',
+      steps:[
+        'Ouvrir le GUI : <code>/ag gui</code>',
+        'Cliquer sur le bouton <strong>"Debug"</strong> dans le footer de ZoneListScreen.',
+        'Vérifier qu\'un indicateur vert <strong>"Debug mode ACTIF"</strong> apparaît dans le header du GUI.',
+        'Fermer le GUI (<kbd>Échap</kbd>).',
+        'Retester plus tard : recliquer sur "Debug" → l\'indicateur disparaît, l\'OP bypass à nouveau.'
+      ],
+      expected:'Bouton "Debug" cliquable. Indicateur visuel vert "Debug mode ACTIF" visible dans le header quand activé. Bascule fiable ON/OFF.'
+    },
+    {
+      id:'setup_3', title:'Se familiariser avec ZoneDetailScreen',
+      tags:[],
+      note:'Prenez le temps de parcourir l\'interface avant de tester les flags — vous y passerez beaucoup de temps.',
+      steps:[
+        '<code>/ag gui</code> → sélectionner <code>testzone</code> → <strong>Détails</strong> (ou touche <kbd>Entrée</kbd>).',
+        'Colonne gauche : vérifier coordonnées, stats, zone parente, toggle inheritDimFlags.',
+        'Colonne centre (Flags) : bouton <kbd>+</kbd> ouvre le FlagPicker (barre de recherche + liste).',
+        'Tester la barre de recherche du FlagPicker en tapant "block".',
+        'Ajouter un flag test, puis le supprimer avec la croix <kbd>✕</kbd>.',
+        'Colonne droite (Membres) : tester le bouton "Ajouter joueur".',
+        'Footer : identifier les boutons Retour, Ajouter joueur, Définir parent, Supprimer zone.'
+      ],
+      expected:'Les 3 colonnes s\'affichent correctement. Le FlagPicker filtre bien les flags. L\'ajout/suppression de flag fonctionne sans erreur.'
+    }
+  ]
+},
+
+// ─── BLOCS ────────────────────────────────────────────────────
+{
+  id:'blocks', icon:'🧱', title:'Blocs',
+  desc:'Protection des interactions avec les blocs.',
+  tests:[
+    {
+      id:'block_break', title:'block_break — bloque la casse de blocs',
+      tags:[T.flag('block_break')],
+      steps: flagOffSteps('block_break', 'Tenter de casser un bloc (ex: dirt) avec une pioche ou à la main.'),
+      expected:'Le bloc ne se casse pas. Message d\'avertissement dans le chat.'
+    },
+    {
+      id:'block_place', title:'block_place — bloque la pose de blocs',
+      tags:[T.flag('block_place')],
+      steps: flagOffSteps('block_place', 'Tenter de poser un bloc (clic droit avec un bloc en main).'),
+      expected:'Le bloc ne se pose pas. Message d\'avertissement dans le chat.'
+    },
+    {
+      id:'block_interact', title:'block_interact — bloque l\'interaction générique',
+      tags:[T.flag('block_interact')],
+      steps: flagOffSteps('block_interact', 'Tenter d\'interagir (clic droit) avec un bloc non-spécifique (ex: jukebox, note block, crafting table).'),
+      expected:'L\'interaction est refusée. Les flags spécifiques (door, container_access) prennent priorité si définis.'
+    },
+    {
+      id:'container_access', title:'container_access — bloque l\'ouverture de coffres',
+      tags:[T.flag('container_access')],
+      note:'Placez un coffre dans la zone avant le test.',
+      steps: flagOffSteps('container_access', 'Clic droit sur un coffre, barrel, shulker, ender chest.'),
+      expected:'Le GUI du conteneur ne s\'ouvre pas. Aucun item ne peut être retiré.'
+    },
+    {
+      id:'door', title:'door — bloque l\'ouverture des portes',
+      tags:[T.flag('door')],
+      note:'Placez une porte en bois dans la zone.',
+      steps: flagOffSteps('door', 'Clic droit sur une porte pour l\'ouvrir.'),
+      expected:'La porte reste fermée. Message d\'avertissement.'
+    },
+    {
+      id:'trapdoor', title:'trapdoor — bloque l\'ouverture des trappes',
+      tags:[T.flag('trapdoor')],
+      steps: flagOffSteps('trapdoor', 'Clic droit sur une trappe.'),
+      expected:'La trappe reste fermée.'
+    },
+    {
+      id:'button', title:'button — bloque l\'activation des boutons',
+      tags:[T.flag('button')],
+      steps: flagOffSteps('button', 'Clic droit sur un bouton (bois ou pierre).'),
+      expected:'Le bouton ne s\'active pas. Aucun signal redstone émis.'
+    },
+    {
+      id:'lever', title:'lever — bloque l\'activation des leviers',
+      tags:[T.flag('lever')],
+      steps: flagOffSteps('lever', 'Clic droit sur un levier.'),
+      expected:'Le levier ne bascule pas.'
+    },
+    {
+      id:'gate', title:'gate — bloque l\'ouverture des portillons (fence gate)',
+      tags:[T.flag('gate')],
+      steps: flagOffSteps('gate', 'Clic droit sur un fence gate.'),
+      expected:'Le portillon reste fermé.'
+    },
+    {
+      id:'pressure_plate', title:'pressure_plate — désactive les plaques de pression',
+      tags:[T.flag('pressure_plate')],
+      steps: flagOffSteps('pressure_plate', 'Marcher sur une plaque de pression.'),
+      expected:'La plaque ne s\'active pas (aucun clic sonore, pas de signal redstone).'
+    }
+  ]
+},
+
+// ─── COMBAT ───────────────────────────────────────────────────
+{
+  id:'combat', icon:'⚔️', title:'Combat & Dégâts',
+  desc:'PvP, dégâts entre entités et invincibilité.',
+  tests:[
+    {
+      id:'pvp', title:'pvp — bloque les dégâts entre joueurs',
+      tags:[T.flag('pvp')],
+      note:'Nécessite un deuxième joueur (OU un autre OP en Debug mode).',
+      steps: flagOffSteps('pvp', 'Attaquer l\'autre joueur avec une épée.'),
+      expected:'Aucun dégât infligé au joueur cible. Animation d\'attaque peut avoir lieu mais vie inchangée.'
+    },
+    {
+      id:'player_damage', title:'player_damage — bloque TOUS les dégâts sur les joueurs',
+      tags:[T.flag('player_damage')],
+      steps: flagOffSteps('player_damage', 'Se faire attaquer par un mob hostile (summoner : <code>/summon zombie ~ ~ ~</code>), tomber, recevoir du feu.'),
+      expected:'Aucun dégât subi quelle que soit la source.'
+    },
+    {
+      id:'mob_damage', title:'mob_damage — empêche les mobs de blesser les joueurs',
+      tags:[T.flag('mob_damage')],
+      steps: flagOffSteps('mob_damage', 'Invoquer un mob hostile : <code>/summon zombie ~ ~ ~</code>. Se laisser attaquer.'),
+      expected:'Le zombie peut approcher et animer, mais ne fait aucun dégât.'
+    },
+    {
+      id:'fall_damage', title:'fall_damage — annule les dégâts de chute',
+      tags:[T.flag('fall_damage')],
+      steps: flagOffSteps('fall_damage', 'Sauter d\'une hauteur de 10+ blocs dans la zone.'),
+      expected:'Aucun dégât de chute.'
+    },
+    {
+      id:'invincible', title:'invincible — joueur totalement invincible',
+      tags:[T.flag('invincible')],
+      steps: flagOffSteps('invincible', 'Essayer toutes sources de dégâts : chute, feu (<code>/summon tnt ~ ~ ~</code>), mob, lave, noyade.'),
+      expected:'Aucune source ne réduit la vie. Attention : override complet de player_damage.'
+    },
+    {
+      id:'attack_animals', title:'attack_animals — bloque les attaques sur animaux passifs',
+      tags:[T.flag('attack_animals')],
+      steps: flagOffSteps('attack_animals', 'Invoquer un cochon : <code>/summon pig ~ ~ ~</code>. Le frapper avec une épée.'),
+      expected:'L\'animal ne prend aucun dégât.'
+    },
+    {
+      id:'attack_monsters', title:'attack_monsters — bloque les attaques sur mobs hostiles',
+      tags:[T.flag('attack_monsters')],
+      steps: flagOffSteps('attack_monsters', 'Invoquer un zombie. Essayer de l\'attaquer.'),
+      expected:'Le monstre ne prend pas de dégât. (Utile pour sanctuaires avec des mobs décoratifs.)'
+    },
+    {
+      id:'ender_pearl', title:'ender_pearl — empêche l\'usage des perles de l\'Ender',
+      tags:[T.flag('ender_pearl')],
+      steps: flagOffSteps('ender_pearl', 'Obtenir des perles : <code>/give @s minecraft:ender_pearl 8</code>. Les lancer.'),
+      expected:'La perle n\'est pas lancée (ou téléportation refusée avec message).'
+    },
+    {
+      id:'chorus_fruit', title:'chorus_fruit — bloque la téléportation aléatoire du chorus',
+      tags:[T.flag('chorus_fruit')],
+      steps: flagOffSteps('chorus_fruit', 'Obtenir un chorus fruit : <code>/give @s minecraft:chorus_fruit 16</code>. Le manger.'),
+      expected:'Le fruit est consommé mais aucune téléportation ne se produit.'
+    }
+  ]
+},
+
+// ─── ENTITÉS & VÉHICULES ──────────────────────────────────────
+{
+  id:'entities', icon:'🐾', title:'Entités & Véhicules',
+  desc:'Spawn, véhicules, laisses et interactions entités.',
+  tests:[
+    {
+      id:'mob_spawn', title:'mob_spawn — bloque TOUS les spawns d\'entités',
+      tags:[T.flag('mob_spawn')],
+      note:'Flag parent : override anime_spawn/monster_spawn/villager_spawn.',
+      steps: flagOffSteps('mob_spawn', 'Tenter <code>/summon zombie</code>, <code>/summon cow</code>, <code>/summon villager</code> dans la zone.'),
+      expected:'Aucun mob n\'apparaît. En passant la nuit (<code>/time set night</code>), pas de spawns naturels.'
+    },
+    {
+      id:'animal_spawn', title:'animal_spawn — bloque uniquement les animaux passifs',
+      tags:[T.flag('animal_spawn')],
+      steps: flagOffSteps('animal_spawn', 'Summon cow, pig, chicken dans la zone.'),
+      expected:'Les animaux passifs ne spawn pas. Les monstres peuvent encore apparaître.'
+    },
+    {
+      id:'monster_spawn', title:'monster_spawn — bloque les monstres',
+      tags:[T.flag('monster_spawn')],
+      steps: flagOffSteps('monster_spawn', '<code>/time set night</code> puis attendre les spawns naturels, ou summon zombie/skeleton.'),
+      expected:'Aucun monstre hostile n\'apparaît. Animaux passifs OK.'
+    },
+    {
+      id:'villager_spawn', title:'villager_spawn — bloque les villageois',
+      tags:[T.flag('villager_spawn')],
+      steps: flagOffSteps('villager_spawn', '<code>/summon villager ~ ~ ~</code>. Tenter aussi le spawn naturel d\'iron golem via 4 villageois.'),
+      expected:'Villager ne spawn pas.'
+    },
+    {
+      id:'vehicle_place', title:'vehicle_place — bloque la pose de véhicules',
+      tags:[T.flag('vehicle_place')],
+      steps: flagOffSteps('vehicle_place', 'Obtenir un minecart et un boat : <code>/give @s minecraft:minecart</code> / <code>/give @s minecraft:oak_boat</code>. Tenter de les placer.'),
+      expected:'Aucun véhicule ne se pose. Message d\'avertissement.'
+    },
+    {
+      id:'vehicle_destroy', title:'vehicle_destroy — protège les véhicules existants',
+      tags:[T.flag('vehicle_destroy')],
+      note:'Poser un minecart AVANT d\'activer le flag.',
+      steps: flagOffSteps('vehicle_destroy', 'Frapper le minecart placé pour tenter de le détruire.'),
+      expected:'Le minecart ne prend aucun dégât et n\'est pas détruit.'
+    },
+    {
+      id:'leash', title:'leash — empêche d\'attacher des mobs à la laisse',
+      tags:[T.flag('leash')],
+      steps: flagOffSteps('leash', 'Summon cow, <code>/give @s minecraft:lead</code>, clic droit sur la vache avec la laisse.'),
+      expected:'La laisse ne s\'attache pas à l\'animal.'
+    },
+    {
+      id:'spawn_egg', title:'spawn_egg — bloque l\'usage des œufs de spawn',
+      tags:[T.flag('spawn_egg')],
+      steps: flagOffSteps('spawn_egg', '<code>/give @s minecraft:cow_spawn_egg</code>. Clic droit au sol.'),
+      expected:'Aucune entité ne spawn, l\'œuf n\'est pas consommé (ou l\'action est annulée).'
+    },
+    {
+      id:'mob_bucket', title:'mob_bucket — bloque l\'usage des seaux à mobs (axolotl, poisson)',
+      tags:[T.flag('mob_bucket')],
+      steps: flagOffSteps('mob_bucket', '<code>/give @s minecraft:axolotl_bucket</code>. Clic droit pour relâcher.'),
+      expected:'Le mob ne sort pas du seau.'
+    },
+    {
+      id:'animal_invincible', title:'animal_invincible — rend les animaux invulnérables',
+      tags:[T.flag('animal_invincible')],
+      note:'Summon une cow avant d\'activer le flag.',
+      steps: flagOffSteps('animal_invincible', 'Attaquer la cow avec une épée — elle ne doit pas mourir.'),
+      expected:'L\'animal ne prend aucun dégât. Utile pour fermes statiques/décoratives.'
+    }
+  ]
+},
+
+// ─── EXPLOSIONS & PROPAGATION ─────────────────────────────────
+{
+  id:'explosions', icon:'💥', title:'Explosions & Propagation',
+  desc:'Protections contre les explosions et propagations de blocs.',
+  tests:[
+    {
+      id:'creeper_explosion', title:'creeper_explosion — neutralise les explosions de creepers',
+      tags:[T.flag('creeper_explosion')],
+      steps: flagOffSteps('creeper_explosion', '<code>/summon creeper ~ ~ ~ {ignited:1b}</code> à côté d\'un bloc de dirt facile à vérifier.'),
+      expected:'Le creeper explose sans casser aucun bloc. Les dégâts aux joueurs peuvent être annulés aussi.'
+    },
+    {
+      id:'tnt_explosion', title:'tnt_explosion — neutralise les explosions de TNT',
+      tags:[T.flag('tnt_explosion')],
+      steps: flagOffSteps('tnt_explosion', '<code>/summon tnt ~ ~ ~</code>. Attendre 4 secondes.'),
+      expected:'La TNT détone mais aucun bloc n\'est cassé.'
+    },
+    {
+      id:'block_explosion', title:'block_explosion — neutralise TOUTES les explosions',
+      tags:[T.flag('block_explosion')],
+      steps: flagOffSteps('block_explosion', 'Tester avec TNT, creeper, bed/respawn anchor (si Nether/End).'),
+      expected:'Aucune explosion ne casse de blocs, quelle que soit la source.'
+    },
+    {
+      id:'fire_spread', title:'fire_spread — empêche le feu de se propager',
+      tags:[T.flag('fire_spread')],
+      steps: flagOffSteps('fire_spread', 'Poser du bois, allumer avec <code>/give @s flint_and_steel</code>.'),
+      expected:'Le feu reste sur le bloc allumé et ne se propage pas aux blocs adjacents.'
+    },
+    {
+      id:'lava_fire', title:'lava_fire — empêche la lave d\'allumer des feux',
+      tags:[T.flag('lava_fire')],
+      steps: flagOffSteps('lava_fire', '<code>/give @s minecraft:lava_bucket</code>. Verser la lave près d\'un bloc inflammable.'),
+      expected:'Aucun feu ne s\'allume spontanément autour de la lave.'
+    },
+    {
+      id:'lava_spread', title:'lava_spread — empêche la lave de couler',
+      tags:[T.flag('lava_spread')],
+      steps: flagOffSteps('lava_spread', 'Verser un seau de lave en hauteur.'),
+      expected:'La source reste mais ne s\'écoule pas sur les blocs adjacents.'
+    },
+    {
+      id:'water_spread', title:'water_spread — empêche l\'eau de couler',
+      tags:[T.flag('water_spread')],
+      steps: flagOffSteps('water_spread', '<code>/give @s minecraft:water_bucket</code>, verser en hauteur.'),
+      expected:'La source reste figée, pas d\'écoulement.'
+    },
+    {
+      id:'leaf_decay', title:'leaf_decay — empêche les feuilles de disparaître',
+      tags:[T.flag('leaf_decay')],
+      note:'Couper le tronc d\'un arbre (hors zone si besoin) pour tester la décomposition des feuilles dans la zone.',
+      steps: flagOffSteps('leaf_decay', 'Couper un tronc d\'arbre planté dans la zone. Attendre 30s-1min.'),
+      expected:'Les feuilles restent en place indéfiniment.'
+    }
+  ]
+},
+
+// ─── ENVIRONNEMENT ────────────────────────────────────────────
+{
+  id:'environment', icon:'🌿', title:'Environnement',
+  desc:'Croissance, érosion et propagation naturelles.',
+  tests:[
+    {
+      id:'crop_growth', title:'crop_growth — bloque la croissance des cultures',
+      tags:[T.flag('crop_growth')],
+      note:'Planter quelques graines de blé avant le test.',
+      steps: flagOffSteps('crop_growth', '<code>/time set day</code> puis attendre 2-3 min, ou utiliser bone meal : <code>/give @s bone_meal 10</code>.'),
+      expected:'Les cultures restent au même stade. Le bone meal ne fait pas avancer.'
+    },
+    {
+      id:'tree_growth', title:'tree_growth — bloque la croissance des arbres',
+      tags:[T.flag('tree_growth')],
+      steps: flagOffSteps('tree_growth', 'Planter un sapling : <code>/give @s oak_sapling</code>, puis bone meal dessus.'),
+      expected:'Le sapling ne pousse pas en arbre.'
+    },
+    {
+      id:'farmland_trample', title:'farmland_trample — empêche le piétinement de la terre labourée',
+      tags:[T.flag('farmland_trample')],
+      note:'Placer un bloc de farmland (<code>/setblock ~ ~ ~ farmland</code>).',
+      steps: flagOffSteps('farmland_trample', 'Sauter sur la farmland depuis 2 blocs de haut.'),
+      expected:'La farmland ne se transforme pas en dirt.'
+    },
+    {
+      id:'grass_spread', title:'grass_spread — empêche l\'herbe de se propager',
+      tags:[T.flag('grass_spread')],
+      note:'Placer du dirt à côté du grass_block.',
+      steps: flagOffSteps('grass_spread', 'Attendre 5+ minutes de jeu (la propagation est lente).'),
+      expected:'Le dirt ne devient jamais grass_block.'
+    },
+    {
+      id:'vine_growth', title:'vine_growth — empêche la pousse des lianes',
+      tags:[T.flag('vine_growth')],
+      note:'Placer une liane en haut d\'un mur.',
+      steps: flagOffSteps('vine_growth', 'Attendre plusieurs minutes.'),
+      expected:'La liane ne s\'étend pas vers le bas.'
+    },
+    {
+      id:'sculk_spread', title:'sculk_spread — bloque la propagation sculk',
+      tags:[T.flag('sculk_spread')],
+      steps: flagOffSteps('sculk_spread', 'Placer un sculk_catalyst, tuer un mob à proximité : <code>/summon zombie ~ ~ ~</code> puis /kill.'),
+      expected:'Aucun sculk ne se propage à partir du catalyst.'
+    },
+    {
+      id:'snow_melt', title:'snow_melt — empêche la neige de fondre',
+      tags:[T.flag('snow_melt')],
+      note:'Placer neige puis chauffer : <code>/setblock ~1 ~ ~ torch</code>.',
+      steps: flagOffSteps('snow_melt', 'Patienter quelques minutes près de la torche.'),
+      expected:'La neige ne fond pas malgré la chaleur.'
+    },
+    {
+      id:'ice_melt', title:'ice_melt — empêche la glace de fondre',
+      tags:[T.flag('ice_melt')],
+      steps: flagOffSteps('ice_melt', 'Placer un bloc de glace près d\'une torche.'),
+      expected:'La glace reste solide indéfiniment.'
+    }
+  ]
+},
+
+// ─── ITEMS ────────────────────────────────────────────────────
+{
+  id:'items', icon:'🎒', title:'Items',
+  desc:'Manipulation des items dans la zone.',
+  tests:[
+    {
+      id:'item_drop', title:'item_drop — bloque le drop manuel d\'items',
+      tags:[T.flag('item_drop')],
+      steps: flagOffSteps('item_drop', 'Avec un item en main, appuyer sur <kbd>Q</kbd> pour le jeter.'),
+      expected:'L\'item reste dans l\'inventaire (ou l\'action est annulée).'
+    },
+    {
+      id:'item_pickup', title:'item_pickup — empêche le ramassage d\'items',
+      tags:[T.flag('item_pickup')],
+      note:'Déposer un item au sol avant (via un OP sans debug, ou avec <code>/summon item</code>).',
+      steps: flagOffSteps('item_pickup', '<code>/summon item ~ ~ ~ {Item:{id:"minecraft:dirt",Count:1b}}</code>. Marcher dessus.'),
+      expected:'L\'item reste au sol et n\'est pas ramassé.'
+    },
+    {
+      id:'item_throw', title:'item_throw — bloque les projectiles lançables (snowball, egg)',
+      tags:[T.flag('item_throw')],
+      steps: flagOffSteps('item_throw', '<code>/give @s minecraft:snowball 16</code>. Tenter de lancer.'),
+      expected:'Le projectile n\'est pas lancé (ou est immédiatement retiré).'
+    },
+    {
+      id:'exp_drop', title:'exp_drop — empêche les orbes d\'XP d\'apparaître',
+      tags:[T.flag('exp_drop')],
+      steps: flagOffSteps('exp_drop', 'Briser un bloc donnant de l\'XP (coal_ore, diamond_ore : <code>/setblock ~ ~ ~ minecraft:diamond_ore</code> puis casser).'),
+      expected:'Aucun orbe d\'XP ne spawn. Le joueur ne gagne pas d\'XP.'
+    }
+  ]
+},
+
+// ─── ENTRY / EXIT ─────────────────────────────────────────────
+{
+  id:'entry_exit', icon:'🚪', title:'Entrée & Sortie',
+  desc:'Contrôle d\'accès à la zone.',
+  tests:[
+    {
+      id:'entry', title:'entry — bloque l\'entrée dans la zone',
+      tags:[T.flag('entry')],
+      note:'Pour ce test, vous devez commencer HORS de la zone.',
+      steps:[
+        'Sortir de la zone au préalable.',
+        'Ouvrir le GUI : <code>/ag gui</code>',
+        'Sélectionner <code>testzone</code> → <strong>Détails</strong>',
+        'Ajouter le flag <code>entry</code> → le mettre sur <strong>OFF (rouge)</strong>',
+        'Activer le <strong>Mode Debug</strong> via le footer.',
+        'Tenter de pénétrer dans la zone à pied.',
+        'Tester aussi via téléportation : <code>/tp @s &lt;coordonnées dans la zone&gt;</code>',
+        'Reset : GUI → Détails → <kbd>✕</kbd> sur <code>entry</code>.'
+      ],
+      expected:'Le joueur est repoussé ou téléporté hors de la zone. Message d\'avertissement.'
+    },
+    {
+      id:'exit', title:'exit — bloque la sortie de la zone',
+      tags:[T.flag('exit')],
+      note:'Commencez À L\'INTÉRIEUR de la zone.',
+      steps:[
+        'Se placer à l\'intérieur de testzone.',
+        '<code>/ag gui</code> → Détails de testzone.',
+        'Ajouter le flag <code>exit</code> → OFF (rouge).',
+        'Activer Debug mode.',
+        'Tenter de sortir à pied (zone bordée en extérieur).',
+        'Tester <code>/tp</code> vers des coordonnées hors zone.',
+        'Reset : <kbd>✕</kbd> sur <code>exit</code>.'
+      ],
+      expected:'Le joueur ne peut pas franchir la bordure extérieure de la zone. Téléportation externe annulée ou déviée.'
+    },
+    {
+      id:'safe_y', title:'Safe-Y teleport (entry/exit)',
+      tags:[T.flag('entry'), T.flag('exit')],
+      note:'Vérifie que la téléportation de replacement se fait à une hauteur sûre (pas dans un mur, pas dans le vide).',
+      steps:[
+        'Configurer <code>entry</code> sur OFF.',
+        'Depuis hors zone, se placer 20 blocs au-dessus de la zone (fly ou <code>/tp</code>).',
+        'Tenter d\'entrer en tombant ou via <code>/tp</code>.',
+        'Observer où le joueur atterrit.'
+      ],
+      expected:'Le joueur est replacé à une hauteur sûre (sol solide, pas dans un bloc, pas dans la lave).'
+    }
+  ]
+},
+
+// ─── MAGIE ────────────────────────────────────────────────────
+{
+  id:'magic', icon:'✨', title:'Magie (mods requis)',
+  desc:'Flags spécifiques aux mods de magie.',
+  tests:[
+    {
+      id:'ars_spell_cast', title:'ars_spell_cast — bloque tous les sorts Ars Nouveau',
+      tags:[T.flag('ars_spell_cast'), T.mod('Ars Nouveau')],
+      steps: flagOffSteps('ars_spell_cast', 'Équiper une spell book Ars Nouveau avec un sort (ex: projectile+harm). Lancer le sort dans la zone.'),
+      expected:'Aucun sort ne part. Message d\'avertissement possible.'
+    },
+    {
+      id:'ars_spell_blacklist', title:'ars_spell_blacklist — blacklist de sorts spécifiques',
+      tags:[T.flag('ars_spell_blacklist'), T.mod('Ars Nouveau')],
+      note:'Flag liste : utilise le bouton <kbd>&gt;</kbd> dans le FlagConfigScreen pour éditer la liste.',
+      steps:[
+        '<code>/ag gui</code> → Détails de testzone.',
+        'Ajouter <code>ars_spell_blacklist</code>, cliquer sur le bouton <kbd>&gt;</kbd> pour ouvrir FlagConfigScreen.',
+        'Ajouter dans la liste : <code>ars_nouveau:glyph_harm</code> (ou un autre sort).',
+        'Activer Debug mode.',
+        'Lancer un sort contenant "harm" → bloqué. Lancer un sort sans "harm" → autorisé.',
+        'Reset : <kbd>✕</kbd> sur le flag.'
+      ],
+      expected:'Seuls les sorts blacklistés sont bloqués. Les autres passent normalement.'
+    },
+    {
+      id:'ars_spell_whitelist', title:'ars_spell_whitelist — whitelist stricte',
+      tags:[T.flag('ars_spell_whitelist'), T.mod('Ars Nouveau')],
+      steps:[
+        '<code>/ag gui</code> → Détails → ajouter <code>ars_spell_whitelist</code>.',
+        'Bouton <kbd>&gt;</kbd> → ajouter uniquement <code>ars_nouveau:glyph_light</code>.',
+        'Activer Debug mode. Tester light (autorisé) et harm (bloqué).'
+      ],
+      expected:'Seuls les sorts whitelistés passent. Tout le reste est refusé.'
+    },
+    {
+      id:'ars_additions_scroll', title:'ars_additions_scroll — bloque les scrolls Ars Additions',
+      tags:[T.flag('ars_additions_scroll'), T.mod('Ars Additions')],
+      steps: flagOffSteps('ars_additions_scroll', 'Utiliser un scroll Ars Additions dans la zone.'),
+      expected:'L\'effet du scroll ne s\'applique pas.'
+    },
+    {
+      id:'irons_spell_cast', title:'irons_spell_cast — bloque tous les sorts Iron\'s Spellbooks',
+      tags:[T.flag('irons_spell_cast'), T.mod('Iron\'s Spellbooks')],
+      steps: flagOffSteps('irons_spell_cast', 'Équiper un spellbook Iron\'s avec un sort. Tenter de le lancer (touche par défaut).'),
+      expected:'Aucun sort ne part.'
+    },
+    {
+      id:'irons_spell_blacklist', title:'irons_spell_blacklist — blacklist Iron\'s',
+      tags:[T.flag('irons_spell_blacklist'), T.mod('Iron\'s Spellbooks')],
+      steps:[
+        'Ajouter <code>irons_spell_blacklist</code> → FlagConfigScreen.',
+        'Lister <code>irons_spellbooks:fireball</code> (ou autre).',
+        'Tester : fireball bloqué, autres sorts OK.'
+      ],
+      expected:'Blacklist ciblée fonctionnelle.'
+    },
+    {
+      id:'irons_spell_whitelist', title:'irons_spell_whitelist — whitelist Iron\'s',
+      tags:[T.flag('irons_spell_whitelist'), T.mod('Iron\'s Spellbooks')],
+      steps:[
+        'Ajouter <code>irons_spell_whitelist</code>.',
+        'Autoriser uniquement <code>irons_spellbooks:heal</code>.',
+        'Tester : heal passe, fireball bloqué.'
+      ],
+      expected:'Whitelist fonctionnelle.'
+    },
+    {
+      id:'simplyswords_ability', title:'simplyswords_ability — bloque les capacités Simply Swords',
+      tags:[T.flag('simplyswords_ability'), T.mod('Simply Swords')],
+      steps: flagOffSteps('simplyswords_ability', 'Équiper une épée Simply Swords avec capacité. Activer la capacité (touche par défaut).'),
+      expected:'La capacité ne s\'active pas.'
+    },
+    {
+      id:'spell_movement', title:'spell_movement — bloque les sorts de mouvement (tous mods)',
+      tags:[T.flag('spell_movement')],
+      steps: flagOffSteps('spell_movement', 'Tenter un sort de téléportation ou dash (n\'importe quel mod).'),
+      expected:'Le sort de mouvement est bloqué, les autres sorts passent.'
+    }
+  ]
+},
+
+// ─── INTÉGRATIONS MODS ────────────────────────────────────────
+{
+  id:'integrations', icon:'🧩', title:'Intégrations Mods',
+  desc:'Flags spécifiques aux mods installés.',
+  tests:[
+    {
+      id:'occultism_use', title:'occultism_use — bloque l\'usage des rituels Occultism',
+      tags:[T.flag('occultism_use'), T.mod('Occultism')],
+      steps: flagOffSteps('occultism_use', 'Tenter d\'utiliser un objet/bloc Occultism (ritual chalk, divination rod).'),
+      expected:'L\'action Occultism est bloquée.'
+    },
+    {
+      id:'supplementaries_throw', title:'supplementaries_throw — bloque les objets lançables Supplementaries',
+      tags:[T.flag('supplementaries_throw'), T.mod('Supplementaries')],
+      steps: flagOffSteps('supplementaries_throw', 'Utiliser un item lançable de Supplementaries (pebble, bomb, etc).'),
+      expected:'Aucun lancer ne part.'
+    },
+    {
+      id:'parcool_actions', title:'parcool_actions — désactive Parcool dans la zone',
+      tags:[T.flag('parcool_actions'), T.mod('Parcool')],
+      steps: flagOffSteps('parcool_actions', 'Dans la zone, tenter un wall-run, un vault, un dodge (Parcool).'),
+      expected:'Aucune action Parcool n\'est possible. Mouvement vanilla seulement.'
+    },
+    {
+      id:'emote_use', title:'emote_use — bloque les emotes Emotecraft',
+      tags:[T.flag('emote_use'), T.mod('Emotecraft')],
+      steps: flagOffSteps('emote_use', 'Tenter de lancer une emote avec la roue Emotecraft.'),
+      expected:'L\'emote ne se déclenche pas.'
+    },
+    {
+      id:'mutant_mob_spawn', title:'mutant_mob_spawn — bloque les mobs Mutant Monsters',
+      tags:[T.flag('mutant_mob_spawn'), T.mod('Mutant Monsters')],
+      steps: flagOffSteps('mutant_mob_spawn', '<code>/summon mutantmonsters:mutant_zombie ~ ~ ~</code>'),
+      expected:'Le mutant zombie ne spawn pas.'
+    },
+    {
+      id:'tf_projectile', title:'tf_projectile — bloque les projectiles Twilight Forest',
+      tags:[T.flag('tf_projectile'), T.mod('Twilight Forest')],
+      steps: flagOffSteps('tf_projectile', 'Utiliser un projectile Twilight Forest (ex: ice bomb, seeker bow).'),
+      expected:'Aucun projectile Twilight Forest n\'est émis dans la zone.'
+    },
+    {
+      id:'charm_use', title:'charm_use — bloque l\'usage des charms Apotheosis',
+      tags:[T.flag('charm_use'), T.mod('Apotheosis')],
+      note:'La suppression des charms est aussi automatique à l\'entrée — voir aussi test "Admin/Bypass" pour le skip OP/membre.',
+      steps: flagOffSteps('charm_use', 'Équiper un charm Apotheosis en trinket. Entrer dans la zone.'),
+      expected:'Le charm est suppressed (inerte) tant que le joueur est dans la zone.'
+    },
+    {
+      id:'waystone_use', title:'waystone_use — bloque l\'usage des waystones',
+      tags:[T.flag('waystone_use'), T.mod('Waystones')],
+      note:'Poser une waystone dans la zone avant (avec un OP bypass).',
+      steps: flagOffSteps('waystone_use', 'Clic droit sur une waystone. Tenter aussi de TP depuis hors zone VERS la waystone.'),
+      expected:'L\'interaction avec la waystone est refusée. La téléportation ne se déclenche pas.'
+    },
+    {
+      id:'rechiseled_use', title:'rechiseled_use — bloque le chisel Rechiseled',
+      tags:[T.flag('rechiseled_use'), T.mod('Rechiseled')],
+      steps: flagOffSteps('rechiseled_use', 'Tenter d\'utiliser le chisel Rechiseled sur un bloc.'),
+      expected:'Le chisel n\'a aucun effet.'
+    },
+    {
+      id:'npc_interact', title:'npc_interact — bloque l\'interaction avec les NPCs',
+      tags:[T.flag('npc_interact')],
+      steps: flagOffSteps('npc_interact', 'Clic droit sur un NPC (Custom NPCs, villagers spéciaux, trader).'),
+      expected:'Le dialogue/trade ne s\'ouvre pas.'
+    }
+  ]
+},
+
+// ─── CONFIG ZONE ──────────────────────────────────────────────
+{
+  id:'zoneconfig', icon:'🔢', title:'Configuration Zone (valeurs int)',
+  desc:'Flags numériques configurés via FlagConfigScreen.',
+  tests:[
+    {
+      id:'heal_amount', title:'heal_amount — régénération progressive dans la zone',
+      tags:[T.flag('heal_amount')],
+      note:'Flag à valeur int. Utilisez le bouton <kbd>&gt;</kbd> sur le flag pour ouvrir FlagConfigScreen et saisir la valeur.',
+      steps:[
+        '<code>/ag gui</code> → Détails de testzone.',
+        'Ajouter <code>heal_amount</code> → <kbd>&gt;</kbd> → saisir la valeur <code>2</code> → confirmer.',
+        'Activer Debug mode.',
+        'Se blesser volontairement : <code>/damage @s 10</code>.',
+        'Entrer dans la zone et attendre.',
+        'Reset : <kbd>✕</kbd> sur <code>heal_amount</code>.'
+      ],
+      expected:'Le joueur regagne 2 points de vie par tick de heal (fréquence selon config). Le heal s\'arrête hors de la zone.'
+    },
+    {
+      id:'feed_amount', title:'feed_amount — rassasie le joueur dans la zone',
+      tags:[T.flag('feed_amount')],
+      steps:[
+        '<code>/ag gui</code> → Détails → ajouter <code>feed_amount</code> → <kbd>&gt;</kbd> → valeur <code>2</code>.',
+        'Activer Debug mode.',
+        'Vider la faim : <code>/effect give @s minecraft:hunger 30 5</code>, attendre.',
+        'Entrer dans la zone.',
+        'Reset : <kbd>✕</kbd> sur <code>feed_amount</code>.'
+      ],
+      expected:'La barre de faim remonte progressivement tant que le joueur est dans la zone.'
+    }
+  ]
+},
+
+// ─── ADMIN & BYPASS ───────────────────────────────────────────
+{
+  id:'admin', icon:'🔑', title:'Admin & Bypass',
+  desc:'Vérification des bypass OP et membres de zone.',
+  tests:[
+    {
+      id:'op_bypass', title:'OP bypass (Debug mode OFF)',
+      tags:[],
+      note:'Vérifie que sans Debug mode activé, l\'OP ignore tous les flags.',
+      steps:[
+        '<code>/ag gui</code> → Détails de testzone.',
+        'Ajouter <code>block_break</code> → OFF (rouge).',
+        '<strong>S\'assurer que Debug mode est DÉSACTIVÉ</strong> (pas d\'indicateur vert).',
+        'Entrer dans la zone.',
+        'Tenter de casser un bloc.',
+        'Reset : <kbd>✕</kbd> sur <code>block_break</code>.'
+      ],
+      expected:'L\'OP casse le bloc normalement. Les flags n\'ont aucun effet sur lui sans Debug mode.'
+    },
+    {
+      id:'member_bypass', title:'Membre de zone bypass les flags',
+      tags:[],
+      note:'Nécessite un deuxième compte (ou un autre joueur) ajouté en whitelist.',
+      steps:[
+        '<code>/ag gui</code> → Détails de testzone.',
+        'Colonne droite (Membres) → <strong>Ajouter joueur</strong> → saisir le pseudo du 2ème compte → confirmer.',
+        'Ajouter <code>block_break</code> → OFF.',
+        'Connecter le 2ème compte (non-OP) et le faire entrer dans la zone.',
+        'Le 2ème compte tente de casser un bloc.',
+        'Reset : retirer le membre et <kbd>✕</kbd> sur <code>block_break</code>.'
+      ],
+      expected:'Le joueur membre peut casser des blocs librement. Les flags ne s\'appliquent pas à lui.'
+    },
+    {
+      id:'charm_suppression_skip', title:'Charm suppression skip pour OP/membres',
+      tags:[T.mod('Apotheosis')],
+      note:'Vérifie que les charms Apotheosis restent actifs pour OP (sans Debug) et membres.',
+      steps:[
+        'Ajouter <code>charm_use</code> → OFF.',
+        'Équiper un charm Apotheosis en trinket.',
+        'Entrer dans la zone en tant qu\'OP (Debug désactivé).',
+        'Vérifier que l\'effet du charm reste actif.',
+        'Ajouter le 2ème compte en membre, lui faire équiper un charm.',
+        'Entrer dans la zone avec le membre.'
+      ],
+      expected:'OP (Debug off) et membres de zone conservent leurs charms actifs. Seuls les joueurs lambda sont affectés par la suppression.'
+    }
+  ]
+},
+
+// ─── COMMANDES GUI ────────────────────────────────────────────
+{
+  id:'guicommands', icon:'💻', title:'Commandes GUI & Gestion Zones',
+  desc:'Tests de manipulation de zones via le GUI.',
+  tests:[
+    {
+      id:'gui_create_zone', title:'Créer une nouvelle zone depuis le GUI',
+      tags:[],
+      steps:[
+        '<code>/give @s arcadiaguard:zone_editor</code>',
+        'Clic gauche + clic droit pour définir pos1/pos2.',
+        '<code>/ag gui</code> → bouton <strong>"Créer zone"</strong> dans le footer.',
+        'Saisir un nom (ex: <code>zone2</code>) → confirmer.',
+        'Vérifier l\'apparition dans la liste centrale.'
+      ],
+      expected:'La nouvelle zone apparaît immédiatement, sélectionnable et éditable. Persiste après redémarrage du serveur.'
+    },
+    {
+      id:'gui_teleport', title:'Téléporter vers une zone (bouton Téléporter)',
+      tags:[],
+      steps:[
+        '<code>/ag gui</code> → sélectionner testzone.',
+        'Cliquer sur <strong>Téléporter</strong> dans le footer.',
+        'Observer la position du joueur.'
+      ],
+      expected:'Le joueur est téléporté au centre (ou spawn point) de la zone.'
+    },
+    {
+      id:'gui_set_parent', title:'Définir une zone parente (inheritance)',
+      tags:[],
+      note:'Crée d\'abord une 2ème zone plus grande englobant testzone.',
+      steps:[
+        'Créer une grande zone <code>parentzone</code>.',
+        'GUI → Détails de <code>testzone</code> → bouton <strong>"Définir parent"</strong> → choisir <code>parentzone</code>.',
+        'Vérifier colonne gauche : la zone parente s\'affiche.',
+        'Ajouter un flag sur parentzone → vérifier qu\'il hérite dans testzone (comportement visible).'
+      ],
+      expected:'testzone hérite des flags de parentzone. Colonne gauche affiche le nom de la zone parente.'
+    },
+    {
+      id:'gui_delete_zone', title:'Supprimer une zone (bouton Supprimer)',
+      tags:[],
+      steps:[
+        'Créer une zone test <code>tempzone</code>.',
+        '<code>/ag gui</code> → Détails de <code>tempzone</code> → <strong>Supprimer zone</strong>.',
+        'Confirmer la boîte de dialogue.',
+        'Vérifier que la zone disparaît de la liste.'
+      ],
+      expected:'Zone supprimée de la liste. Ses flags et membres sont purgés. Aucune erreur console.'
+    },
+    {
+      id:'gui_dim_flags', title:'Dim Flags (flags par dimension)',
+      tags:[],
+      steps:[
+        '<code>/ag gui</code> → bouton <strong>"Dim Flags"</strong> dans le footer de ZoneListScreen.',
+        'Choisir la dimension <code>minecraft:overworld</code>.',
+        'Ajouter un flag au niveau dimension (ex: <code>mob_spawn</code> OFF).',
+        'Sortir de toute zone et tester.',
+        'Revenir dans testzone : activer le toggle <code>inheritDimFlags</code> sur la zone.',
+        'Reset.'
+      ],
+      expected:'Les flags de dimension s\'appliquent partout dans l\'overworld. Quand <code>inheritDimFlags</code> est ON sur une zone, celle-ci hérite des dim flags.'
+    },
+    {
+      id:'gui_search', title:'Recherche de zones (Ctrl+F)',
+      tags:[],
+      steps:[
+        'Créer plusieurs zones (3+).',
+        '<code>/ag gui</code> → appuyer sur <kbd>Ctrl+F</kbd>.',
+        'Taper une partie du nom d\'une zone.',
+        'Vérifier le filtrage de la liste.'
+      ],
+      expected:'La barre de recherche reçoit le focus. Le filtrage est instantané et case-insensitive.'
+    }
+  ]
+},
+
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  ÉTAT GLOBAL
+// ═══════════════════════════════════════════════════════════════
+const state = {};
+
+let testCount = 0;
+let globalIndex = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDU
+// ═══════════════════════════════════════════════════════════════
+function buildTag(tag) {
+  const cls = tag.c === 'flag' ? 'tag-flag' : tag.c === 'mod' ? 'tag-mod' : 'tag-req';
+  const prefix = tag.c === 'mod' ? '🧩 ' : tag.c === 'req' ? '⚠️ ' : '';
+  return `<span class="tag ${cls}">${prefix}${tag.t}</span>`;
+}
+
+function render() {
+  const root = document.getElementById('sections-root');
+  root.innerHTML = '';
+
+  SECTIONS.forEach((sec, si) => {
+    const secTests = sec.tests;
+    testCount += secTests.length;
+
+    const el = document.createElement('div');
+    el.className = 'section' + (si < 2 ? ' open' : '');
+    el.id = 'sec-' + sec.id;
+
+    const badgeId = `badge-${sec.id}`;
+
+    el.innerHTML = `
+      <div class="section-header" onclick="toggleSection('sec-${sec.id}')">
+        <span style="font-size:18px">${sec.icon}</span>
+        <div style="flex:1">
+          <div class="section-title">${sec.title}</div>
+          <div class="section-desc">${sec.desc}</div>
+        </div>
+        <span class="section-badge" id="${badgeId}">0 / ${secTests.length}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="body-${sec.id}"></div>
+    `;
+
+    root.appendChild(el);
+
+    const body = el.querySelector('.section-body');
+
+    secTests.forEach((test, ti) => {
+      globalIndex++;
+      const idx = globalIndex;
+      if (!state[test.id]) state[test.id] = { status: '', notes: '' };
+
+      const tags = (test.tags || []).map(buildTag).join(' ');
+      const noteHtml = test.note
+        ? `<div class="setup-note">ℹ️ ${test.note}</div>` : '';
+
+      const stepsHtml = test.steps.map(s => `<li>${s}</li>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'test-card';
+      card.id = 'card-' + test.id;
+
+      card.innerHTML = `
+        <div class="test-header">
+          <span class="test-number">#${idx}</span>
+          <span class="test-title">${test.title}</span>
+          ${tags}
+        </div>
+        <div class="test-body">
+          ${noteHtml}
+          <div class="test-steps" style="grid-column:1/-1">
+            <div class="subsection-label">Étapes</div>
+            <ol class="steps-list">${stepsHtml}</ol>
+          </div>
+          <div class="expected-box">
+            <div class="subsection-label">✓ Résultat attendu</div>
+            ${test.expected}
+          </div>
+          <div class="verdict-row">
+            <div class="subsection-label">Verdict</div>
+            <div class="radio-group">
+              <label class="radio-btn opt-pass" id="btn-pass-${test.id}">
+                <input type="radio" name="${test.id}" value="pass" onchange="setStatus('${test.id}','pass')">
+                ✓ Succès
+              </label>
+              <label class="radio-btn opt-fail" id="btn-fail-${test.id}">
+                <input type="radio" name="${test.id}" value="fail" onchange="setStatus('${test.id}','fail')">
+                ✗ Échec
+              </label>
+              <label class="radio-btn opt-skip" id="btn-skip-${test.id}">
+                <input type="radio" name="${test.id}" value="skip" onchange="setStatus('${test.id}','skip')">
+                — Non testé
+              </label>
+            </div>
+          </div>
+          <textarea class="notes-area" placeholder="Notes, comportement observé, captures d'écran..."
+            id="notes-${test.id}"
+            oninput="setNotes('${test.id}', this.value)">${state[test.id].notes}</textarea>
+        </div>
+      `;
+
+      body.appendChild(card);
+      applyStyling(test.id);
+    });
+  });
+
+  updateProgress();
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function setStatus(testId, val) {
+  state[testId].status = val;
+  applyStyling(testId);
+  updateProgress();
+  autosaveLocal();
+}
+
+function setNotes(testId, val) {
+  state[testId].notes = val;
+  autosaveLocal();
+}
+
+function applyStyling(testId) {
+  const card = document.getElementById('card-' + testId);
+  if (!card) return;
+  const st = state[testId].status;
+  card.classList.remove('status-pass', 'status-fail', 'status-skip');
+  if (st) card.classList.add('status-' + st);
+
+  ['pass','fail','skip'].forEach(v => {
+    const btn = document.getElementById(`btn-${v}-${testId}`);
+    if (btn) {
+      btn.classList.toggle('selected', st === v);
+      const input = btn.querySelector('input');
+      if (input) input.checked = (st === v);
+    }
+  });
+}
+
+function updateProgress() {
+  let done = 0, pass = 0, fail = 0, skip = 0;
+  for (const id in state) {
+    const s = state[id].status;
+    if (s === 'pass') { done++; pass++; }
+    else if (s === 'fail') { done++; fail++; }
+    else if (s === 'skip') { done++; skip++; }
+  }
+  const total = Object.keys(state).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('prog-text').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('cnt-pass').textContent = pass + ' succès';
+  document.getElementById('cnt-fail').textContent = fail + ' échec' + (fail > 1 ? 's' : '');
+  document.getElementById('cnt-skip').textContent = skip + ' ignoré' + (skip > 1 ? 's' : '');
+
+  SECTIONS.forEach(sec => {
+    let secDone = 0;
+    sec.tests.forEach(t => {
+      if (state[t.id] && state[t.id].status) secDone++;
+    });
+    const badge = document.getElementById('badge-' + sec.id);
+    if (badge) badge.textContent = `${secDone} / ${sec.tests.length}`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SAVE / LOAD
+// ═══════════════════════════════════════════════════════════════
+function getMeta() {
+  return {
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    version: document.getElementById('meta-version').value,
+    server: document.getElementById('meta-server').value,
+  };
+}
+
+function saveJSON() {
+  const data = {
+    meta: { ...getMeta(), exportedAt: new Date().toISOString(), tool: 'ArcadiaGuard Test Report' },
+    results: {}
+  };
+  for (const id in state) {
+    data.results[id] = { ...state[id] };
+  }
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = getMeta().date || new Date().toISOString().split('T')[0];
+  const tester = getMeta().tester || 'rapport';
+  a.href = url;
+  a.download = `arcadiaguard-tests_${tester}_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Rapport sauvegardé !');
+}
+
+function loadJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.meta) {
+        if (data.meta.tester) document.getElementById('meta-tester').value = data.meta.tester;
+        if (data.meta.date) document.getElementById('meta-date').value = data.meta.date;
+        if (data.meta.version) document.getElementById('meta-version').value = data.meta.version;
+        if (data.meta.server) document.getElementById('meta-server').value = data.meta.server;
+      }
+      if (data.results) {
+        for (const id in data.results) {
+          if (state[id] !== undefined) {
+            state[id] = { status: data.results[id].status || '', notes: data.results[id].notes || '' };
+          }
+        }
+        for (const id in state) {
+          applyStyling(id);
+          const ta = document.getElementById('notes-' + id);
+          if (ta) ta.value = state[id].notes;
+        }
+        updateProgress();
+      }
+      toast('📂 Rapport chargé avec succès !');
+    } catch {
+      toast('❌ Erreur lors du chargement du fichier JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function autosaveLocal() {
+  try {
+    localStorage.setItem('ag_test_state', JSON.stringify({ state, meta: getMeta() }));
+  } catch {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('ag_test_state');
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (saved.state) {
+      for (const id in saved.state) {
+        if (state[id] !== undefined) state[id] = saved.state[id];
+      }
+    }
+    if (saved.meta) {
+      if (saved.meta.tester) document.getElementById('meta-tester').value = saved.meta.tester;
+      if (saved.meta.date) document.getElementById('meta-date').value = saved.meta.date;
+      if (saved.meta.version) document.getElementById('meta-version').value = saved.meta.version;
+      if (saved.meta.server) document.getElementById('meta-server').value = saved.meta.server;
+    }
+    return true;
+  } catch { return false; }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
+
+document.getElementById('load-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadJSON(e.target.files[0]);
+});
+
+['meta-tester','meta-date','meta-version','meta-server'].forEach(id => {
+  document.getElementById(id).addEventListener('input', autosaveLocal);
+});
+
+render();
+if (loadLocal()) {
+  for (const id in state) {
+    applyStyling(id);
+    const ta = document.getElementById('notes-' + id);
+    if (ta) ta.value = state[id].notes;
+  }
+  updateProgress();
+  toast('🔄 Session précédente restaurée');
+}
+</script>
+</body>
+</html>
