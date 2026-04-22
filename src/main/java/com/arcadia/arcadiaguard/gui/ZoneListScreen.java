@@ -126,7 +126,7 @@ public final class ZoneListScreen extends Screen {
         zoneColX[4] = tableX + Math.max(175, tableW * 360 / 477);
         zoneColX[5] = tableX + Math.max(210, tableW * 420 / 477);
 
-        searchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, tableX + 22, searchY + 6, tableW - 30, 14,
+        searchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, tableX + 22, searchY + 3, tableW - 30, 14,
             Component.translatable("arcadiaguard.gui.zone_list.search_placeholder"));
         searchBox.setMaxLength(60);
         searchBox.setBordered(false);
