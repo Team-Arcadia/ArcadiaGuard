@@ -33,6 +33,13 @@ public final class SelfTestCommand {
 
     private SelfTestCommand() {}
 
+    /** Enregistre les scenarios builtin. Appele une fois apres FMLCommonSetup. */
+    public static void registerBuiltinScenariosAfterSetup() {
+        // Smoke generique pour TOUS les flags (post-FMLCommonSetup pour acces registry).
+        com.arcadia.arcadiaguard.selftest.scenarios.AllFlagsSmokeScenarios.generateAll()
+            .forEach(s -> SelfTestRunner.register(s));
+    }
+
     /** Enregistre les scenarios builtin. Appele une fois au mod setup. */
     public static void registerBuiltinScenarios() {
         SelfTestRunner.register(
@@ -64,7 +71,27 @@ public final class SelfTestCommand {
             ModIntegrationScenarios.TWILIGHT_FOREST,
             ModIntegrationScenarios.MUTANT_MONSTERS,
             ModIntegrationScenarios.LUCKPERMS,
-            ModIntegrationScenarios.YAWP
+            ModIntegrationScenarios.YAWP,
+            // E2E HIGH priority (audit gaps)
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.MONSTER_SPAWN_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.ANIMAL_SPAWN_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.PVP_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.BLOCK_INTERACT_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.ENTRY_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.HEAL_AMOUNT_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.ITEM_DROP_DENY_E2E,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EScenarios.SEND_CHAT_DENY_E2E,
+            // Commands (10)
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_LIST,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_INFO,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_CREATE_REMOVE,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_FLAG,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_DIMFLAG,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_LOG,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ITEM_LIST,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_HELP,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_RELOAD,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_WAND_GIVE
         );
     }
 

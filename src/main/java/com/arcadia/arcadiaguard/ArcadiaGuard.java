@@ -85,6 +85,9 @@ public final class ArcadiaGuard {
         services.asyncZoneWriter().start();
         services.zoneManager().reload(event.getServer());
         services.dynamicItemBlockList().load();
+        // SelfTest : enregistre les scenarios smoke auto-generes (un par flag du registry).
+        // Apres ServerStarting car a besoin que tous les mods soient charges + flags registres.
+        com.arcadia.arcadiaguard.selftest.SelfTestCommand.registerBuiltinScenariosAfterSetup();
         try { DimFlagSerializer.read(services.dimFlagStore(), ArcadiaGuardPaths.dimFlagsFile()); }
         catch (java.io.IOException e) { LOGGER.error("[ArcadiaGuard] Failed to load dimension flags", e); }
         services.auditLogger().onServerStarted(event.getServer());
