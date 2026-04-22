@@ -575,7 +575,12 @@ public final class GuiActionHandler {
         if (opt.isEmpty()) return null;
         Flag<?> flag = opt.get();
         try {
-            if (flag instanceof com.arcadia.arcadiaguard.api.flag.IntFlag) return Integer.parseInt(raw.trim());
+            if (flag instanceof com.arcadia.arcadiaguard.api.flag.IntFlag intFlag) {
+                int parsed = Integer.parseInt(raw.trim());
+                // Clamp serveur pour garantir que les bornes ne peuvent pas etre contournees
+                // meme si un client malveillant envoie une valeur hors plage.
+                return Math.max(intFlag.min(), Math.min(intFlag.max(), parsed));
+            }
             if (flag instanceof com.arcadia.arcadiaguard.api.flag.ListFlag) {
                 if (raw.isBlank()) return new ArrayList<String>();
                 ArrayList<String> out = new ArrayList<>();
