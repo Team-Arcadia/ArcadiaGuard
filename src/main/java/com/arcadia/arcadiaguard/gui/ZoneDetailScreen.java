@@ -205,23 +205,8 @@ public final class ZoneDetailScreen extends Screen {
             b -> minecraft.setScreen(parent));
         addRenderableWidget(footerBackBtn);
 
-        footerPlayerBtn = CartographiaButton.good(btX2, bfy, btW2, 16,
-            isWhitelist
-                ? Component.translatable("arcadiaguard.gui.zonedetail.confirm_player")
-                : Component.translatable("arcadiaguard.gui.zonedetail.add_player"),
-            b -> {
-                if (popup instanceof PopupState.WhitelistInput) {
-                    String name = whitelistBox.getValue().trim();
-                    if (!name.isEmpty())
-                        PacketDistributor.sendToServer(GuiActionPayload.whitelistAdd(detail.name(), name));
-                    whitelistBox.setValue("");
-                    popup = new PopupState.None();
-                } else {
-                    popup = new PopupState.WhitelistInput();
-                    setFocused(whitelistBox);
-                }
-            });
-        addRenderableWidget(footerPlayerBtn);
+        // footerPlayerBtn retire: le bouton '+' inline dans la section Members remplace.
+        footerPlayerBtn = null;
 
         footerParentBtn = CartographiaButton.neutral(btX3, bfy, btW3, 16,
             isParent
