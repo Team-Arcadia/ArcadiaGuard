@@ -80,7 +80,10 @@ public final class LogCommands {
                 .limit(6)
                 .forEach(p -> {
                     try { collectFromFile(p, zoneFilter, playerFilter, results); }
-                    catch (IOException ignored) {}
+                    catch (IOException e) {
+                        com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.warn(
+                            "[ArcadiaGuard] Failed to read audit log file {}: {}", p, e.toString());
+                    }
                 });
         }
         return results;

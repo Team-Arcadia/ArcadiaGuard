@@ -18,23 +18,28 @@ public record DimFlagsPayload(String dimKey, List<FlagInfo> flags) implements Cu
                            String description, byte type, String stringValue) {
         public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2;
 
+        private static final StreamCodec<ByteBuf, String> ID_C    = ByteBufCodecs.stringUtf8(64);
+        private static final StreamCodec<ByteBuf, String> LABEL_C = ByteBufCodecs.stringUtf8(128);
+        private static final StreamCodec<ByteBuf, String> DESC_C  = ByteBufCodecs.stringUtf8(512);
+        private static final StreamCodec<ByteBuf, String> VALUE_C = ByteBufCodecs.stringUtf8(32768);
+
         static final StreamCodec<ByteBuf, FlagInfo> CODEC = StreamCodec.of(
             (buf, f) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.id);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.label);
+                ID_C.encode(buf, f.id);
+                LABEL_C.encode(buf, f.label);
                 buf.writeBoolean(f.value);
                 buf.writeBoolean(f.configured);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.description);
+                DESC_C.encode(buf, f.description);
                 buf.writeByte(f.type);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.stringValue);
+                VALUE_C.encode(buf, f.stringValue);
             },
             buf -> new FlagInfo(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                ID_C.decode(buf),
+                LABEL_C.decode(buf),
                 buf.readBoolean(), buf.readBoolean(),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                DESC_C.decode(buf),
                 buf.readByte(),
-                ByteBufCodecs.STRING_UTF8.decode(buf)
+                VALUE_C.decode(buf)
             )
         );
     }
@@ -42,14 +47,16 @@ public record DimFlagsPayload(String dimKey, List<FlagInfo> flags) implements Cu
     public static final Type<DimFlagsPayload> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(ArcadiaGuard.MOD_ID, "dim_flags"));
 
+    private static final StreamCodec<ByteBuf, String> DIM_C = ByteBufCodecs.stringUtf8(256);
+
     public static final StreamCodec<RegistryFriendlyByteBuf, DimFlagsPayload> STREAM_CODEC = StreamCodec.of(
         (buf, p) -> {
-            ByteBufCodecs.STRING_UTF8.encode(buf, p.dimKey());
+            DIM_C.encode(buf, p.dimKey());
             buf.writeInt(p.flags().size());
             for (FlagInfo f : p.flags()) FlagInfo.CODEC.encode(buf, f);
         },
         buf -> {
-            String dimKey = ByteBufCodecs.STRING_UTF8.decode(buf);
+            String dimKey = DIM_C.decode(buf);
             int size = buf.readInt();
             if (size < 0 || size > 256) throw new io.netty.handler.codec.DecoderException("Invalid size " + size + " in DimFlagsPayload");
             List<FlagInfo> flags = new ArrayList<>(size);

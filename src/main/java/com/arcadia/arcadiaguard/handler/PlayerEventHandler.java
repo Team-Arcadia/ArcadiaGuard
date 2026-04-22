@@ -89,6 +89,8 @@ public final class PlayerEventHandler
         tickCounter.removeInt(id);
         playerCurrentZone.remove(id);
         lastSafePos.remove(id);
+        playerParcoolBlocked.remove(id);
+        playerEmoteBlocked.remove(id);
         WandItem.clearSelection(id);
         com.arcadia.arcadiaguard.ArcadiaGuard.guardService().clearDebug(id);
         // H7: invalidate bypass cache so stale verdict is not reused on next login

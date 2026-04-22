@@ -27,10 +27,13 @@ public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2
         int maxX, int maxY, int maxZ,
         int memberCount, boolean hasParent, int flagCount, boolean enabled
     ) {
+        private static final StreamCodec<ByteBuf, String> NAME_C = ByteBufCodecs.stringUtf8(64);
+        private static final StreamCodec<ByteBuf, String> DIM_C  = ByteBufCodecs.stringUtf8(256);
+
         static final StreamCodec<ByteBuf, ZoneEntry> CODEC = StreamCodec.of(
             (buf, e) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, e.name);
-                ByteBufCodecs.STRING_UTF8.encode(buf, e.dim);
+                NAME_C.encode(buf, e.name);
+                DIM_C.encode(buf, e.dim);
                 buf.writeInt(e.minX); buf.writeInt(e.minY); buf.writeInt(e.minZ);
                 buf.writeInt(e.maxX); buf.writeInt(e.maxY); buf.writeInt(e.maxZ);
                 buf.writeInt(e.memberCount);
@@ -39,8 +42,8 @@ public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2
                 buf.writeBoolean(e.enabled);
             },
             buf -> new ZoneEntry(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                NAME_C.decode(buf),
+                DIM_C.decode(buf),
                 buf.readInt(), buf.readInt(), buf.readInt(),
                 buf.readInt(), buf.readInt(), buf.readInt(),
                 buf.readInt(), buf.readBoolean(), buf.readInt(), buf.readBoolean()

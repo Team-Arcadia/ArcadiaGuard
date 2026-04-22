@@ -19,15 +19,17 @@ public record ZoneDataPayload(List<ClientZoneInfo> zones) implements CustomPacke
         boolean dimensional,
         boolean hasParent
     ) {
+        private static final StreamCodec<ByteBuf, String> NAME_C = ByteBufCodecs.stringUtf8(64);
+
         static final StreamCodec<ByteBuf, ClientZoneInfo> STREAM_CODEC = StreamCodec.of(
             (buf, info) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, info.name);
+                NAME_C.encode(buf, info.name);
                 buf.writeInt(info.minX); buf.writeInt(info.minY); buf.writeInt(info.minZ);
                 buf.writeInt(info.maxX); buf.writeInt(info.maxY); buf.writeInt(info.maxZ);
                 buf.writeByte((info.dimensional ? 1 : 0) | (info.hasParent ? 2 : 0));
             },
             buf -> {
-                String name = ByteBufCodecs.STRING_UTF8.decode(buf);
+                String name = NAME_C.decode(buf);
                 int minX = buf.readInt(), minY = buf.readInt(), minZ = buf.readInt();
                 int maxX = buf.readInt(), maxY = buf.readInt(), maxZ = buf.readInt();
                 byte flags = buf.readByte();

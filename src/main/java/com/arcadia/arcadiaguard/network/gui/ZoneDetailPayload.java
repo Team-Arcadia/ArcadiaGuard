@@ -18,39 +18,51 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
                             String description, byte type, String stringValue) {
         public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2;
 
+        // DoS-safe string codecs (size-capped)
+        private static final StreamCodec<ByteBuf, String> ID_C     = ByteBufCodecs.stringUtf8(64);
+        private static final StreamCodec<ByteBuf, String> LABEL_C  = ByteBufCodecs.stringUtf8(128);
+        private static final StreamCodec<ByteBuf, String> DESC_C   = ByteBufCodecs.stringUtf8(512);
+        private static final StreamCodec<ByteBuf, String> VALUE_C  = ByteBufCodecs.stringUtf8(32768);
+
         static final StreamCodec<ByteBuf, FlagEntry> CODEC = StreamCodec.of(
             (buf, f) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.id);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.label);
+                ID_C.encode(buf, f.id);
+                LABEL_C.encode(buf, f.label);
                 buf.writeBoolean(f.value);
                 buf.writeBoolean(f.inherited);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.description);
+                DESC_C.encode(buf, f.description);
                 buf.writeByte(f.type);
-                ByteBufCodecs.STRING_UTF8.encode(buf, f.stringValue);
+                VALUE_C.encode(buf, f.stringValue);
             },
             buf -> new FlagEntry(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                ID_C.decode(buf),
+                LABEL_C.decode(buf),
                 buf.readBoolean(), buf.readBoolean(),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
+                DESC_C.decode(buf),
                 buf.readByte(),
-                ByteBufCodecs.STRING_UTF8.decode(buf)
+                VALUE_C.decode(buf)
             )
         );
     }
 
     public record MemberEntry(String uuid, String name) {
+        private static final StreamCodec<ByteBuf, String> UUID_C = ByteBufCodecs.stringUtf8(36);
+        private static final StreamCodec<ByteBuf, String> NAME_C = ByteBufCodecs.stringUtf8(32);
         static final StreamCodec<ByteBuf, MemberEntry> CODEC = StreamCodec.of(
             (buf, m) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, m.uuid);
-                ByteBufCodecs.STRING_UTF8.encode(buf, m.name);
+                UUID_C.encode(buf, m.uuid);
+                NAME_C.encode(buf, m.name);
             },
             buf -> new MemberEntry(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf)
+                UUID_C.decode(buf),
+                NAME_C.decode(buf)
             )
         );
     }
+
+    private static final StreamCodec<ByteBuf, String> ZONE_NAME_C = ByteBufCodecs.stringUtf8(64);
+    private static final StreamCodec<ByteBuf, String> DIM_NAME_C  = ByteBufCodecs.stringUtf8(256);
+    private static final StreamCodec<ByteBuf, String> ITEM_ID_C   = ByteBufCodecs.stringUtf8(128);
 
     public record Detail(
         String name, String dim,
@@ -65,11 +77,11 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
     ) {
         static final StreamCodec<ByteBuf, Detail> CODEC = StreamCodec.of(
             (buf, d) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, d.name);
-                ByteBufCodecs.STRING_UTF8.encode(buf, d.dim);
+                ZONE_NAME_C.encode(buf, d.name);
+                DIM_NAME_C.encode(buf, d.dim);
                 buf.writeInt(d.minX); buf.writeInt(d.minY); buf.writeInt(d.minZ);
                 buf.writeInt(d.maxX); buf.writeInt(d.maxY); buf.writeInt(d.maxZ);
-                ByteBufCodecs.STRING_UTF8.encode(buf, d.parentName == null ? "" : d.parentName);
+                ZONE_NAME_C.encode(buf, d.parentName == null ? "" : d.parentName);
                 buf.writeInt(d.flags.size());
                 for (FlagEntry f : d.flags) FlagEntry.CODEC.encode(buf, f);
                 buf.writeInt(d.members.size());
@@ -77,14 +89,14 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
                 buf.writeBoolean(d.enabled);
                 buf.writeBoolean(d.inheritDimFlags);
                 buf.writeInt(d.blockedItems.size());
-                for (String id : d.blockedItems) ByteBufCodecs.STRING_UTF8.encode(buf, id);
+                for (String id : d.blockedItems) ITEM_ID_C.encode(buf, id);
             },
             buf -> {
-                String name = ByteBufCodecs.STRING_UTF8.decode(buf);
-                String dim  = ByteBufCodecs.STRING_UTF8.decode(buf);
+                String name = ZONE_NAME_C.decode(buf);
+                String dim  = DIM_NAME_C.decode(buf);
                 int minX = buf.readInt(), minY = buf.readInt(), minZ = buf.readInt();
                 int maxX = buf.readInt(), maxY = buf.readInt(), maxZ = buf.readInt();
-                String parent = ByteBufCodecs.STRING_UTF8.decode(buf);
+                String parent = ZONE_NAME_C.decode(buf);
                 int fc = buf.readInt();
                 if (fc < 0 || fc > 256) throw new io.netty.handler.codec.DecoderException("Invalid flag count " + fc + " in ZoneDetailPayload");
                 List<FlagEntry> flags = new ArrayList<>(fc);
@@ -98,7 +110,7 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
                 int bic = buf.readInt();
                 if (bic < 0 || bic > 4096) throw new io.netty.handler.codec.DecoderException("Invalid blocked items count " + bic + " in ZoneDetailPayload");
                 List<String> blockedItems = new ArrayList<>(bic);
-                for (int i = 0; i < bic; i++) blockedItems.add(ByteBufCodecs.STRING_UTF8.decode(buf));
+                for (int i = 0; i < bic; i++) blockedItems.add(ITEM_ID_C.decode(buf));
                 return new Detail(name, dim, minX, minY, minZ, maxX, maxY, maxZ,
                     parent.isEmpty() ? null : parent, flags, members, enabled, inheritDimFlags, blockedItems);
             }

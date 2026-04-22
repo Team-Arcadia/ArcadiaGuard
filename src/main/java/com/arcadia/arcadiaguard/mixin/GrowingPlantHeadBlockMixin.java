@@ -18,7 +18,7 @@ public abstract class GrowingPlantHeadBlockMixin {
         method = "randomTick(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;Lnet/minecraft/util/RandomSource;)V",
         at = @At("HEAD"), cancellable = true
     )
-    private void arcadiaguard$blockVineGrowth(BlockState state, ServerLevel level, BlockPos pos,
+    private void arcadiaguard$blockPlantHeadGrowth(BlockState state, ServerLevel level, BlockPos pos,
             RandomSource rand, CallbackInfo ci) {
         if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.VINE_GROWTH)) ci.cancel();
