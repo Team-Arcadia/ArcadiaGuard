@@ -91,7 +91,24 @@ public final class SelfTestCommand {
             com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ITEM_LIST,
             com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_HELP,
             com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_RELOAD,
-            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_WAND_GIVE
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_WAND_GIVE,
+            // E2E Blocks (RightClickBlock-based)
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.DOOR_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.TRAPDOOR_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.BUTTON_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.LEVER_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.GATE_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EBlockScenarios.CONTAINER_ACCESS_DENY,
+            // E2E Combat
+            com.arcadia.arcadiaguard.selftest.scenarios.E2ECombatScenarios.ATTACK_MONSTERS_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2ECombatScenarios.MOB_DAMAGE_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2ECombatScenarios.PLAYER_DAMAGE_DENY,
+            // E2E Event-post (spawn + explosion + farmland)
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.VILLAGER_SPAWN_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.CREEPER_EXPLOSION_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.TNT_EXPLOSION_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.BLOCK_EXPLOSION_DENY,
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.FARMLAND_TRAMPLE_DENY
         );
     }
 
