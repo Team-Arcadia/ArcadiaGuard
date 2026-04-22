@@ -132,9 +132,11 @@ public final class AsyncZoneWriter {
     }
 
     private void loop() {
-        while (this.running || !this.queue.isEmpty()) {
+        BlockingQueue<String> q = this.queue;
+        if (q == null) return;
+        while (this.running || !q.isEmpty()) {
             try {
-                String key = this.queue.poll(100, TimeUnit.MILLISECONDS);
+                String key = q.poll(100, TimeUnit.MILLISECONDS);
                 if (key != null) {
                     Runnable task = pending.remove(key);
                     if (task != null) {
@@ -153,8 +155,10 @@ public final class AsyncZoneWriter {
     }
 
     private void drainRemaining() {
+        BlockingQueue<String> q = this.queue;
+        if (q == null) return;
         String key;
-        while ((key = this.queue.poll()) != null) {
+        while ((key = q.poll()) != null) {
             Runnable task = pending.remove(key);
             if (task == null) continue;
             try { task.run(); processed.incrementAndGet(); }

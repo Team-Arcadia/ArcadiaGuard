@@ -91,6 +91,7 @@ public final class PlayerEventHandler
         lastSafePos.remove(id);
         playerParcoolBlocked.remove(id);
         playerEmoteBlocked.remove(id);
+        GuiActionHandler.onPlayerLogout(id);
         WandItem.clearSelection(id);
         com.arcadia.arcadiaguard.ArcadiaGuard.guardService().clearDebug(id);
         // H7: invalidate bypass cache so stale verdict is not reused on next login
@@ -277,7 +278,7 @@ public final class PlayerEventHandler
      * Cache le Holder via lookup statique pour eviter les allocations en hot path.
      */
     private static volatile net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> CREATIVE_FLIGHT_ATTR;
-    private static boolean CREATIVE_FLIGHT_MISSING = false;
+    private static volatile boolean CREATIVE_FLIGHT_MISSING = false;
 
     private static boolean hasCreativeFlightAttribute(ServerPlayer player) {
         if (CREATIVE_FLIGHT_MISSING) return false;

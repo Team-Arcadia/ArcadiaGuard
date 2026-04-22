@@ -125,7 +125,7 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
         }
     }
 
-    private static boolean WARN_WARP_LOGGED = false;
+    private static volatile boolean WARN_WARP_LOGGED = false;
 
     private static ResourceLocation itemKey(ItemStack stack) {
         ResourceKey<Item> k = stack.getItemHolder().getKey();
