@@ -133,6 +133,7 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, true, net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent.class, vanillaExtraHandler::onTravelDim);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, BlockEvent.BlockToolModificationEvent.class, vanillaExtraHandler::onBlockToolModification);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, PlayerInteractEvent.RightClickBlock.class, vanillaExtraHandler::onBucketUse);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, PlayerInteractEvent.RightClickItem.class, vanillaExtraHandler::onBucketUseItem);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.ServerChatEvent.class, vanillaExtraHandler::onChat);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.CommandEvent.class, vanillaExtraHandler::onCommand);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingIncomingDamageEvent.class, entityEventHandler::onLivingIncomingDamage);
