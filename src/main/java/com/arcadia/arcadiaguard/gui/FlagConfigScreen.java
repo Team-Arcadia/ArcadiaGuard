@@ -37,6 +37,13 @@ public final class FlagConfigScreen extends Screen {
     private int listScroll = 0;
     private String errorMsg = "";
 
+    /** Autocomplete (S-H22) : suggestions pour les ListFlag ars/irons spell. */
+    private List<String> allSuggestions = List.of();
+    private List<String> filteredSuggestions = List.of();
+    private int suggestionScroll = 0;
+    private static final int SUGG_ROW_H = 12;
+    private static final int SUGG_MAX_ROWS = 6;
+
     private CartographiaButton backBtn;
     private CartographiaButton resetBtn;
     private CartographiaButton saveBtn;
@@ -91,8 +98,12 @@ public final class FlagConfigScreen extends Screen {
             listAddBox.setTextColor(Colors.TEXT);
             listAddBox.setHint(Component.translatable("arcadiaguard.gui.flagconfig.list_add.hint")
                 .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+            listAddBox.setResponder(this::onSearchChanged);
             addRenderableWidget(listAddBox);
             setFocused(listAddBox);
+            // S-H22 : charge les suggestions d'autocompletion si le flag est un spell blacklist/whitelist
+            allSuggestions = com.arcadia.arcadiaguard.util.SpellRegistryHelper.suggestionsFor(flagId);
+            refreshFilteredSuggestions();
 
             int inputY = gy + GUI_H - 60;
             int addX = gx + GUI_W - 76;
@@ -240,6 +251,53 @@ public final class FlagConfigScreen extends Screen {
         g.fill(gx + 14, inputY, gx + GUI_W - 80, inputY + 20, Colors.BG_1);
         g.fill(gx + 14, inputY, gx + GUI_W - 80, inputY + 1, Colors.ACCENT_LO);
         g.fill(gx + 14, inputY + 19, gx + GUI_W - 80, inputY + 20, Colors.ACCENT_LO);
+
+        // S-H22 : dropdown d'autocompletion au-dessus de l'input si listAddBox focus + suggestions dispo
+        if (!filteredSuggestions.isEmpty() && listAddBox != null && listAddBox.isFocused()) {
+            renderSuggestionDropdown(g, mx, my, inputY);
+        }
+    }
+
+    private void renderSuggestionDropdown(GuiGraphics g, int mx, int my, int inputY) {
+        int maxVis = Math.min(SUGG_MAX_ROWS, filteredSuggestions.size());
+        int ddH = maxVis * SUGG_ROW_H + 4;
+        int ddW = GUI_W - 80 - 14;
+        int ddX = gx + 14;
+        int ddY = inputY - ddH - 2;
+        g.fill(ddX - 1, ddY - 1, ddX + ddW + 1, ddY + ddH + 1, Colors.ACCENT_LO);
+        g.fill(ddX, ddY, ddX + ddW, ddY + ddH, Colors.BG_0);
+        int end = Math.min(suggestionScroll + maxVis, filteredSuggestions.size());
+        for (int i = suggestionScroll; i < end; i++) {
+            int iy = ddY + 2 + (i - suggestionScroll) * SUGG_ROW_H;
+            boolean hov = mx >= ddX && mx < ddX + ddW && my >= iy && my < iy + SUGG_ROW_H;
+            if (hov) g.fill(ddX + 1, iy, ddX + ddW - 1, iy + SUGG_ROW_H, Colors.ACCENT & 0xFFFFFF | 0x40000000);
+            String entry = filteredSuggestions.get(i);
+            g.drawString(font, entry, ddX + 4, iy + 2, hov ? Colors.ACCENT_HI : Colors.TEXT, false);
+        }
+        // Indicateur scroll
+        if (filteredSuggestions.size() > maxVis) {
+            g.drawString(font, "↓ " + (filteredSuggestions.size() - end), ddX + ddW - 30, ddY + ddH - 10, Colors.TEXT_MUTE, false);
+        }
+    }
+
+    private void onSearchChanged(String value) {
+        suggestionScroll = 0;
+        refreshFilteredSuggestions();
+    }
+
+    private void refreshFilteredSuggestions() {
+        if (allSuggestions.isEmpty()) { filteredSuggestions = List.of(); return; }
+        String q = listAddBox != null ? listAddBox.getValue().trim().toLowerCase() : "";
+        if (q.isEmpty()) {
+            filteredSuggestions = allSuggestions.size() > 50 ? allSuggestions.subList(0, 50) : allSuggestions;
+            return;
+        }
+        List<String> out = new ArrayList<>();
+        for (String s : allSuggestions) {
+            if (s.toLowerCase().contains(q) && !listEntries.contains(s)) out.add(s);
+            if (out.size() >= 50) break;
+        }
+        filteredSuggestions = out;
     }
 
     private void renderFooterDivider(GuiGraphics g) {
@@ -259,6 +317,25 @@ public final class FlagConfigScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int btn) {
+        // S-H22 : clic sur une suggestion d'autocompletion -> add + clear input
+        if (flagType == FlagType.LIST && !filteredSuggestions.isEmpty() && listAddBox != null && listAddBox.isFocused()) {
+            int inputY = gy + GUI_H - 60;
+            int maxVis = Math.min(SUGG_MAX_ROWS, filteredSuggestions.size());
+            int ddH = maxVis * SUGG_ROW_H + 4;
+            int ddW = GUI_W - 80 - 14;
+            int ddX = gx + 14;
+            int ddY = inputY - ddH - 2;
+            if (mx >= ddX && mx < ddX + ddW && my >= ddY && my < ddY + ddH) {
+                int row = (int)(my - ddY - 2) / SUGG_ROW_H + suggestionScroll;
+                if (row >= 0 && row < filteredSuggestions.size()) {
+                    String picked = filteredSuggestions.get(row);
+                    if (!listEntries.contains(picked)) listEntries.add(picked);
+                    listAddBox.setValue("");
+                    refreshFilteredSuggestions();
+                    return true;
+                }
+            }
+        }
         if (flagType == FlagType.LIST) {
             // ✕ sur une entrée
             int listY = gy + 74;
@@ -285,6 +362,22 @@ public final class FlagConfigScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        // S-H22 : scroll dans le dropdown de suggestions
+        if (flagType == FlagType.LIST && !filteredSuggestions.isEmpty()
+                && listAddBox != null && listAddBox.isFocused()) {
+            int inputY = gy + GUI_H - 60;
+            int maxVis = Math.min(SUGG_MAX_ROWS, filteredSuggestions.size());
+            int ddH = maxVis * SUGG_ROW_H + 4;
+            int ddW = GUI_W - 80 - 14;
+            int ddX = gx + 14;
+            int ddY = inputY - ddH - 2;
+            if (mx >= ddX && mx < ddX + ddW && my >= ddY && my < ddY + ddH) {
+                suggestionScroll = Math.max(0, Math.min(
+                    suggestionScroll - (int) dy,
+                    Math.max(0, filteredSuggestions.size() - maxVis)));
+                return true;
+            }
+        }
         if (flagType == FlagType.LIST) {
             listScroll = Math.max(0, listScroll - (int) dy);
         }
