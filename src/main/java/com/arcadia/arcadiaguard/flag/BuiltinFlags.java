@@ -102,8 +102,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag ARS_ADDITIONS_SCROLL = new BooleanFlag("ars-additions-scroll", false, "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",         "ars_additions");
     public static final BooleanFlag ARS_WARP_SCROLL     = new BooleanFlag("ars-warp-scroll",     false, "[Ars Nouveau] Bloque specifiquement le warp scroll (teleport). Independant de ars-spell-cast.", "ars_nouveau");
     public static final BooleanFlag CHUNKLOAD            = new BooleanFlag("chunkload",          false, "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).");
-    public static final BooleanFlag FLY                  = new BooleanFlag("fly",                false, "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignores.");
-    public static final BooleanFlag APOTHEOSIS_FLY       = new BooleanFlag("apotheosis-fly",     false, "[Apotheosis] Bloque le vol via attribut neoforge:creative_flight (affixe unbound).",          "apotheosis");
+    public static final BooleanFlag FLY                  = new BooleanFlag("fly",                false, "Bloque le vol dans la zone (mayfly + attribut neoforge:creative_flight). Creative/spectator/OP ignores.");
 
     // --- Vanilla flags additionnels (parite YAWP) ---
     public static final BooleanFlag USE_ELYTRA           = new BooleanFlag("use-elytra",         false, "Bloque l'utilisation de l'elytra (vol/planage) dans la zone.");

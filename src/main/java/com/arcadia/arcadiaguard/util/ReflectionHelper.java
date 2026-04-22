@@ -248,13 +248,4 @@ public final class ReflectionHelper {
         return type;
     }
 
-    // Kept to avoid touching signatures used by older call sites.
-    @SuppressWarnings("unused")
-    private static Method findCompatibleMethod(Class<?> type, String methodName, Class<?>[] types, Object... args)
-            throws NoSuchMethodException {
-        Method m = resolve(type, methodName, types == null ? new Class<?>[0] : types, args);
-        if (m == null) throw new NoSuchMethodException(type.getName() + "#" + methodName
-            + Arrays.toString(types));
-        return m;
-    }
 }
