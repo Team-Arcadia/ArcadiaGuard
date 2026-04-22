@@ -107,7 +107,7 @@ public final class FlagEventHandler {
                 ("create".equals(ns) && (path.endsWith("handcrank") || path.endsWith("clutch")
                     || path.endsWith("gearshift") || path.endsWith("lever")))
                 || ("supplementaries".equals(ns) && path.endsWith("lever"))
-                || ("design_decor".equals(ns) && path.endsWith("lever"));
+                || ("dndecor".equals(ns) && path.endsWith("lever"));
             if (isModLever && deny(player, pos, BuiltinFlags.LEVER, "lever")) {
                 event.setCanceled(true);
                 return;
