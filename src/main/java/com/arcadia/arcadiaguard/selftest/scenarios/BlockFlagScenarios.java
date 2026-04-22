@@ -23,13 +23,17 @@ public final class BlockFlagScenarios {
         @Override public String category() { return "blocks"; }
         @Override public ScenarioResult run(TestContext ctx) {
             long start = System.nanoTime();
+            // Skip si player bypass (OP sans Debug actif) : le handler ne s'applique
+            // pas et le test rapporterait un faux fail.
+            if (com.arcadia.arcadiaguard.ArcadiaGuard.guardService().shouldBypass(ctx.player())) {
+                return ScenarioResult.skip(id(),
+                    "player bypass actif (OP sans Debug). Active Debug dans GUI pour tester.");
+            }
             ctx.setupZone(BuiltinFlags.BLOCK_BREAK.id(), false, 8);
 
             BlockPos pos = ctx.testPos();
             var snapshot = ctx.snapshotBlock(pos);
             ctx.setBlock(pos, Blocks.STONE);
-
-            // Simule un break via destroyBlock (fire BlockEvent.BreakEvent que AG ecoute).
             boolean destroyed = ctx.level().destroyBlock(pos, false, ctx.player());
 
             long ms = (System.nanoTime() - start) / 1_000_000;

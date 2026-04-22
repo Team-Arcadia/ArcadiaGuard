@@ -36,16 +36,19 @@ public final class E2EScenarios {
             BlockPos pos = ctx.player().blockPosition().offset(3, 0, 0);
             zombie.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
 
-            // Fire FinalizeSpawnEvent via EventHooks officielle (NeoForge).
-            var result = net.neoforged.neoforge.event.EventHooks.finalizeMobSpawn(zombie,
-                ctx.level(), ctx.level().getCurrentDifficultyAt(pos),
-                MobSpawnType.NATURAL, null);
-            // result == null si l'event a ete cancel (l'entity ne sera pas spawn par AG).
-            if (result == null) {
-                return ScenarioResult.pass(id(), "monster-spawn=deny a cancel le spawn", ms(start));
+            // EntityEventHandler.onMobSpawn appelle event.setSpawnCancelled(true) pour
+            // les flags MOB_SPAWN/MONSTER_SPAWN/ANIMAL_SPAWN. On post l'event soi-meme
+            // et on verifie isSpawnCancelled() (pas isCanceled() qui correspond a un
+            // veto plus fort).
+            var event = new net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent(
+                zombie, ctx.level(), pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                ctx.level().getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
+            if (event.isSpawnCancelled() || event.isCanceled()) {
+                return ScenarioResult.pass(id(), "spawn cancel par AG", ms(start));
             }
             return ScenarioResult.fail(id(),
-                "monster-spawn=deny mais FinalizeSpawnEvent non cancel", ms(start));
+                "monster-spawn=deny mais ni isSpawnCancelled ni isCanceled", ms(start));
         }
     };
 
@@ -61,14 +64,15 @@ public final class E2EScenarios {
             BlockPos pos = ctx.player().blockPosition().offset(3, 0, 0);
             cow.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
 
-            var result = net.neoforged.neoforge.event.EventHooks.finalizeMobSpawn(cow,
-                ctx.level(), ctx.level().getCurrentDifficultyAt(pos),
-                MobSpawnType.NATURAL, null);
-            if (result == null) {
+            var event = new net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent(
+                cow, ctx.level(), pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
+                ctx.level().getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
+            if (event.isSpawnCancelled() || event.isCanceled()) {
                 return ScenarioResult.pass(id(), ms(start));
             }
             return ScenarioResult.fail(id(),
-                "animal-spawn=deny mais FinalizeSpawnEvent non cancel", ms(start));
+                "animal-spawn=deny mais ni isSpawnCancelled ni isCanceled", ms(start));
         }
     };
 

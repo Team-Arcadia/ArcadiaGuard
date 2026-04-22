@@ -44,6 +44,10 @@ public final class CombatScenarios {
         @Override public String category() { return "combat"; }
         @Override public ScenarioResult run(TestContext ctx) {
             long start = System.nanoTime();
+            if (com.arcadia.arcadiaguard.ArcadiaGuard.guardService().shouldBypass(ctx.player())) {
+                return ScenarioResult.skip(id(),
+                    "player bypass actif. Active Debug dans GUI pour tester.");
+            }
             ctx.setupZone(BuiltinFlags.ATTACK_ANIMALS.id(), false, 8);
 
             Pig pig = EntityType.PIG.create(ctx.level());
@@ -71,6 +75,11 @@ public final class CombatScenarios {
         @Override public String category() { return "combat"; }
         @Override public ScenarioResult run(TestContext ctx) {
             long start = System.nanoTime();
+            // Skip si player en creatif/spectator — invulnerable nativement aux dmg.
+            if (ctx.player().isCreative() || ctx.player().isSpectator()) {
+                return ScenarioResult.skip(id(),
+                    "player en creatif/spectator (invulnerable nativement). Passe en survie.");
+            }
             ctx.setupZone(BuiltinFlags.FALL_DAMAGE.id(), true, 8);
 
             float hpBefore = ctx.player().getHealth();
