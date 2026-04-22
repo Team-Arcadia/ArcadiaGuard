@@ -34,7 +34,9 @@ public final class BlockFlagScenarios {
             BlockPos pos = ctx.testPos();
             var snapshot = ctx.snapshotBlock(pos);
             ctx.setBlock(pos, Blocks.STONE);
-            boolean destroyed = ctx.level().destroyBlock(pos, false, ctx.player());
+            // ServerPlayerGameMode.destroyBlock() fire BlockEvent.BreakEvent,
+            // contrairement a Level.destroyBlock() qui break direct sans event.
+            boolean destroyed = ctx.player().gameMode.destroyBlock(pos);
 
             long ms = (System.nanoTime() - start) / 1_000_000;
             ctx.restoreBlock(pos, snapshot);
@@ -59,7 +61,7 @@ public final class BlockFlagScenarios {
             BlockPos pos = ctx.testPos();
             var snapshot = ctx.snapshotBlock(pos);
             ctx.setBlock(pos, Blocks.STONE);
-            boolean destroyed = ctx.level().destroyBlock(pos, false, ctx.player());
+            boolean destroyed = ctx.player().gameMode.destroyBlock(pos);
 
             long ms = (System.nanoTime() - start) / 1_000_000;
             ctx.restoreBlock(pos, snapshot);

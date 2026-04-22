@@ -14,11 +14,13 @@ public final class CombatScenarios {
     private CombatScenarios() {}
 
     public static final Scenario INVINCIBLE_FLAG = new Scenario() {
-        @Override public String id() { return "invincible-allow"; }
+        @Override public String id() { return "invincible-protect"; }
         @Override public String category() { return "combat"; }
         @Override public ScenarioResult run(TestContext ctx) {
             long start = System.nanoTime();
-            ctx.setupZone(BuiltinFlags.INVINCIBLE.id(), true, 8);
+            // Convention AG : value=false = protection ACTIVE (isZoneDenying = !v).
+            // GUI affiche 'ON' (vert) pour value=false. Donc invincible 'ON' = false.
+            ctx.setupZone(BuiltinFlags.INVINCIBLE.id(), false, 8);
 
             float hpBefore = ctx.player().getHealth();
             // Applique 1 HP de damage generic. Si invincible=allow fonctionne, le handler
