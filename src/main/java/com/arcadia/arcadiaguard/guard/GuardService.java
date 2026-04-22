@@ -102,6 +102,37 @@ public final class GuardService implements IGuardService {
      */
     public void invalidateBypass(UUID playerId) {
         bypassCache.remove(playerId);
+        // Purge les entrees de throttle d'audit pour ce joueur.
+        String prefix = playerId.toString();
+        auditThrottle.keySet().removeIf(k -> k.startsWith(prefix));
+    }
+
+    /** Throttle d'audit : cooldown par (playerUUID|zone|flag) pour eviter le spam. */
+    private final ConcurrentHashMap<String, Long> auditThrottle = new ConcurrentHashMap<>();
+    private static final long AUDIT_THROTTLE_MS = 2000L;
+    private static final int AUDIT_THROTTLE_MAX = 2048;
+
+    /**
+     * Log une action refusee initiee par un joueur avec throttling par (player, zone, flag).
+     * N'appelle PAS le logger si :
+     *  - le logging est desactive dans la config,
+     *  - le joueur a spam la meme action dans les {@link #AUDIT_THROTTLE_MS} dernieres ms.
+     * A utiliser uniquement pour des actions joueur (pas pour les events passifs du monde).
+     */
+    public void auditDenied(ServerPlayer player, String zoneName, BlockPos pos,
+                            BooleanFlag flag, String actionName) {
+        if (!ArcadiaGuardConfig.ENABLE_LOGGING.get()) return;
+        String key = player.getUUID() + "|" + zoneName + "|" + flag.id();
+        long now = System.currentTimeMillis();
+        Long last = auditThrottle.get(key);
+        if (last != null && now - last < AUDIT_THROTTLE_MS) return;
+        auditThrottle.put(key, now);
+        if (auditThrottle.size() > AUDIT_THROTTLE_MAX) {
+            long cutoff = now - AUDIT_THROTTLE_MS;
+            auditThrottle.entrySet().removeIf(e -> e.getValue() < cutoff);
+        }
+        this.auditLogger.logBlockedAction(
+            player.getGameProfile().getName(), actionName, zoneName, pos);
     }
 
     @Override

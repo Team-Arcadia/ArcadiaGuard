@@ -43,34 +43,50 @@ public final class EntityEventHandler {
         if (zoneIZoneOpt.isEmpty()) return; // no zone → no restriction
         ProtectedZone zone = (ProtectedZone) zoneIZoneOpt.get();
 
+        Entity attacker = event.getSource().getEntity();
         if (victim instanceof Player) {
             if (guard.isZoneDenying(zone, BuiltinFlags.INVINCIBLE, level)) {
                 event.setCanceled(true);
+                if (attacker instanceof ServerPlayer sp) {
+                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.INVINCIBLE, "invincible");
+                }
                 return;
             }
-            Entity attacker = event.getSource().getEntity();
-            if (attacker instanceof Player) {
+            if (attacker instanceof ServerPlayer attackerSp) {
                 if (guard.isZoneDenying(zone, BuiltinFlags.PVP, level)) {
                     event.setCanceled(true);
+                    guard.auditDenied(attackerSp, zone.name(), victim.blockPosition(), BuiltinFlags.PVP, "pvp");
                     return;
                 }
             }
             if (guard.isZoneDenying(zone, BuiltinFlags.PLAYER_DAMAGE, level)) {
                 event.setCanceled(true);
+                if (attacker instanceof ServerPlayer sp) {
+                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.PLAYER_DAMAGE, "player_damage");
+                }
             }
         } else if (victim instanceof Animal) {
             // Convention GUI : "ON" (vert) = value=false = protection active
             // → on utilise isZoneDenying comme tous les autres flags (cohérence sémantique).
             if (guard.isZoneDenying(zone, BuiltinFlags.ANIMAL_INVINCIBLE, level)) {
                 event.setCanceled(true);
+                if (attacker instanceof ServerPlayer sp) {
+                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.ANIMAL_INVINCIBLE, "animal_invincible");
+                }
                 return;
             }
             if (guard.isZoneDenying(zone, BuiltinFlags.MOB_DAMAGE, level)) {
                 event.setCanceled(true);
+                if (attacker instanceof ServerPlayer sp) {
+                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.MOB_DAMAGE, "mob_damage");
+                }
             }
         } else if (victim instanceof Monster) {
             if (guard.isZoneDenying(zone, BuiltinFlags.MOB_DAMAGE, level)) {
                 event.setCanceled(true);
+                if (attacker instanceof ServerPlayer sp) {
+                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.MOB_DAMAGE, "mob_damage");
+                }
             }
         }
     }
@@ -82,8 +98,12 @@ public final class EntityEventHandler {
         // R3 : bypass OP/membre pour cohrence avec les autres flags — sinon un OP en
         // mode survie ne peut pas tester fall_damage sans desactiver le flag.
         if (guard.shouldBypass(player)) return;
-        if (guard.isZoneDenying(level, player.blockPosition(), BuiltinFlags.FALL_DAMAGE)) {
+        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
+        if (zoneOpt.isEmpty()) return;
+        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
+        if (guard.isZoneDenying(zone, BuiltinFlags.FALL_DAMAGE, level)) {
             event.setCanceled(true);
+            guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.FALL_DAMAGE, "fall_damage");
         }
     }
 

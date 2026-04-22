@@ -51,6 +51,7 @@ public final class SupplementariesHandler implements RightClickItemHandler {
                 player.displayClientMessage(
                     net.minecraft.network.chat.Component.translatable(ArcadiaGuardConfig.MESSAGE_SUPPLEMENTARIES.get())
                         .withStyle(net.minecraft.ChatFormatting.RED), true);
+                guardService.auditDenied(player, zoneOpt.get().name(), blockPos, BuiltinFlags.SUPPLEMENTARIES_THROW, "supplementaries_throw");
                 event.setCanceled(true);
             }
         }

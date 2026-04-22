@@ -413,9 +413,11 @@ public final class FlagEventHandler {
     private boolean deny(ServerPlayer player, BlockPos pos, BooleanFlag flag, String actionName) {
         Optional<ProtectedZone> zoneOpt = guard.zoneManager().checkZone(player, pos);
         if (zoneOpt.isEmpty()) return false;
-        if (!guard.isZoneDenying(zoneOpt.get(), flag, player.serverLevel())) return false;
+        ProtectedZone zone = zoneOpt.get();
+        if (!guard.isZoneDenying(zone, flag, player.serverLevel())) return false;
         player.displayClientMessage(Component.translatable("arcadiaguard.message." + actionName)
             .withStyle(ChatFormatting.RED), true);
+        guard.auditDenied(player, zone.name(), pos, flag, actionName);
         return true;
     }
 }

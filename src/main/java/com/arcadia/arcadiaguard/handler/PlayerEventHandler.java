@@ -136,6 +136,7 @@ public final class PlayerEventHandler
                             player.getYRot(), player.getXRot());
                         player.displayClientMessage(
                             Component.translatable("arcadiaguard.message.entry"), true);
+                        guard.auditDenied(player, zone.name(), pos, BuiltinFlags.ENTRY, "entry");
                         return; // don't update zone tracking
                     }
                 }
@@ -164,6 +165,7 @@ public final class PlayerEventHandler
                             player.getYRot(), player.getXRot());
                         player.displayClientMessage(
                             Component.translatable("arcadiaguard.message.exit"), true);
+                        guard.auditDenied(player, z.name(), pos, BuiltinFlags.EXIT, "exit");
                         return;
                     }
                 }
@@ -196,6 +198,7 @@ public final class PlayerEventHandler
                 player.displayClientMessage(
                     Component.translatable("arcadiaguard.message.parcool_actions")
                         .withStyle(net.minecraft.ChatFormatting.RED), true);
+                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.PARCOOL_ACTIONS, "parcool_actions");
             }
         }
 
@@ -214,6 +217,7 @@ public final class PlayerEventHandler
                 player.displayClientMessage(
                     Component.translatable("arcadiaguard.message.emote_use")
                         .withStyle(net.minecraft.ChatFormatting.RED), true);
+                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.EMOTE_USE, "emote_use");
             }
         }
 
