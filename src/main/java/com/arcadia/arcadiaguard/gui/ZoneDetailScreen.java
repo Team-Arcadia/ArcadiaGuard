@@ -503,7 +503,9 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(ebx,           eby,            ebx + 1,   eby + btnH,    Colors.ACCENT_LO);
         g.fill(ebx + ebw - 1, eby,            ebx + ebw, eby + btnH,    Colors.ACCENT_LO);
         String label = canEdit ? Component.translatable("arcadiaguard.gui.zonedetail.redefine_wand").getString() : Component.translatable("arcadiaguard.gui.zonedetail.need_wand_selection").getString();
-        g.drawCenteredString(font, label, ebx + ebw / 2, eby + 3,
+        // Trunque le label s'il depasse la largeur du bouton (petite GUI/petite resolution).
+        if (font.width(label) > ebw - 6) label = font.plainSubstrByWidth(label, ebw - 12) + "\u2026";
+        g.drawCenteredString(font, label, ebx + ebw / 2, eby + 4,
             !canEdit ? Colors.TEXT_MUTE : (hov ? Colors.ACCENT_HI : Colors.ACCENT));
         if (canEdit) {
             hit(ebx, eby, ebw, btnH, () -> {
@@ -525,7 +527,9 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(ecbx,            ecby + btnH - 1, ecbx + ecbw, ecby + btnH,    Colors.ACCENT_LO);
         g.fill(ecbx,            ecby,            ecbx + 1,    ecby + btnH,    Colors.ACCENT_LO);
         g.fill(ecbx + ecbw - 1, ecby,            ecbx + ecbw, ecby + btnH,    Colors.ACCENT_LO);
-        g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.edit_manually").getString(), ecbx + ecbw / 2, ecby + 3,
+        String editLabel = Component.translatable("arcadiaguard.gui.zonedetail.edit_manually").getString();
+        if (font.width(editLabel) > ecbw - 6) editLabel = font.plainSubstrByWidth(editLabel, ecbw - 12) + "\u2026";
+        g.drawCenteredString(font, editLabel, ecbx + ecbw / 2, ecby + 4,
             hov2 ? Colors.ACCENT_HI : Colors.ACCENT);
         hit(ecbx, ecby, ecbw, btnH, this::openCoordsEditor);
         cy += btnH + 6;
@@ -601,7 +605,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(addBtnX,      cy + 13, addBtnX + 18, cy + 14, Colors.ACCENT_LO);
         g.fill(addBtnX,      cy,      addBtnX + 1,  cy + 14, Colors.ACCENT_LO);
         g.fill(addBtnX + 17, cy,      addBtnX + 18, cy + 14, Colors.ACCENT_LO);
-        g.drawCenteredString(font, "+", addBtnX + 9, cy + 3,
+        g.drawCenteredString(font, "+", addBtnX + 9, cy + 4,
             addHov ? Colors.ACCENT_HI : Colors.VERDIGRIS);
         hit(addBtnX, cy, 18, 14, this::openPicker);
 
@@ -851,7 +855,7 @@ public final class ZoneDetailScreen extends Screen {
             int xbtnX = px + pw - 22;
             boolean xhov = mx >= xbtnX && mx < xbtnX + 14 && my >= iy && my < iy + ITEM_ROW_H;
             if (xhov) g.fill(xbtnX, iy, xbtnX + 14, iy + ITEM_ROW_H, Colors.DANGER & 0xFFFFFF | 0x40000000);
-            g.drawCenteredString(font, "\u2715", xbtnX + 7, iy + 3, xhov ? Colors.DANGER : Colors.TEXT_MUTE);
+            g.drawCenteredString(font, "\u2715", xbtnX + 7, iy + 4, xhov ? Colors.DANGER : Colors.TEXT_MUTE);
         }
         if (blockedList.isEmpty()) {
             g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.empty").getString(),
@@ -895,7 +899,7 @@ public final class ZoneDetailScreen extends Screen {
             int addX = px + pw - 22;
             boolean ahov = mx >= addX && mx < addX + 14 && my >= iy && my < iy + ITEM_ROW_H;
             if (ahov) g.fill(addX, iy, addX + 14, iy + ITEM_ROW_H, Colors.VERDIGRIS & 0xFFFFFF | 0x40000000);
-            g.drawCenteredString(font, "+", addX + 7, iy + 3, ahov ? Colors.VERDIGRIS : Colors.TEXT_MUTE);
+            g.drawCenteredString(font, "+", addX + 7, iy + 4, ahov ? Colors.VERDIGRIS : Colors.TEXT_MUTE);
         }
         if (results.isEmpty() && itemSearchBox != null && !itemSearchBox.getValue().trim().isEmpty()) {
             g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.itemblocks.no_match").getString(),
@@ -1016,7 +1020,7 @@ public final class ZoneDetailScreen extends Screen {
         int addX = cx + cw - 16;
         boolean addHov = mx >= addX && mx < addX + 14 && my >= cy && my < cy + 14;
         g.fill(addX, cy, addX + 14, cy + 14, addHov ? Colors.accentTint(0x30) : Colors.BG_2);
-        g.drawCenteredString(font, "+", addX + 7, cy + 3, addHov ? Colors.ACCENT_HI : Colors.ACCENT);
+        g.drawCenteredString(font, "+", addX + 7, cy + 4, addHov ? Colors.ACCENT_HI : Colors.ACCENT);
         hit(addX, cy, 14, 14, () -> {
             popup = new PopupState.WhitelistInput();
             if (whitelistBox != null) setFocused(whitelistBox);

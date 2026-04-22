@@ -314,7 +314,7 @@
   "arcadiaguard.gui.zonedetail.dim_flags_label": "Flags dim :",
   "arcadiaguard.gui.zonedetail.inherited": "H\u00e9rit\u00e9e",
   "arcadiaguard.gui.zonedetail.own": "Propre",
-  "arcadiaguard.gui.zonedetail.redefine_wand": "\u270e Red\u00e9finir (wand)",
+  "arcadiaguard.gui.zonedetail.redefine_wand": "\u270e Redéfinir",
   "arcadiaguard.gui.zonedetail.need_wand_selection": "\u270e S\u00e9lection wand requise",
   "arcadiaguard.gui.zonedetail.edit_manually": "\u270e \u00c9diter manuellement",
   "arcadiaguard.gui.zonedetail.confirm_delete_title": "Supprimer \u00ab %1$s \u00bb ?",

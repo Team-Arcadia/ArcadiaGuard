@@ -314,7 +314,7 @@
   "arcadiaguard.gui.zonedetail.dim_flags_label": "Dim flags:",
   "arcadiaguard.gui.zonedetail.inherited": "Inherited",
   "arcadiaguard.gui.zonedetail.own": "Own",
-  "arcadiaguard.gui.zonedetail.redefine_wand": "\u270e Redefine (wand)",
+  "arcadiaguard.gui.zonedetail.redefine_wand": "\u270e Redefine",
   "arcadiaguard.gui.zonedetail.need_wand_selection": "\u270e Wand selection required",
   "arcadiaguard.gui.zonedetail.edit_manually": "\u270e Edit manually",
   "arcadiaguard.gui.zonedetail.confirm_delete_title": "Delete \"%1$s\"?",
