@@ -389,10 +389,22 @@ public final class FlagConfigScreen extends Screen {
         String value;
         if (flagType == FlagType.INT) {
             value = input.getValue().trim();
-            try { Integer.parseInt(value); }
+            int parsed;
+            try { parsed = Integer.parseInt(value); }
             catch (NumberFormatException e) {
                 errorMsg = Component.translatable("arcadiaguard.gui.flagconfig.error.not_int").getString();
                 return false;
+            }
+            // Validation des bornes min/max si le flag est un IntFlag avec limites.
+            var flagOpt = com.arcadia.arcadiaguard.api.ArcadiaGuardAPI.get().flagRegistry().get(flagId);
+            if (flagOpt.isPresent() && flagOpt.get() instanceof com.arcadia.arcadiaguard.api.flag.IntFlag intFlag) {
+                int min = intFlag.min();
+                int max = intFlag.max();
+                if (parsed < min || parsed > max) {
+                    errorMsg = Component.translatable("arcadiaguard.gui.flagconfig.error.out_of_bounds",
+                        String.valueOf(min), String.valueOf(max)).getString();
+                    return false;
+                }
             }
         } else {
             value = String.join(",", listEntries);

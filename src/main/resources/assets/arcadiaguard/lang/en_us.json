@@ -114,6 +114,7 @@
   "arcadiaguard.gui.flagconfig.add_entry": "+ Add",
   "arcadiaguard.gui.flagconfig.reset": "✕ Reset",
   "arcadiaguard.gui.flagconfig.error.not_int": "Value must be an integer.",
+  "arcadiaguard.gui.flagconfig.error.out_of_bounds": "Value must be between %1$s and %2$s.",
 
   "arcadiaguard.gui.confirm.reset.title": "Confirm Reset",
   "arcadiaguard.gui.confirm.reset.message": "Reset flag \"%1$s\" to default?",
