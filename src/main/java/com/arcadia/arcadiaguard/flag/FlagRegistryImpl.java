@@ -120,6 +120,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.RECHISELED_USE);
         register(BuiltinFlags.ARS_ADDITIONS_SCROLL);
         register(BuiltinFlags.ARS_WARP_SCROLL);
+        register(BuiltinFlags.CARRYON);
         register(BuiltinFlags.CHUNKLOAD);
         register(BuiltinFlags.FLY);
         register(BuiltinFlags.USE_ELYTRA);

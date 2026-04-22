@@ -111,6 +111,7 @@ public final class HandlerRegistry {
         IronsSpellbooksHandler.registerEventListeners();
         // Mod integrations that register their own listeners
         EmotecraftHandler.register(guardService);
+        new com.arcadia.arcadiaguard.handler.handlers.CarryOnHandler(guardService).register();
 
         for (Object handler : this.handlers) {
             if (handler instanceof DynamicEventHandler dynamic) {
