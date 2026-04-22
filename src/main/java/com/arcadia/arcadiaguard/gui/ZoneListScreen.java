@@ -555,24 +555,20 @@ public final class ZoneListScreen extends Screen {
 
         boolean canCreate = wandPos1 != null && wandPos2 != null;
 
-        // Compute cursor position after conditional left buttons for wand message
+        // Compute cursor position after conditional left buttons for wand message.
+        // Inclut les 3 boutons Teleport/Details/Delete quand une zone est selectionnee.
         int cursor = gx + 8;
-        if (selectedIndex >= 0) cursor += (BTN_W_ACTION + 8) * 2;
+        if (selectedIndex >= 0) cursor += (BTN_W_ACTION + 8) * 3;
         cursor += BTN_W_CREATE + 8;
 
-        // Message à droite des boutons — tronqué pour ne pas chevaucher les boutons droite
+        // Message a droite des boutons — UNIQUEMENT le hint 'need wand' quand la selection
+        // wand est incomplete (les coords pos1/pos2 sont deja affichees par WandHudRenderer
+        // en HUD permanent, pas la peine de les dupliquer ici).
         int rightLimit = !dimFilter.isEmpty() ? (gx + GUI_W - 268) : (gx + GUI_W - 176);
         int maxTextW = rightLimit - cursor;
-        if (maxTextW > 0) {
-            if (!canCreate) {
-                String msg = Component.translatable("arcadiaguard.gui.zonelist.need_wand").getString();
-                g.drawString(font, font.plainSubstrByWidth(msg, maxTextW), cursor, fy + 10, Colors.TEXT_MUTE, false);
-            } else if (selectedIndex < 0) {
-                String p1 = wandPos1.getX() + "," + wandPos1.getY() + "," + wandPos1.getZ();
-                String p2 = wandPos2.getX() + "," + wandPos2.getY() + "," + wandPos2.getZ();
-                String wandText = "A:" + p1 + "  B:" + p2;
-                g.drawString(font, font.plainSubstrByWidth(wandText, maxTextW), cursor, fy + 10, Colors.VERDIGRIS, false);
-            }
+        if (maxTextW > 0 && !canCreate) {
+            String msg = Component.translatable("arcadiaguard.gui.zonelist.need_wand").getString();
+            g.drawString(font, font.plainSubstrByWidth(msg, maxTextW), cursor, fy + 10, Colors.TEXT_MUTE, false);
         }
 
         // Centre: page label (boutons prev/next are widgets)
