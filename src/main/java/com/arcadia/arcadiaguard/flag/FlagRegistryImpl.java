@@ -119,6 +119,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.WAYSTONE_USE);
         register(BuiltinFlags.RECHISELED_USE);
         register(BuiltinFlags.ARS_ADDITIONS_SCROLL);
+        register(BuiltinFlags.CHUNKLOAD);
         // Zone configuration
         register(BuiltinFlags.HEAL_AMOUNT);
         register(BuiltinFlags.FEED_AMOUNT);

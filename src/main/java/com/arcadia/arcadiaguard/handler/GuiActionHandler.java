@@ -485,10 +485,10 @@ public final class GuiActionHandler {
                 String joined = String.join(",", v);
                 strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
             } else { continue; }
-            String desc = flag.description();
-            if (desc != null && desc.length() > 1024) desc = desc.substring(0, 1021) + "…";
+            // i18n : envoie la cle de traduction, le client traduira.
+            String desc = "arcadiaguard.flag." + flag.id() + ".description";
             flags.add(new FlagInfo(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
-                boolVal, configured, desc != null ? desc : "", type, strVal));
+                boolVal, configured, desc, type, strVal));
         }
         PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags));
     }

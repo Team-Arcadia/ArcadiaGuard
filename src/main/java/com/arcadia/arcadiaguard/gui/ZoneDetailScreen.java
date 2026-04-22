@@ -633,7 +633,7 @@ public final class ZoneDetailScreen extends Screen {
                 if (i % 2 == 1) g.fill(cx, iy, cx + cw, iy + FLAG_H, 0x08FFFFFF);
                 if (hov) {
                     g.fill(cx, iy, cx + cw, iy + FLAG_H, Colors.accentTint(0x10));
-                    if (!f.description().isEmpty()) hoveredFlagDesc = f.description();
+                    if (!f.description().isEmpty()) hoveredFlagDesc = Component.translatable(f.description()).getString();
                 }
 
                 g.drawString(font, f.label(), cx + 4, iy + 6, Colors.TEXT, false);

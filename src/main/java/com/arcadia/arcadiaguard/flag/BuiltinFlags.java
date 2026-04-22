@@ -99,6 +99,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag WAYSTONE_USE        = new BooleanFlag("waystone-use",        false, "[Waystones] Autorise/refuse l'utilisation des waystones dans la zone.",                  "waystones");
     public static final BooleanFlag RECHISELED_USE      = new BooleanFlag("rechiseled-use",      false, "[Rechiseled] Autorise/refuse l'utilisation des blocs Rechiseled dans la zone.",          "rechiseled");
     public static final BooleanFlag ARS_ADDITIONS_SCROLL = new BooleanFlag("ars-additions-scroll", false, "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",         "ars_additions");
+    public static final BooleanFlag CHUNKLOAD            = new BooleanFlag("chunkload",          false, "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).");
 
     // --- Zone configuration ---
     public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");

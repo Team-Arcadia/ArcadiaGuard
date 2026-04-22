@@ -88,6 +88,8 @@ public final class ArcadiaGuard {
         catch (java.io.IOException e) { LOGGER.error("[ArcadiaGuard] Failed to load dimension flags", e); }
         services.auditLogger().onServerStarted(event.getServer());
         com.arcadia.arcadiaguard.compat.luckperms.LuckPermsCompat.init();
+        // Re-apply chunkload for zones with CHUNKLOAD flag active
+        com.arcadia.arcadiaguard.zone.ZoneChunkLoader.refreshAll(event.getServer(), services.guardService());
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
