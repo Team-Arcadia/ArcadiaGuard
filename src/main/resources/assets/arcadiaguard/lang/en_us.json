@@ -52,6 +52,8 @@
   "arcadiaguard.message.waystone_use": "You cannot use waystones here.",
   "arcadiaguard.message.rechiseled_use": "You cannot use Rechiseled blocks here.",
   "arcadiaguard.message.ars_additions_scroll": "You cannot use this scroll here.",
+  "arcadiaguard.message.fly": "Flight is disabled in this zone.",
+  "arcadiaguard.message.apotheosis_fly": "Apotheosis flight is disabled in this zone.",
 
   "arcadiaguard.gui.zone_list.title": "ArcadiaGuard — Zones",
   "arcadiaguard.gui.zone_list.search_placeholder": "Search…",
@@ -425,6 +427,8 @@
   "arcadiaguard.flag.rechiseled-use.description": "[Rechiseled] Allow/deny use of Rechiseled blocks.",
   "arcadiaguard.flag.ars-additions-scroll.description": "[Ars Additions] Allow/deny use of Ars Additions scrolls.",
   "arcadiaguard.flag.chunkload.description": "Force permanent chunk loading for the zone (ON green = ArcadiaGuard tickets).",
+  "arcadiaguard.flag.fly.description": "Blocks vanilla flight (mayfly) in the zone. Creative/spectator/OP ignored.",
+  "arcadiaguard.flag.apotheosis-fly.description": "[Apotheosis] Blocks flight granted by Apotheosis affixes.",
   "arcadiaguard.flag.heal-amount.description": "Health points regenerated per second in the zone (0 = disabled).",
   "arcadiaguard.flag.feed-amount.description": "Hunger points restored per second in the zone (0 = disabled)."
 }
