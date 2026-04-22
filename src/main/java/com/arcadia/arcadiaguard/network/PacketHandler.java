@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.handler.GuiActionHandler;
 import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload;
 import com.arcadia.arcadiaguard.network.gui.GuiActionPayload;
 import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
+import com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneLogsPayload;
 import net.neoforged.bus.api.IEventBus;
@@ -73,6 +74,10 @@ public final class PacketHandler {
 
         reg.playToClient(ZoneLogsPayload.TYPE, ZoneLogsPayload.STREAM_CODEC,
             (p, c) -> clientZoneLogs.accept(p, c));
+
+        // S-H21 : parcool blocked state S->C (client-only handler inline)
+        reg.playToClient(ParcoolBlockedPayload.TYPE, ParcoolBlockedPayload.STREAM_CODEC,
+            (p, c) -> com.arcadia.arcadiaguard.client.ClientParcoolState.setBlocked(p.blocked()));
 
         reg.playToServer(GuiActionPayload.TYPE,  GuiActionPayload.STREAM_CODEC,
             GuiActionHandler::handle);

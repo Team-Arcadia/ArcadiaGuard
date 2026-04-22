@@ -32,8 +32,11 @@ public final class EmotecraftHandler {
             // Register via the Event<EmoteVerifier>.register(verifier) method
             // EmoteVerifier is a functional interface: EventResult verify(IEmote emote, UUID userId)
             Class<?> verifierInterface = Class.forName("io.github.kosmx.emotes.api.events.server.ServerEmoteEvents$EmoteVerifier");
+            // Utiliser le classloader du verifier (module Emotecraft) pour que Proxy
+            // puisse resoudre les types EventResult/KeyframeAnimation correctement
+            // dans l'environnement NeoForge avec modules separes.
             Object verifier = java.lang.reflect.Proxy.newProxyInstance(
-                EmotecraftHandler.class.getClassLoader(),
+                verifierInterface.getClassLoader(),
                 new Class<?>[] { verifierInterface },
                 (proxy, method, args) -> {
                     if (!"verify".equals(method.getName())) return null;
