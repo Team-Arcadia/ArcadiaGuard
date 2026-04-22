@@ -222,6 +222,8 @@ public final class PlayerEventHandler
         }
 
         // FLY / APOTHEOSIS_FLY : bloque mayfly dans la zone. Creative/spectator/bypass ignores.
+        // APOTHEOSIS_FLY detecte specifiquement l'attribut 'neoforge:creative_flight' utilise
+        // par l'affixe Apotheosis 'unbound' (et autres mods partageant cet attribut).
         if (zoneOpt.isPresent()
                 && !guard.shouldBypass(player)
                 && !guard.isZoneMember(player, zoneOpt.get())
@@ -234,8 +236,8 @@ public final class PlayerEventHandler
             if (guard.isZoneDenying(zone, BuiltinFlags.FLY, player.serverLevel())) {
                 denyFlag = BuiltinFlags.FLY;
                 actionName = "fly";
-            } else if (net.neoforged.fml.ModList.get().isLoaded("apotheosis")
-                    && guard.isZoneDenying(zone, BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel())) {
+            } else if (guard.isZoneDenying(zone, BuiltinFlags.APOTHEOSIS_FLY, player.serverLevel())
+                    && hasCreativeFlightAttribute(player)) {
                 denyFlag = BuiltinFlags.APOTHEOSIS_FLY;
                 actionName = "apotheosis_fly";
             }
@@ -267,6 +269,29 @@ public final class PlayerEventHandler
                 player.getFoodData().eat(feed, 0.5f);
             }
         }
+    }
+
+    /**
+     * Detecte si le joueur a l'attribut 'neoforge:creative_flight' > 0.
+     * Cet attribut est utilise par l'affixe Apotheosis 'unbound' (chestplate mythic).
+     * Cache le Holder via lookup statique pour eviter les allocations en hot path.
+     */
+    private static volatile net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> CREATIVE_FLIGHT_ATTR;
+    private static boolean CREATIVE_FLIGHT_MISSING = false;
+
+    private static boolean hasCreativeFlightAttribute(ServerPlayer player) {
+        if (CREATIVE_FLIGHT_MISSING) return false;
+        var holder = CREATIVE_FLIGHT_ATTR;
+        if (holder == null) {
+            try {
+                var rl = net.minecraft.resources.ResourceLocation.parse("neoforge:creative_flight");
+                holder = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.getHolder(rl).orElse(null);
+                if (holder == null) { CREATIVE_FLIGHT_MISSING = true; return false; }
+                CREATIVE_FLIGHT_ATTR = holder;
+            } catch (Throwable t) { CREATIVE_FLIGHT_MISSING = true; return false; }
+        }
+        var inst = player.getAttributes().getInstance(holder);
+        return inst != null && inst.getValue() > 0.0D;
     }
 
     /** Finds the lowest Y inside [minY, maxY] where two consecutive non-solid blocks sit above a solid one. */
