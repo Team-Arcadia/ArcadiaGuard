@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadiaGuard — Rapport de Tests v1.5</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c26;
+    --bg3: #1e2333;
+    --bg4: #252b3d;
+    --border: #2e3650;
+    --text: #d4d8e8;
+    --text-dim: #7a82a0;
+    --text-bright: #eef0f8;
+    --accent: #5b7cfa;
+    --accent2: #7c5bfa;
+    --green: #3ecf6e;
+    --green-bg: #0d2a1a;
+    --red: #f05555;
+    --red-bg: #2a0d0d;
+    --yellow: #f5c842;
+    --yellow-bg: #2a220a;
+    --mod-color: #a78bfa;
+    --mod-bg: #1e1535;
+    --radius: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .page-header h1 span { color: var(--accent); }
+  .header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .meta-fields {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .meta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .meta-field label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .meta-field input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-bright);
+    padding: 6px 10px;
+    font-size: 13px;
+    width: 180px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .meta-field input:focus { border-color: var(--accent); }
+
+  .progress-block { min-width: 280px; }
+  .progress-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .progress-label strong { color: var(--text-bright); }
+  .progress-bar-outer {
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 99px;
+    transition: width .4s ease;
+  }
+  .progress-counts {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .cnt { display: flex; align-items: center; gap: 5px; }
+  .cnt .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+  }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 120px; }
+
+  .intro-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .intro-box strong { color: var(--text-bright); }
+  .intro-box kbd {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text-bright);
+  }
+
+  .section {
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .section-header {
+    background: var(--bg3);
+    padding: 14px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    transition: background .15s;
+  }
+  .section-header:hover { background: var(--bg4); }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .section-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-weight: 400;
+  }
+  .section-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .chevron {
+    color: var(--text-dim);
+    transition: transform .2s;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+
+  .test-card {
+    border-top: 1px solid var(--border);
+    padding: 18px 20px;
+    background: var(--bg2);
+    transition: background .15s;
+  }
+  .test-card:hover { background: #181c28; }
+  .test-card.status-pass { border-left: 3px solid var(--green); }
+  .test-card.status-fail { border-left: 3px solid var(--red); }
+  .test-card.status-skip { border-left: 3px solid var(--text-dim); }
+
+  .test-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .test-number {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .test-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .tag-flag {
+    background: rgba(91,124,250,.15);
+    color: var(--accent);
+    border: 1px solid rgba(91,124,250,.3);
+  }
+  .tag-mod {
+    background: var(--mod-bg);
+    color: var(--mod-color);
+    border: 1px solid rgba(167,139,250,.3);
+  }
+  .tag-req { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,200,66,.3); }
+
+  .test-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media(max-width:700px) { .test-body { grid-template-columns: 1fr; } }
+
+  .test-steps { grid-column: 1 / -1; }
+  .subsection-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .steps-list {
+    list-style: none;
+    counter-reset: step;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .steps-list li {
+    counter-increment: step;
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg3);
+    padding: 7px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+  }
+  .steps-list li::before {
+    content: counter(step);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    background: var(--accent);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 1px;
+  }
+  code {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: #93c5fd;
+  }
+  .kbd {
+    background: var(--bg4);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--text-bright);
+  }
+  .gui-path {
+    color: var(--accent2);
+    font-weight: 600;
+  }
+
+  .expected-box {
+    background: rgba(62,207,110,.07);
+    border: 1px solid rgba(62,207,110,.25);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .expected-box .subsection-label { color: var(--green); }
+
+  .verdict-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all .15s;
+    user-select: none;
+  }
+  .radio-btn input { display: none; }
+  .radio-btn.opt-pass { color: var(--green); }
+  .radio-btn.opt-pass:hover, .radio-btn.opt-pass.selected {
+    background: var(--green-bg); border-color: var(--green);
+  }
+  .radio-btn.opt-fail { color: var(--red); }
+  .radio-btn.opt-fail:hover, .radio-btn.opt-fail.selected {
+    background: var(--red-bg); border-color: var(--red);
+  }
+  .radio-btn.opt-skip { color: var(--text-dim); }
+  .radio-btn.opt-skip:hover, .radio-btn.opt-skip.selected {
+    background: var(--bg4); border-color: var(--text-dim);
+  }
+
+  .notes-area {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px 10px;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    transition: border-color .2s;
+    grid-column: 1 / -1;
+  }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-area::placeholder { color: var(--text-dim); }
+
+  .setup-note {
+    background: var(--yellow-bg);
+    border: 1px solid rgba(245,200,66,.3);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 10px;
+    grid-column: 1 / -1;
+  }
+
+  .sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(15,17,23,.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+    z-index: 200;
+  }
+  .btn {
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #4a6af0; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--bg4); }
+  .footer-info {
+    font-size: 12px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .footer-info strong { color: var(--text); }
+
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 13px;
+    color: var(--text-bright);
+    box-shadow: var(--shadow);
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🛡️ <span>ArcadiaGuard</span> — Rapport de Tests v1.5</h1>
+  <div class="header-row">
+    <div class="meta-fields">
+      <div class="meta-field">
+        <label>Testeur</label>
+        <input type="text" id="meta-tester" placeholder="Votre pseudo">
+      </div>
+      <div class="meta-field">
+        <label>Date</label>
+        <input type="date" id="meta-date">
+      </div>
+      <div class="meta-field">
+        <label>Version du mod</label>
+        <input type="text" id="meta-version" placeholder="ex: 1.0.2">
+      </div>
+      <div class="meta-field">
+        <label>Serveur / Modpack</label>
+        <input type="text" id="meta-server" placeholder="ex: ArcadiaRPG v3">
+      </div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-label">
+        <span>Progression globale</span>
+        <strong id="prog-text">0 / 0</strong>
+      </div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="prog-bar" style="width:0%"></div>
+      </div>
+      <div class="progress-counts">
+        <span class="cnt"><span class="dot" style="background:var(--green)"></span><span id="cnt-pass">0 succès</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--red)"></span><span id="cnt-fail">0 échecs</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--text-dim)"></span><span id="cnt-skip">0 ignorés</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="intro-box">
+    <strong>🎮 Tout passe par l'interface graphique (GUI).</strong><br>
+    Ouvrez le GUI avec <code>/ag gui</code> — toute la configuration se fait là : création de zone, flags, membres, debug mode. <strong>Aucune commande <code>/zone flag set</code> n'est utilisée dans ces tests.</strong><br><br>
+    <strong>🐛 Mode Debug (essentiel) :</strong> dans <span class="gui-path">ZoneListScreen → footer → bouton "Debug"</span>. Quand activé, un indicateur vert <strong>"Debug mode ACTIF"</strong> s'affiche dans le header. Effet : votre compte OP est soumis aux flags comme un joueur normal → <strong>vous pouvez tester seul, sans deuxième compte</strong>.<br><br>
+    <strong>📋 Workflow standard pour chaque flag :</strong><br>
+    1. <code>/ag gui</code> → sélectionner <code>testzone</code> → <strong>Détails</strong><br>
+    2. Colonne <strong>Flags</strong> → bouton <kbd>+</kbd> → rechercher le flag → confirmer<br>
+    3. Clic sur le flag pour le basculer <strong style="color:var(--red)">OFF (rouge)</strong><br>
+    4. <kbd>Échap</kbd> pour fermer, puis activer le <strong>Mode Debug</strong><br>
+    5. Effectuer l'action en jeu et vérifier le résultat<br>
+    6. Revenir dans Détails → bouton <kbd>✕</kbd> à côté du flag pour le <strong>réinitialiser</strong><br><br>
+    Cochez <strong style="color:var(--green)">✓ Succès</strong> si le comportement correspond, <strong style="color:var(--red)">✗ Échec</strong> sinon. Les données sont sauvegardées automatiquement dans le navigateur — cliquez <strong>💾 Sauvegarder JSON</strong> pour exporter.
+  </div>
+  <div id="sections-root"></div>
+</main>
+
+<div class="sticky-footer">
+  <span class="footer-info">Session sauvegardée automatiquement dans le navigateur. <strong>Pensez à exporter régulièrement.</strong></span>
+  <label class="btn btn-secondary" style="cursor:pointer">
+    📂 Charger JSON
+    <input type="file" id="load-input" accept=".json" style="display:none">
+  </label>
+  <button class="btn btn-primary" onclick="saveJSON()">💾 Sauvegarder JSON</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  HELPERS POUR ÉVITER LA RÉPÉTITION
+// ═══════════════════════════════════════════════════════════════
+// Étapes standards pour tester un flag booléen en mode OFF
+function flagOffSteps(flagName, action, extra) {
+  const steps = [
+    `Ouvrir le GUI : <code>/ag gui</code>`,
+    `Sélectionner <code>testzone</code> → bouton <strong>Détails</strong>`,
+    `Colonne <strong>Flags</strong> → bouton <kbd>+</kbd> → taper "<strong>${flagName}</strong>" → confirmer`,
+    `Cliquer sur le flag <code>${flagName}</code> → il passe sur <strong style="color:#f05555">OFF (rouge)</strong>`,
+    `<kbd>Échap</kbd> pour fermer, puis <code>/ag gui</code> → bouton <strong>Debug</strong> (indicateur vert "Debug mode ACTIF")`,
+    `Entrer dans la zone <code>testzone</code>`,
+    action
+  ];
+  if (extra) steps.push(extra);
+  steps.push(`Revenir dans <span class="gui-path">GUI → testzone → Détails</span> → <kbd>✕</kbd> sur <code>${flagName}</code> pour reset, puis désactiver Debug mode`);
+  return steps;
+}
+
+// Tag raccourcis
+const T = {
+  flag: t => ({c:'flag', t}),
+  mod:  t => ({c:'mod', t}),
+  req:  t => ({c:'req', t}),
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  DONNÉES DES TESTS
+// ═══════════════════════════════════════════════════════════════
+const SECTIONS = [
+
+// ─── PRÉREQUIS ──────────────────────────────────────────────
+{
+  id:'setup', icon:'⚙️', title:'Prérequis',
+  desc:'Config initiale. À faire avant tout le reste.',
+  tests:[
+    {
+      id:'setup_jar', title:'Installer le jar v1.5.0',
+      tags:[T.req('OBLIGATOIRE')],
+      steps:[
+        'Déposer <code>arcadiaguard-1.5.0.jar</code> dans <code>mods/</code> serveur ET client',
+        'Vérifier le MD5 : <code>5246eb8f53c3d4e93c6dfc7258ed62e0</code>',
+        'Redémarrer le serveur + client',
+        'Vérifier dans le log serveur au boot : pas d\'erreur ArcadiaGuard'
+      ],
+      expected:'Le mod est chargé des 2 côtés sans erreur/warning bloquant.'
+    },
+    {
+      id:'setup_zone', title:'Créer la zone de test',
+      tags:[],
+      steps:[
+        '<code>/give @s arcadiaguard:zone_editor</code>',
+        'Clic gauche bloc (pos1), clic droit bloc (pos2)',
+        '<code>/ag gui</code> → "Créer zone" → nom <code>testzone</code>',
+        'Zone apparaît dans la liste'
+      ],
+      expected:'Zone <code>testzone</code> créée, visible dans le GUI.'
+    },
+    {
+      id:'setup_debug', title:'Activer le Debug mode (OP bypass OFF)',
+      tags:[T.req('CRITIQUE')],
+      steps:[
+        '<code>/ag gui</code> → bouton "Debug"',
+        'Indicateur vert "Debug mode ACTIF" visible',
+        'Sans ça, l\'OP bypass tous les flags'
+      ],
+      expected:'Debug mode actif — les flags s\'appliquent à l\'OP.'
+    }
+  ]
+},
+
+// ─── RÉGRESSIONS S-H15 ───────────────────────────────────────
+{
+  id:'sh15', icon:'🔧', title:'Régressions S-H15 — Bugs internes',
+  desc:'Bugs remontés par les testeurs v1.4 et corrigés.',
+  tests:[
+    {
+      id:'vine_growth', title:'vine_growth — vines nether/cave/weeping',
+      tags:[T.flag('vine_growth')],
+      note:'Bug v1.4 : vines nether ignorées. Fix via GrowingPlantHeadBlockMixin.',
+      steps:[
+        'Zone flag <code>vine_growth=deny</code>',
+        'Placer <code>twisting_vines</code>, <code>weeping_vines</code>, <code>cave_vines</code>',
+        'Attendre 1-2 min, <code>/time set day</code> plusieurs fois'
+      ],
+      expected:'Aucune vine ne pousse. Tous types bloqués (pas seulement overworld).'
+    },
+    {
+      id:'animal_invincible', title:'animal_invincible — fenêtre de 2s corrigée',
+      tags:[T.flag('animal_invincible')],
+      note:'Bug v1.4 : animaux prenaient dégâts pendant 2s au spawn.',
+      steps:[
+        'Zone <code>animal_invincible=deny</code>',
+        '<code>/summon cow ~ ~ ~</code>',
+        'Frapper la vache IMMÉDIATEMENT (< 2s après spawn)'
+      ],
+      expected:'0 dégât dès le premier tick. Effets Resistance+Regen appliqués sans window.'
+    },
+    {
+      id:'crop_growth_bonemeal', title:'crop_growth — bonemeal respecte le flag',
+      tags:[T.flag('crop_growth')],
+      note:'Bug v1.4 : bonemeal contournait crop_growth.',
+      steps:[
+        'Zone <code>crop_growth=deny</code>',
+        'Planter blé (graines sur farmland)',
+        'Clic droit avec <code>bone_meal</code> sur le blé'
+      ],
+      expected:'Bonemeal consommé ? À vérifier. Le blé ne doit PAS avancer de stade.'
+    },
+    {
+      id:'ars_additions_scroll', title:'ars_additions_scroll — clic droit sur bloc/entité/air',
+      tags:[T.flag('ars_additions_scroll'), T.mod('Ars Additions')],
+      note:'Bug v1.4 : seul clic-item émis, pas clic-bloc/entité.',
+      steps:[
+        'Zone <code>ars_additions_scroll=deny</code>',
+        'Tenir un scroll Ars Additions',
+        'Tester clic droit sur : 1) bloc solide, 2) entité (vache), 3) air'
+      ],
+      expected:'Les 3 cas bloqués avec message. Pas de trigger du scroll.'
+    },
+    {
+      id:'gui_ctrlf', title:'GUI — Ctrl+F focus search box',
+      tags:[],
+      note:'Bug v1.4 : Ctrl+F rejeté.',
+      steps:[
+        '<code>/ag gui</code>',
+        'Appuyer <kbd>Ctrl+F</kbd>'
+      ],
+      expected:'La search box de zones prend le focus. Texte tapé filtre la liste.'
+    },
+    {
+      id:'gui_setparent', title:'GUI — setParent rafraîchit le détail',
+      tags:[],
+      note:'Bug v1.4 : ZoneDetailScreen ne se rafraîchissait pas.',
+      steps:[
+        'Créer 2 zones : <code>parent_zone</code> et <code>child_zone</code>',
+        'Ouvrir détail de <code>child_zone</code>',
+        'Bouton "Définir parent" → sélectionner <code>parent_zone</code>'
+      ],
+      expected:'Le panel se rafraîchit AUTOMATIQUEMENT, affiche le parent sans rouvrir.'
+    }
+  ]
+},
+
+// ─── RÉGRESSIONS S-H19 ───────────────────────────────────────
+{
+  id:'sh19', icon:'🎯', title:'Régressions S-H19 — Retours testeurs oubliés',
+  desc:'3 retours de NokhXyr/Fricadelle qui avaient été oubliés.',
+  tests:[
+    {
+      id:'block_interact_place', title:'block_interact ne bloque PAS la pose de blocs',
+      tags:[T.flag('block_interact'), T.flag('block_place')],
+      note:'Bug v1.4 : block_interact bloquait aussi les poses.',
+      steps:[
+        'Zone : <code>block_interact=deny</code>, <code>block_place=allow</code>',
+        'Tenir de la terre',
+        'Clic droit sur le sol'
+      ],
+      expected:'La terre se pose normalement. block_interact ne doit bloquer QUE les interactions spécifiques (lits, jukebox, etc.).'
+    },
+    {
+      id:'block_interact_bed', title:'block_interact bloque bien les lits',
+      tags:[T.flag('block_interact')],
+      steps:[
+        'Zone <code>block_interact=deny</code>',
+        'Placer un lit (en dehors) et entrer dans la zone',
+        'Clic droit sur le lit'
+      ],
+      expected:'Impossible de dormir. Message de refus.'
+    },
+    {
+      id:'tnt_minecart', title:'tnt_explosion couvre MinecartTNT',
+      tags:[T.flag('tnt_explosion')],
+      note:'Bug v1.4 : seul PrimedTnt détecté, pas MinecartTNT.',
+      steps:[
+        'Zone <code>tnt_explosion=deny</code>',
+        'Poser des rails + <code>MinecartTNT</code> dessus',
+        'Activer via une plaque de pression (ou <code>/summon tnt_minecart ~ ~ ~ {Fuse:20}</code>)'
+      ],
+      expected:'Explosion visible mais aucun bloc cassé. Pas de dégât entity.'
+    }
+  ]
+},
+
+// ─── CROSS-DIM + ITEM BLOCKS S-H18/S-H20 ──────────────────────
+{
+  id:'crossdim', icon:'🌍', title:'Cross-dim + Per-zone items (S-H18/S-H20)',
+  desc:'GUI cross-dimension et items bannis par zone.',
+  tests:[
+    {
+      id:'crossdim_list', title:'Zones cross-dim visibles',
+      tags:[],
+      steps:[
+        'Créer une zone dans le Nether',
+        'TP en Overworld',
+        '<code>/ag gui</code> → vérifier que la zone Nether apparaît'
+      ],
+      expected:'Toutes les zones de toutes dim visibles dans la liste.'
+    },
+    {
+      id:'crossdim_detail', title:'Détail zone cross-dim',
+      tags:[],
+      steps:[
+        'Depuis Overworld, cliquer sur une zone du Nether',
+        'Bouton "Détails"'
+      ],
+      expected:'Le détail s\'ouvre sans erreur "dim not loaded".'
+    },
+    {
+      id:'crossdim_modify', title:'Modifier flags/items cross-dim',
+      tags:[],
+      steps:[
+        'Depuis Overworld, ouvrir le détail d\'une zone Nether',
+        'Ajouter un flag OU un item banni (bouton "+" items)',
+        'Retourner au Nether, vérifier que la modif est bien appliquée'
+      ],
+      expected:'Modifs persistent et s\'appliquent dans la dim cible.'
+    },
+    {
+      id:'items_per_zone', title:'Items bannis par zone',
+      tags:[],
+      note:'S-H20 : items indépendants par zone.',
+      steps:[
+        'Zone A avec <code>blocked-items = [diamond_sword, ender_pearl]</code>',
+        'Zone B avec <code>blocked-items = [stick]</code>',
+        'Tester dans chaque zone'
+      ],
+      expected:'Zone A bloque sword+pearl, pas stick. Zone B bloque stick, pas sword.'
+    },
+    {
+      id:'items_autocomplete', title:'Autocomplete items',
+      tags:[],
+      steps:[
+        'Ouvrir le popup "Gérer les items" d\'une zone',
+        'Taper "diam" dans le search'
+      ],
+      expected:'Liste filtrée avec tous les items vanilla+mods contenant "diam".'
+    },
+    {
+      id:'escape_popup', title:'Escape ferme SEULEMENT le popup',
+      tags:[],
+      note:'Bug corrigé : Escape fermait tout l\'écran.',
+      steps:[
+        'Ouvrir popup items (ou flag picker)',
+        'Appuyer <kbd>Échap</kbd>'
+      ],
+      expected:'Popup fermé, on reste sur ZoneDetailScreen. 2e Échap ferme ZoneDetailScreen.'
+    }
+  ]
+},
+
+// ─── PARCOOL + EMOTECRAFT S-H21 ──────────────────────────────
+{
+  id:'sh21', icon:'🤸', title:'ParCool + Emotecraft (S-H21)',
+  desc:'Blocage client-side (le serveur ne peut pas cancel).',
+  tests:[
+    {
+      id:'parcool_actions', title:'parcool_actions — wall-jump / vault bloqués',
+      tags:[T.flag('parcool_actions'), T.mod('ParCool')],
+      note:'Client mixin ActionProcessorMixin requis côté client.',
+      steps:[
+        'Zone <code>parcool_actions=deny</code>',
+        'Placer un mur de 2 blocs',
+        'Tenter un wall-jump (Shift + espace contre le mur)',
+        'Tenter un vault (courir vers un bloc de 1)'
+      ],
+      expected:'Les actions ParCool ne déclenchent PAS (le perso bute sur le mur).'
+    },
+    {
+      id:'parcool_message', title:'parcool_actions — message one-shot',
+      tags:[T.flag('parcool_actions')],
+      note:'Bug v1.4 : spam à chaque tick.',
+      steps:[
+        'Zone <code>parcool_actions=deny</code>',
+        'Entrer dans la zone'
+      ],
+      expected:'1 seul message actionbar à l\'entrée. Pas de spam.'
+    },
+    {
+      id:'emote_use', title:'emote_use — Emotecraft bloqué client',
+      tags:[T.flag('emote_use'), T.mod('Emotecraft')],
+      steps:[
+        'Zone <code>emote_use=deny</code>',
+        'Utiliser une émote Emotecraft (roue des émotes)'
+      ],
+      expected:'L\'émote ne joue pas. Message client visible.'
+    }
+  ]
+},
+
+// ─── NOUVEAUX FLAGS VANILLA v1.5 ──────────────────────────────
+{
+  id:'vanilla_new', icon:'✨', title:'Nouveaux flags vanilla v1.5 (parité YAWP)',
+  desc:'9 flags ajoutés en v1.5 — jamais testés en prod.',
+  tests:[
+    {
+      id:'use_elytra', title:'use-elytra — coupe l\'elytra en vol',
+      tags:[T.flag('use-elytra')],
+      steps:[
+        'Zone <code>use-elytra=deny</code>',
+        'Équiper une elytra, décoller depuis une zone alliée',
+        'Voler et entrer dans la zone'
+      ],
+      expected:'Chute immédiate à l\'entrée de la zone. Message actionbar "... dans la zone testzone".'
+    },
+    {
+      id:'use_portal', title:'use-portal — bloque les portails Nether/End',
+      tags:[T.flag('use-portal')],
+      steps:[
+        'Zone <code>use-portal=deny</code>',
+        'Construire un portail Nether dedans, l\'allumer',
+        'Entrer dans le portail'
+      ],
+      expected:'Le joueur reste dans l\'Overworld (pas de téléport). Message actionbar.'
+    },
+    {
+      id:'till_farmland', title:'till-farmland — houe bloquée',
+      tags:[T.flag('till-farmland')],
+      steps:[
+        'Zone <code>till-farmland=deny</code>',
+        'Clic droit sur dirt avec une houe'
+      ],
+      expected:'La terre N\'EST PAS labourée. Message "Vous ne pouvez pas labourer la terre ici."'
+    },
+    {
+      id:'strip_wood', title:'strip-wood — hache sur bois',
+      tags:[T.flag('strip-wood')],
+      steps:[
+        'Zone <code>strip-wood=deny</code>',
+        'Clic droit sur <code>oak_log</code> avec une hache'
+      ],
+      expected:'Le bois N\'EST PAS écorcé. Message.'
+    },
+    {
+      id:'shovel_path', title:'shovel-path — pelle sur herbe',
+      tags:[T.flag('shovel-path')],
+      steps:[
+        'Zone <code>shovel-path=deny</code>',
+        'Clic droit sur <code>grass_block</code> avec une pelle'
+      ],
+      expected:'Pas de conversion en <code>dirt_path</code>.'
+    },
+    {
+      id:'scoop_fluids', title:'scoop-fluids — seau vide → fluide',
+      tags:[T.flag('scoop-fluids')],
+      steps:[
+        'Zone <code>scoop-fluids=deny</code>',
+        'Seau vide en main, clic droit sur de l\'eau / lave'
+      ],
+      expected:'Seau reste vide. Fluide non collecté.'
+    },
+    {
+      id:'place_fluids', title:'place-fluids — seau rempli → pose',
+      tags:[T.flag('place-fluids')],
+      steps:[
+        'Zone <code>place-fluids=deny</code>',
+        'Water_bucket en main, clic droit sur un bloc'
+      ],
+      expected:'Eau non placée. Seau reste plein.'
+    },
+    {
+      id:'send_chat', title:'send-chat — chat bloqué dans la zone',
+      tags:[T.flag('send-chat')],
+      steps:[
+        'Zone <code>send-chat=deny</code>',
+        'Y entrer, taper un message dans le chat'
+      ],
+      expected:'Message bloqué. Actionbar "Le chat est désactivé dans la zone testzone" (nom paramétré).'
+    },
+    {
+      id:'exec_command', title:'exec-command — commandes slash bloquées',
+      tags:[T.flag('exec-command')],
+      steps:[
+        'Zone <code>exec-command=deny</code>',
+        'Tester <code>/tp @s ~ ~10 ~</code>, <code>/gamemode</code>, <code>/say test</code>'
+      ],
+      expected:'Toutes bloquées. Actionbar "Les commandes sont désactivées dans la zone testzone".'
+    },
+    {
+      id:'exec_command_ag_exception', title:'exec-command — /ag toujours autorisé',
+      tags:[T.flag('exec-command')],
+      note:'Anti lock-out admin.',
+      steps:[
+        'Zone <code>exec-command=deny</code>',
+        'Tester <code>/ag gui</code>, <code>/arcadiaguard zone list</code>'
+      ],
+      expected:'Les commandes ArcadiaGuard FONCTIONNENT même si exec-command=deny.'
+    }
+  ]
+},
+
+// ─── exec-command-blacklist ──────────────────────────────────
+{
+  id:'exec_blacklist', icon:'📜', title:'exec-command-blacklist (sous-menu)',
+  desc:'ListFlag permettant de bloquer des commandes spécifiques.',
+  tests:[
+    {
+      id:'exec_blacklist_add', title:'Ajouter des commandes à la blacklist',
+      tags:[T.flag('exec-command-blacklist')],
+      steps:[
+        'Zone <code>exec-command=allow</code>',
+        'Ajouter flag <code>exec-command-blacklist</code>',
+        'Cliquer dessus → FlagConfigScreen',
+        'Taper "tp" ou "/tp" → Ajouter',
+        'Taper "gamemode" → Ajouter',
+        'Sauvegarder'
+      ],
+      expected:'Les 2 entrées apparaissent dans la liste. Sauvegarde OK.'
+    },
+    {
+      id:'exec_blacklist_block', title:'Commande blacklistée bloquée',
+      tags:[T.flag('exec-command-blacklist')],
+      steps:[
+        'Avec la config ci-dessus',
+        'Taper <code>/tp @s ~ ~10 ~</code>'
+      ],
+      expected:'Bloqué avec message "La commande /tp est interdite dans cette zone."'
+    },
+    {
+      id:'exec_blacklist_allow', title:'Commande non-blacklistée autorisée',
+      tags:[T.flag('exec-command-blacklist')],
+      steps:[
+        'Avec la config ci-dessus (tp+gamemode bloqués)',
+        'Taper <code>/say hello</code>'
+      ],
+      expected:'Commande exécutée normalement. Message affiché dans le chat.'
+    }
+  ]
+},
+
+// ─── FLY / APOTHEOSIS_FLY ────────────────────────────────────
+{
+  id:'fly', icon:'🪽', title:'FLY / APOTHEOSIS_FLY',
+  desc:'Blocage du vol vanilla et des affixes Apotheosis.',
+  tests:[
+    {
+      id:'fly_basic', title:'fly — mayfly coupé',
+      tags:[T.flag('fly')],
+      steps:[
+        'Zone <code>fly=deny</code>',
+        'Joueur en survival, donner mayfly : <code>/ability @s mayfly true</code>',
+        'Activer le vol (double-tap espace)',
+        'Entrer dans la zone'
+      ],
+      expected:'mayfly désactivé automatiquement. Joueur tombe. Actionbar.'
+    },
+    {
+      id:'fly_creative_ignore', title:'fly — creative/spectator IGNORÉ',
+      tags:[T.flag('fly')],
+      steps:[
+        'Zone <code>fly=deny</code>',
+        'Passer en creative <code>/gamemode creative</code>',
+        'Voler dans la zone'
+      ],
+      expected:'Creative vole normalement. fly ne touche que survival+mayfly.'
+    },
+    {
+      id:'apotheosis_fly', title:'apotheosis-fly — affixe unbound bloqué',
+      tags:[T.flag('apotheosis-fly'), T.mod('Apotheosis')],
+      note:'Nécessite un chestplate avec affixe "unbound" (mythic, très rare).',
+      steps:[
+        'Obtenir un chestplate avec affixe unbound (attribut <code>neoforge:creative_flight</code>)',
+        'Zone <code>apotheosis-fly=deny</code>',
+        'Équiper + entrer zone'
+      ],
+      expected:'Vol désactivé. Actionbar "Le vol Apotheosis est désactivé dans cette zone."'
+    },
+    {
+      id:'apotheosis_fly_exclusive', title:'apotheosis-fly ne touche PAS les autres sources',
+      tags:[T.flag('apotheosis-fly')],
+      steps:[
+        'Zone <code>apotheosis-fly=deny</code>',
+        'Autre source de vol : <code>/ability @s mayfly true</code>',
+        'Voler dans la zone'
+      ],
+      expected:'Vol fonctionne (pas d\'attribut creative_flight, donc pas ciblé par le flag).'
+    }
+  ]
+},
+
+// ─── Autocomplete spells ─────────────────────────────────────
+{
+  id:'spell_autocomplete', icon:'🔮', title:'Autocomplete spells (Ars Nouveau + Iron\'s)',
+  desc:'Dropdown suggestions pour les ListFlag spell blacklist/whitelist.',
+  tests:[
+    {
+      id:'ars_autocomplete', title:'Ars Nouveau — autocomplete glyphs',
+      tags:[T.flag('ars-spell-blacklist'), T.mod('Ars Nouveau')],
+      steps:[
+        'ZoneDetail → Ajouter flag <code>ars-spell-blacklist</code>',
+        'Cliquer dessus → FlagConfigScreen',
+        'Cliquer dans l\'input',
+        'Un dropdown apparaît AU-DESSUS de l\'input',
+        'Taper "blink"'
+      ],
+      expected:'Dropdown filtré → <code>ars_nouveau:glyph_blink</code> suggéré. Click = ajoute à la liste.'
+    },
+    {
+      id:'ars_block_spell', title:'Ars Nouveau — cast d\'un glyph blacklisté bloqué',
+      tags:[T.flag('ars-spell-blacklist'), T.mod('Ars Nouveau')],
+      steps:[
+        'Zone avec <code>ars-spell-blacklist=[ars_nouveau:glyph_blink]</code>',
+        'Préparer un spellbook avec blink',
+        'Cast dans la zone'
+      ],
+      expected:'Cast refusé. Message actionbar.'
+    },
+    {
+      id:'irons_autocomplete', title:'Iron\'s — autocomplete spells',
+      tags:[T.flag('irons-spell-blacklist'), T.mod('Iron\'s Spellbooks')],
+      steps:[
+        'Ajouter flag <code>irons-spell-blacklist</code>',
+        'Cliquer dans l\'input → dropdown',
+        'Taper "fire"'
+      ],
+      expected:'Dropdown filtré avec tous les spells Iron\'s contenant "fire" (fireball, fire_arrow, etc.)'
+    },
+    {
+      id:'irons_block_spell', title:'Iron\'s — cast d\'un spell blacklisté bloqué',
+      tags:[T.flag('irons-spell-blacklist'), T.mod('Iron\'s Spellbooks')],
+      steps:[
+        'Zone avec <code>irons-spell-blacklist=[irons_spellbooks:fireball]</code>',
+        'Avoir un spell book avec fireball',
+        'Cast dans la zone'
+      ],
+      expected:'Cast refusé.'
+    }
+  ]
+},
+
+// ─── CHUNKLOAD ───────────────────────────────────────────────
+{
+  id:'chunkload', icon:'📦', title:'CHUNKLOAD',
+  desc:'Force-load des chunks de la zone.',
+  tests:[
+    {
+      id:'chunkload_active', title:'chunkload=deny force-load les chunks',
+      tags:[T.flag('chunkload')],
+      steps:[
+        'Zone <code>chunkload=deny</code> (valeur par défaut = ON = force-load actif)',
+        'S\'éloigner à 500+ blocs',
+        'Placer une redstone clock dans la zone avant (ou observer mobs tickant)',
+        'Vérifier via <code>/forceload query</code>'
+      ],
+      expected:'Chunks listés dans forceload. Mobs continuent de ticker. Redstone tourne même loin.'
+    },
+    {
+      id:'chunkload_disable', title:'chunkload=allow libère les chunks',
+      tags:[T.flag('chunkload')],
+      steps:[
+        'Zone avec chunkload actif',
+        'Reset le flag (✕) ou le passer à allow',
+        '<code>/forceload query</code>'
+      ],
+      expected:'Chunks retirés de forceload. Tick normal.'
+    },
+    {
+      id:'chunkload_zone_delete', title:'Suppression zone → chunks libérés',
+      tags:[T.flag('chunkload')],
+      steps:[
+        'Zone avec chunkload actif',
+        'Supprimer la zone via GUI',
+        '<code>/forceload query</code>'
+      ],
+      expected:'Chunks libérés automatiquement.'
+    }
+  ]
+},
+
+// ─── FlagFrequency ───────────────────────────────────────────
+{
+  id:'freq', icon:'⚡', title:'FlagFrequency kill-switch',
+  desc:'Config admin pour désactiver des classes de flags.',
+  tests:[
+    {
+      id:'freq_disable_very_high', title:'Désactiver VERY_HIGH',
+      tags:[],
+      steps:[
+        'Éditer <code>config/arcadiaguard-common.toml</code>',
+        '<code>disabled_flag_frequencies = ["VERY_HIGH"]</code>',
+        'Redémarrer le serveur',
+        'Zone <code>water-spread=deny</code>',
+        'Verser un seau d\'eau'
+      ],
+      expected:'L\'eau coule normalement (flag bypassed par la config). Fast-path active.'
+    },
+    {
+      id:'freq_restore', title:'Retirer le kill-switch restaure le comportement',
+      tags:[],
+      steps:[
+        '<code>disabled_flag_frequencies = []</code>',
+        'Redémarrer',
+        'Zone <code>water-spread=deny</code>, verser de l\'eau'
+      ],
+      expected:'L\'eau ne coule plus. Flag actif.'
+    }
+  ]
+},
+
+// ─── Messages paramétrés ─────────────────────────────────────
+{
+  id:'params', icon:'💬', title:'Messages paramétrés (%1$s)',
+  desc:'Le nom de zone apparaît dans les messages.',
+  tests:[
+    {
+      id:'param_send_chat', title:'send-chat affiche le nom de zone',
+      tags:[T.flag('send-chat')],
+      steps:[
+        'Zone nommée <code>ma_super_zone</code>',
+        'Flag <code>send-chat=deny</code>',
+        'Taper un message chat'
+      ],
+      expected:'Actionbar : "Le chat est désactivé dans la zone <strong>ma_super_zone</strong>."'
+    },
+    {
+      id:'param_exec_command', title:'exec-command affiche le nom',
+      tags:[T.flag('exec-command')],
+      steps:[
+        'Zone <code>ma_super_zone</code>',
+        '<code>exec-command=deny</code>',
+        '<code>/tp</code>'
+      ],
+      expected:'Actionbar : "Les commandes sont désactivées dans la zone <strong>ma_super_zone</strong>."'
+    },
+    {
+      id:'param_use_portal', title:'use-portal affiche le nom',
+      tags:[T.flag('use-portal')],
+      steps:[
+        'Zone <code>ma_super_zone</code>, flag <code>use-portal=deny</code>',
+        'Entrer dans un portail'
+      ],
+      expected:'Actionbar : "Les portails sont désactivés dans la zone <strong>ma_super_zone</strong>."'
+    }
+  ]
+},
+
+// ─── Audit log ───────────────────────────────────────────────
+{
+  id:'audit', icon:'📋', title:'Audit log',
+  desc:'Toutes les actions joueur sont loggées, throttlées.',
+  tests:[
+    {
+      id:'audit_coverage', title:'Log coverage actions variées',
+      tags:[],
+      steps:[
+        'Zone avec plusieurs flags deny (block_break, pvp, send-chat, exec-command)',
+        'Exécuter 5-10 actions bloquées différentes',
+        '<code>/ag log</code>'
+      ],
+      expected:'Toutes les actions apparaissent dans le log avec player + zone + action + pos.'
+    },
+    {
+      id:'audit_throttle', title:'Throttle 2s par (player|zone|flag)',
+      tags:[],
+      steps:[
+        'Zone <code>block_break=deny</code>',
+        'Spammer 50 clics gauche sur un bloc en 5s',
+        '<code>/ag log</code>'
+      ],
+      expected:'Maximum 2-3 entrées "block_break" (pas 50). Throttle fonctionne.'
+    },
+    {
+      id:'audit_no_passive', title:'Events passifs PAS loggés',
+      tags:[],
+      steps:[
+        'Zone <code>water-spread=deny</code>, <code>leaf-decay=deny</code>',
+        'Verser de l\'eau (ne coule pas), casser un arbre (feuilles restent)',
+        '<code>/ag log</code>'
+      ],
+      expected:'Aucune entrée pour water/leaf (events passifs, pas d\'action joueur directe).'
+    }
+  ]
+},
+
+// ─── Write coalescing ────────────────────────────────────────
+{
+  id:'coalesce', icon:'⚙️', title:'Write coalescing AsyncZoneWriter',
+  desc:'Bursts de writes coalescent en 1 seule écriture disque.',
+  tests:[
+    {
+      id:'coalesce_active', title:'Coalescing actif sur burst',
+      tags:[],
+      steps:[
+        'Modifier rapidement 30 flags (toggle) sur la MÊME zone',
+        '<code>/ag debug stats</code>'
+      ],
+      expected:'Compteur <code>coalesced=N</code> avec N >= 20 (la majorité des writes ont été mergés).'
+    },
+    {
+      id:'coalesce_final', title:'État final correctement persisté',
+      tags:[],
+      steps:[
+        'Après le burst ci-dessus',
+        'Redémarrer le serveur',
+        'Vérifier l\'état des flags de la zone'
+      ],
+      expected:'Les flags sont dans leur état final (dernier toggle), pas intermédiaire.'
+    }
+  ]
+},
+
+// ─── Easter egg ──────────────────────────────────────────────
+{
+  id:'easter', icon:'🥚', title:'Easter egg testeurs',
+  desc:'Messages actionbar au login pour Fricadelle & NokhXyr.',
+  tests:[
+    {
+      id:'easter_frica', title:'Fricadelle reçoit un message au login',
+      tags:[T.req('UUID 724b9ff8-9434-4152-9435-e9aafb62375c')],
+      steps:[
+        'Se connecter avec le compte Fricadelle',
+        'Attendre 6 secondes APRÈS le spawn complet',
+        'Observer l\'actionbar'
+      ],
+      expected:'Message 🥚 [Easter Egg] apparaît avec un texte FuFu/bacon. Relog = autre message random.'
+    },
+    {
+      id:'easter_nokh', title:'NokhXyr reçoit un message au login',
+      tags:[T.req('UUID 0d03894e-ced6-4520-bf92-a4a73d3ba502')],
+      steps:[
+        'Connexion NokhXyr',
+        'Attendre 6s'
+      ],
+      expected:'Message 🥚 [Easter Egg] avec pool Nokh (bugs/testeur légendaire).'
+    },
+    {
+      id:'easter_other_player', title:'Autre joueur = aucun message',
+      tags:[],
+      steps:[
+        'Connexion avec un compte random',
+        'Attendre 10s'
+      ],
+      expected:'AUCUN message easter egg (whitelist stricte par UUID).'
+    }
+  ]
+},
+
+// ─── Stabilité ───────────────────────────────────────────────
+{
+  id:'stability', icon:'🛡️', title:'Stabilité / Perf',
+  desc:'Pas de crash, pas de leak, Spark visible.',
+  tests:[
+    {
+      id:'shutdown_clean', title:'Shutdown propre — pas de NPE Moonlight',
+      tags:[],
+      steps:[
+        'Serveur avec Supplementaries et Moonlight installés',
+        '<code>stop</code>',
+        'Check logs serveur'
+      ],
+      expected:'Aucune NPE <code>LevelRegionData.setDirty</code> ou similaire. Fake levels correctement ignorés.'
+    },
+    {
+      id:'spark_visibility', title:'Spark profiler voit nos méthodes par nom',
+      tags:[],
+      steps:[
+        '<code>/spark profiler --timeout 60</code>',
+        'Actions variées en zone pendant 60s',
+        'Ouvrir le rapport Spark'
+      ],
+      expected:'Méthodes <code>GuardService.isZoneDenying</code>, <code>FlagResolver.*</code>, <code>AsyncZoneWriter.loop</code> visibles par nom complet.'
+    },
+    {
+      id:'no_memory_leak', title:'Pas de leak après 10 connexions',
+      tags:[],
+      steps:[
+        '10 joueurs différents se connectent puis se déconnectent',
+        '<code>/ag debug stats</code>'
+      ],
+      expected:'RATE_LIMITERS, playerCurrentZone, etc. ne grossissent pas indéfiniment. Cleanup au logout OK.'
+    },
+    {
+      id:'reload_consistency', title:'Reload config cohérente',
+      tags:[],
+      steps:[
+        'Modifier beaucoup de zones (flags + items)',
+        '<code>/reload</code> serveur ou restart',
+        'Vérifier que tout est bien persisté'
+      ],
+      expected:'État disque cohérent. Toutes les modifs retrouvées après restart.'
+    }
+  ]
+}
+
+];
+
+// ═══════════════════════════════════════════════════════════════
+//  ÉTAT GLOBAL
+// ═══════════════════════════════════════════════════════════════
+const state = {};
+
+let testCount = 0;
+let globalIndex = 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  RENDU
+// ═══════════════════════════════════════════════════════════════
+function buildTag(tag) {
+  const cls = tag.c === 'flag' ? 'tag-flag' : tag.c === 'mod' ? 'tag-mod' : 'tag-req';
+  const prefix = tag.c === 'mod' ? '🧩 ' : tag.c === 'req' ? '⚠️ ' : '';
+  return `<span class="tag ${cls}">${prefix}${tag.t}</span>`;
+}
+
+function render() {
+  const root = document.getElementById('sections-root');
+  root.innerHTML = '';
+
+  SECTIONS.forEach((sec, si) => {
+    const secTests = sec.tests;
+    testCount += secTests.length;
+
+    const el = document.createElement('div');
+    el.className = 'section' + (si < 2 ? ' open' : '');
+    el.id = 'sec-' + sec.id;
+
+    const badgeId = `badge-${sec.id}`;
+
+    el.innerHTML = `
+      <div class="section-header" onclick="toggleSection('sec-${sec.id}')">
+        <span style="font-size:18px">${sec.icon}</span>
+        <div style="flex:1">
+          <div class="section-title">${sec.title}</div>
+          <div class="section-desc">${sec.desc}</div>
+        </div>
+        <span class="section-badge" id="${badgeId}">0 / ${secTests.length}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="body-${sec.id}"></div>
+    `;
+
+    root.appendChild(el);
+
+    const body = el.querySelector('.section-body');
+
+    secTests.forEach((test, ti) => {
+      globalIndex++;
+      const idx = globalIndex;
+      if (!state[test.id]) state[test.id] = { status: '', notes: '' };
+
+      const tags = (test.tags || []).map(buildTag).join(' ');
+      const noteHtml = test.note
+        ? `<div class="setup-note">ℹ️ ${test.note}</div>` : '';
+
+      const stepsHtml = test.steps.map(s => `<li>${s}</li>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'test-card';
+      card.id = 'card-' + test.id;
+
+      card.innerHTML = `
+        <div class="test-header">
+          <span class="test-number">#${idx}</span>
+          <span class="test-title">${test.title}</span>
+          ${tags}
+        </div>
+        <div class="test-body">
+          ${noteHtml}
+          <div class="test-steps" style="grid-column:1/-1">
+            <div class="subsection-label">Étapes</div>
+            <ol class="steps-list">${stepsHtml}</ol>
+          </div>
+          <div class="expected-box">
+            <div class="subsection-label">✓ Résultat attendu</div>
+            ${test.expected}
+          </div>
+          <div class="verdict-row">
+            <div class="subsection-label">Verdict</div>
+            <div class="radio-group">
+              <label class="radio-btn opt-pass" id="btn-pass-${test.id}">
+                <input type="radio" name="${test.id}" value="pass" onchange="setStatus('${test.id}','pass')">
+                ✓ Succès
+              </label>
+              <label class="radio-btn opt-fail" id="btn-fail-${test.id}">
+                <input type="radio" name="${test.id}" value="fail" onchange="setStatus('${test.id}','fail')">
+                ✗ Échec
+              </label>
+              <label class="radio-btn opt-skip" id="btn-skip-${test.id}">
+                <input type="radio" name="${test.id}" value="skip" onchange="setStatus('${test.id}','skip')">
+                — Non testé
+              </label>
+            </div>
+          </div>
+          <textarea class="notes-area" placeholder="Notes, comportement observé, captures d'écran..."
+            id="notes-${test.id}"
+            oninput="setNotes('${test.id}', this.value)">${state[test.id].notes}</textarea>
+        </div>
+      `;
+
+      body.appendChild(card);
+      applyStyling(test.id);
+    });
+  });
+
+  updateProgress();
+}
+
+function toggleSection(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+function setStatus(testId, val) {
+  state[testId].status = val;
+  applyStyling(testId);
+  updateProgress();
+  autosaveLocal();
+}
+
+function setNotes(testId, val) {
+  state[testId].notes = val;
+  autosaveLocal();
+}
+
+function applyStyling(testId) {
+  const card = document.getElementById('card-' + testId);
+  if (!card) return;
+  const st = state[testId].status;
+  card.classList.remove('status-pass', 'status-fail', 'status-skip');
+  if (st) card.classList.add('status-' + st);
+
+  ['pass','fail','skip'].forEach(v => {
+    const btn = document.getElementById(`btn-${v}-${testId}`);
+    if (btn) {
+      btn.classList.toggle('selected', st === v);
+      const input = btn.querySelector('input');
+      if (input) input.checked = (st === v);
+    }
+  });
+}
+
+function updateProgress() {
+  let done = 0, pass = 0, fail = 0, skip = 0;
+  for (const id in state) {
+    const s = state[id].status;
+    if (s === 'pass') { done++; pass++; }
+    else if (s === 'fail') { done++; fail++; }
+    else if (s === 'skip') { done++; skip++; }
+  }
+  const total = Object.keys(state).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+
+  document.getElementById('prog-text').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('cnt-pass').textContent = pass + ' succès';
+  document.getElementById('cnt-fail').textContent = fail + ' échec' + (fail > 1 ? 's' : '');
+  document.getElementById('cnt-skip').textContent = skip + ' ignoré' + (skip > 1 ? 's' : '');
+
+  SECTIONS.forEach(sec => {
+    let secDone = 0;
+    sec.tests.forEach(t => {
+      if (state[t.id] && state[t.id].status) secDone++;
+    });
+    const badge = document.getElementById('badge-' + sec.id);
+    if (badge) badge.textContent = `${secDone} / ${sec.tests.length}`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SAVE / LOAD
+// ═══════════════════════════════════════════════════════════════
+function getMeta() {
+  return {
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    version: document.getElementById('meta-version').value,
+    server: document.getElementById('meta-server').value,
+  };
+}
+
+function saveJSON() {
+  const data = {
+    meta: { ...getMeta(), exportedAt: new Date().toISOString(), tool: 'ArcadiaGuard Test Report' },
+    results: {}
+  };
+  for (const id in state) {
+    data.results[id] = { ...state[id] };
+  }
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = getMeta().date || new Date().toISOString().split('T')[0];
+  const tester = getMeta().tester || 'rapport';
+  a.href = url;
+  a.download = `arcadiaguard-tests-v1.5_${tester}_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Rapport sauvegardé !');
+}
+
+function loadJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.meta) {
+        if (data.meta.tester) document.getElementById('meta-tester').value = data.meta.tester;
+        if (data.meta.date) document.getElementById('meta-date').value = data.meta.date;
+        if (data.meta.version) document.getElementById('meta-version').value = data.meta.version;
+        if (data.meta.server) document.getElementById('meta-server').value = data.meta.server;
+      }
+      if (data.results) {
+        for (const id in data.results) {
+          if (state[id] !== undefined) {
+            state[id] = { status: data.results[id].status || '', notes: data.results[id].notes || '' };
+          }
+        }
+        for (const id in state) {
+          applyStyling(id);
+          const ta = document.getElementById('notes-' + id);
+          if (ta) ta.value = state[id].notes;
+        }
+        updateProgress();
+      }
+      toast('📂 Rapport chargé avec succès !');
+    } catch {
+      toast('❌ Erreur lors du chargement du fichier JSON.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function autosaveLocal() {
+  try {
+    localStorage.setItem('ag_test_state_v15', JSON.stringify({ state, meta: getMeta() }));
+  } catch {}
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem('ag_test_state_v15');
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (saved.state) {
+      for (const id in saved.state) {
+        if (state[id] !== undefined) state[id] = saved.state[id];
+      }
+    }
+    if (saved.meta) {
+      if (saved.meta.tester) document.getElementById('meta-tester').value = saved.meta.tester;
+      if (saved.meta.date) document.getElementById('meta-date').value = saved.meta.date;
+      if (saved.meta.version) document.getElementById('meta-version').value = saved.meta.version;
+      if (saved.meta.server) document.getElementById('meta-server').value = saved.meta.server;
+    }
+    return true;
+  } catch { return false; }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
+
+document.getElementById('load-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadJSON(e.target.files[0]);
+});
+
+['meta-tester','meta-date','meta-version','meta-server'].forEach(id => {
+  document.getElementById(id).addEventListener('input', autosaveLocal);
+});
+
+render();
+if (loadLocal()) {
+  for (const id in state) {
+    applyStyling(id);
+    const ta = document.getElementById('notes-' + id);
+    if (ta) ta.value = state[id].notes;
+  }
+  updateProgress();
+  toast('🔄 Session précédente restaurée');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadiaGuard — Rapport de Tests v1.5 R6 (Full Solo)</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c26;
+    --bg3: #1e2333;
+    --bg4: #252b3d;
+    --border: #2e3650;
+    --text: #d4d8e8;
+    --text-dim: #7a82a0;
+    --text-bright: #eef0f8;
+    --accent: #5b7cfa;
+    --accent2: #7c5bfa;
+    --green: #3ecf6e;
+    --green-bg: #0d2a1a;
+    --red: #f05555;
+    --red-bg: #2a0d0d;
+    --yellow: #f5c842;
+    --yellow-bg: #2a220a;
+    --mod-color: #a78bfa;
+    --mod-bg: #1e1535;
+    --radius: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  .page-header { background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%); border-bottom: 1px solid var(--border); padding: 24px 32px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text-bright); margin-bottom: 4px; }
+  .page-header h1 span { color: var(--accent); }
+  .header-row { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 14px; }
+  .meta-fields { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; }
+  .meta-field { display: flex; flex-direction: column; gap: 4px; }
+  .meta-field label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .meta-field input { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-bright); padding: 6px 10px; font-size: 13px; width: 180px; outline: none; transition: border-color .2s; }
+  .meta-field input:focus { border-color: var(--accent); }
+  .progress-block { min-width: 280px; }
+  .progress-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-label strong { color: var(--text-bright); }
+  .progress-bar-outer { height: 8px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+  .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .4s ease; }
+  .progress-counts { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; }
+  .cnt { display: flex; align-items: center; gap: 5px; }
+  .cnt .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 120px; }
+  .intro-box { background: var(--bg2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 28px; font-size: 13px; color: var(--text); line-height: 1.7; }
+  .intro-box strong { color: var(--text-bright); }
+  .intro-box kbd { background: var(--bg4); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; font-family: 'Consolas', monospace; font-size: 11px; color: var(--text-bright); }
+  .section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .section-header { background: var(--bg3); padding: 14px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; user-select: none; transition: background .15s; }
+  .section-header:hover { background: var(--bg4); }
+  .section-icon { font-size: 18px; }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .section-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-weight: 400; }
+  .section-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--bg4); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap; }
+  .chevron { color: var(--text-dim); transition: transform .2s; font-size: 13px; flex-shrink: 0; }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+  .test-card { border-top: 1px solid var(--border); padding: 16px 20px; background: var(--bg2); transition: background .15s; }
+  .test-card:hover { background: #181c28; }
+  .test-card.status-pass { border-left: 3px solid var(--green); }
+  .test-card.status-fail { border-left: 3px solid var(--red); }
+  .test-card.status-skip { border-left: 3px solid var(--text-dim); }
+  .test-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .test-number { font-size: 11px; color: var(--text-dim); background: var(--bg4); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .test-title { font-size: 14px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600; white-space: nowrap; margin-top: 2px; }
+  .tag-flag { background: rgba(91,124,250,.15); color: var(--accent); border: 1px solid rgba(91,124,250,.3); }
+  .tag-mod { background: var(--mod-bg); color: var(--mod-color); border: 1px solid rgba(167,139,250,.3); }
+  .tag-gui { background: rgba(62,207,110,.1); color: var(--green); border: 1px solid rgba(62,207,110,.3); }
+  .tag-cmd { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,200,66,.3); }
+  .test-body { display: grid; grid-template-columns: 1fr 220px; gap: 12px; align-items: start; }
+  @media(max-width:700px) { .test-body { grid-template-columns: 1fr; } }
+  .test-steps { font-size: 13px; color: var(--text); background: var(--bg3); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); }
+  .test-steps strong { color: var(--text-bright); }
+  code { background: var(--bg4); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: 12px; color: #93c5fd; }
+  .verdict-row { display: flex; flex-direction: column; gap: 6px; }
+  .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .radio-btn { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 12px; font-weight: 600; transition: all .15s; user-select: none; }
+  .radio-btn input { display: none; }
+  .radio-btn.opt-pass { color: var(--green); }
+  .radio-btn.opt-pass:hover, .radio-btn.opt-pass.selected { background: var(--green-bg); border-color: var(--green); }
+  .radio-btn.opt-fail { color: var(--red); }
+  .radio-btn.opt-fail:hover, .radio-btn.opt-fail.selected { background: var(--red-bg); border-color: var(--red); }
+  .radio-btn.opt-skip { color: var(--text-dim); }
+  .radio-btn.opt-skip:hover, .radio-btn.opt-skip.selected { background: var(--bg4); border-color: var(--text-dim); }
+  .notes-area { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit; padding: 6px 8px; resize: vertical; min-height: 40px; outline: none; transition: border-color .2s; }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-area::placeholder { color: var(--text-dim); }
+  .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,17,23,.95); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 14px 32px; display: flex; gap: 12px; align-items: center; justify-content: flex-end; z-index: 200; }
+  .btn { padding: 9px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: all .15s; display: flex; align-items: center; gap: 7px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4a6af0; transform: translateY(-1px); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg4); }
+  .footer-info { font-size: 12px; color: var(--text-dim); flex: 1; }
+  .footer-info strong { color: var(--text); }
+  .toast { position: fixed; bottom: 80px; right: 24px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; font-size: 13px; color: var(--text-bright); box-shadow: var(--shadow); z-index: 300; opacity: 0; transform: translateY(8px); transition: all .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .section-progress { font-size: 11px; color: var(--green); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🛡️ <span>ArcadiaGuard</span> — Rapport de Tests v1.5 R6 · Full Solo</h1>
+  <div class="header-row">
+    <div class="meta-fields">
+      <div class="meta-field"><label>Testeur</label><input type="text" id="meta-tester" placeholder="Votre pseudo"></div>
+      <div class="meta-field"><label>Date</label><input type="date" id="meta-date"></div>
+      <div class="meta-field"><label>Version du mod</label><input type="text" id="meta-version" placeholder="1.5.0"></div>
+      <div class="meta-field"><label>Modpack / Serveur</label><input type="text" id="meta-server" placeholder="Arcadia test"></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-label"><span>Progression globale</span><strong id="prog-text">0 / 0</strong></div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+      <div class="progress-counts">
+        <span class="cnt"><span class="dot" style="background:var(--green)"></span><span id="cnt-pass">0 succès</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--red)"></span><span id="cnt-fail">0 échecs</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--text-dim)"></span><span id="cnt-skip">0 ignorés</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="intro-box">
+    <strong>🎮 Procédure complète pour testeur solo.</strong><br>
+    Couvre l'intégralité du mod : 86 flags, 7 écrans GUI, 25+ commandes, intégrations mods, permissions, migration YAWP, audit logs, sync client, etc. Environ <strong>230 tests</strong>.<br><br>
+    <strong>🐛 Mode Debug (essentiel) :</strong> <span style="color:var(--accent2)">ZoneListScreen → footer → bouton Debug</span>. Quand actif, indicateur <strong>"Debug mode ACTIF"</strong> visible. Effet : ton compte OP est soumis aux flags → <strong>tu peux tester seul</strong>.<br><br>
+    <strong>📋 Workflow standard par flag :</strong><br>
+    1. <code>/ag gui</code> → zone <code>testzone</code> → <strong>Détails</strong><br>
+    2. Colonne <strong>Flags</strong> → <kbd>+</kbd> → chercher le flag → confirmer<br>
+    3. Clic sur flag → bascule <strong style="color:var(--red)">OFF (rouge)</strong><br>
+    4. <kbd>Échap</kbd> → activer <strong>Debug</strong> si pas déjà fait<br>
+    5. Effectuer l'action en jeu + vérifier le résultat<br>
+    6. Retour Détails → <kbd>✕</kbd> sur flag pour reset<br><br>
+    Sauvegarde auto dans le navigateur. <strong>💾 Sauvegarder JSON</strong> pour exporter à la fin. Ordre libre — tu peux sauter et revenir.
+  </div>
+  <div id="sections-root"></div>
+</main>
+
+<div class="sticky-footer">
+  <span class="footer-info">Sauvegarde auto dans le navigateur. <strong>Exporter JSON avant de fermer.</strong></span>
+  <label class="btn btn-secondary" style="cursor:pointer">📂 Charger JSON<input type="file" id="load-input" accept=".json" style="display:none"></label>
+  <button class="btn btn-primary" onclick="saveJSON()">💾 Sauvegarder JSON</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const T = { flag: t => ({c:'flag',t}), mod: t=>({c:'mod',t}), gui: t=>({c:'gui',t}), cmd: t=>({c:'cmd',t}) };
+
+function s(...steps) { return steps.map(x => typeof x === 'string' ? x : x).join(' → '); }
+
+const SECTIONS = [
+{
+  id:'setup', icon:'⚙️', title:'Prérequis & Setup',
+  desc:'Installation + zone de test de base',
+  tests:[
+    { n:1, title:'Install jar', tags:[], steps:'Déposer <code>arcadiaguard-1.5.0.jar</code> dans <code>mods/</code>. Serveur + client démarrent sans crash. Log contient "ArcadiaGuard loaded".' },
+    { n:2, title:'Give wand', tags:[T.cmd('/ag')], steps:'<code>/ag wand give editor</code> → tu reçois la wand en inventaire.' },
+    { n:3, title:'Créer testzone', tags:[T.gui('GUI')], steps:'Left-click wand sur bloc A, right-click sur bloc B (cube ~20×20). <code>/ag gui</code> → <strong>Create</strong> → nom <code>testzone</code> → OK. Zone apparaît dans la liste.' },
+    { n:4, title:'Ouvrir Détails', tags:[T.gui('GUI')], steps:'Sélectionner <code>testzone</code> → <strong>Détails</strong>. Onglets INFO/FLAGS/MEMBERS/LOGS visibles.' },
+    { n:5, title:'Activer Debug mode', tags:[T.gui('GUI')], steps:'ZoneListScreen → footer → <strong>Debug</strong>. Bandeau vert "Debug mode ACTIF" en header.' },
+  ]
+},
+{
+  id:'gui-zonelist', icon:'📋', title:'GUI — ZoneListScreen',
+  desc:'Recherche, filtres, pagination, boutons',
+  tests:[
+    { n:10, title:'Recherche live', tags:[T.gui('GUI')], steps:'Taper dans la search box → liste filtrée en temps réel, texte centré verticalement dans la box.' },
+    { n:11, title:'Sidebar dimensions', tags:[T.gui('GUI')], steps:'Cliquer dims dans sidebar → zones de la dim affichées. Scroll sidebar si plusieurs dims.' },
+    { n:12, title:'Pagination', tags:[T.gui('GUI')], steps:'Avec beaucoup de zones → boutons Prev/Next, compteur "Page X/Y" change correctement.' },
+    { n:13, title:'Double-clic zone', tags:[T.gui('GUI')], steps:'Double-clic rapide (<400ms) sur row zone → ouvre Détails directement.' },
+    { n:14, title:'Sélection simple', tags:[T.gui('GUI')], steps:'Clic simple → highlight ligne + boutons Teleport/Details/Delete activés.' },
+    { n:15, title:'Bouton Teleport', tags:[T.gui('GUI')], steps:'Zone sélectionnée → <strong>Teleport</strong> → joueur TP au centre de la zone.' },
+    { n:16, title:'Bouton Delete + overlay', tags:[T.gui('GUI')], steps:'Zone sélectionnée → <strong>Delete</strong> → overlay custom "Confirmer la suppression ?" avec OK/Cancel.' },
+    { n:17, title:'Delete confirm', tags:[T.gui('GUI')], steps:'Dans overlay → OK → zone supprimée + retour liste refreshée.' },
+    { n:18, title:'Delete cancel', tags:[T.gui('GUI')], steps:'Dans overlay → Cancel → aucune action, overlay disparaît.' },
+    { n:19, title:'Wand positions', tags:[T.gui('GUI')], steps:'Pos1/Pos2 sélectionnées à la wand → coords affichées en bas de l\'écran.' },
+    { n:20, title:'Create depuis wand', tags:[T.gui('GUI')], steps:'2 pos wand + clic <strong>Create</strong> → ouvre ZoneCreateScreen.' },
+    { n:21, title:'DimFlags button', tags:[T.gui('GUI')], steps:'Clic <strong>DimFlags</strong> → ouvre DimDetailScreen de la dim courante.' },
+    { n:22, title:'Ordre clic membre/role', tags:[T.gui('GUI')], steps:'Textes alignés, pas de clipping sur bords de ligne.' },
+  ]
+},
+{
+  id:'gui-zonecreate', icon:'➕', title:'GUI — ZoneCreateScreen',
+  desc:'Création zone depuis wand',
+  tests:[
+    { n:30, title:'Saisie nom', tags:[T.gui('GUI')], steps:'Taper caractères → texte centré vertical dans la box.' },
+    { n:31, title:'Nom vide rejeté', tags:[T.gui('GUI')], steps:'Vide + Create → erreur affichée, zone non créée.' },
+    { n:32, title:'Normalisation', tags:[T.gui('GUI')], steps:'Taper <code>Zone Test!!</code> → nom stocké <code>zone_test</code> (accents/espaces/spéciaux normalisés).' },
+    { n:33, title:'Nom dupliqué', tags:[T.gui('GUI')], steps:'Utiliser nom déjà existant → erreur claire.' },
+    { n:34, title:'Cancel', tags:[T.gui('GUI')], steps:'Bouton Cancel → retour ZoneList sans création.' },
+    { n:35, title:'Création success', tags:[T.gui('GUI')], steps:'Nom valide + Create → zone créée + retour liste, zone apparaît.' },
+    { n:36, title:'Coords wand affichées', tags:[T.gui('GUI')], steps:'Pos1/Pos2 affichées dans l\'écran pour validation visuelle.' },
+  ]
+},
+{
+  id:'gui-zonedetail', icon:'📝', title:'GUI — ZoneDetailScreen',
+  desc:'Onglets, flags, members, coords',
+  tests:[
+    { n:40, title:'Onglet INFO', tags:[T.gui('GUI')], steps:'Nom, dimension, coords min/max, parent, priority affichés.' },
+    { n:41, title:'Onglet FLAGS', tags:[T.gui('GUI')], steps:'Liste flags avec valeurs allow/deny/inherit.' },
+    { n:42, title:'Onglet MEMBERS', tags:[T.gui('GUI')], steps:'Liste membres avec rôle + UUID court.' },
+    { n:43, title:'Onglet LOGS', tags:[T.gui('GUI')], steps:'Ouvre ZoneLogsScreen dédié.' },
+    { n:44, title:'Toggle boolean flag', tags:[T.gui('GUI'),T.flag('bool')], steps:'Clic flag → cycle allow(vert) → deny(rouge) → inherit(gris).' },
+    { n:45, title:'Search flag', tags:[T.gui('GUI')], steps:'Taper dans search → liste flags filtrée live.' },
+    { n:46, title:'IntFlag config', tags:[T.gui('GUI')], steps:'Clic <code>heal-amount</code> → ouvre FlagConfigScreen INT.' },
+    { n:47, title:'ListFlag config', tags:[T.gui('GUI')], steps:'Clic <code>ars-spell-blacklist</code> → ouvre FlagConfigScreen LIST.' },
+    { n:48, title:'Ajouter membre via +', tags:[T.gui('GUI')], steps:'Clic <kbd>+</kbd> dans MEMBERS → popup whitelist input → pseudo + Enter → membre ajouté.' },
+    { n:49, title:'Ajouter membre Enter', tags:[T.gui('GUI')], steps:'Dans popup whitelist → Enter valide sans avoir à cliquer.' },
+    { n:50, title:'Pseudo inconnu', tags:[T.gui('GUI')], steps:'Taper pseudo inexistant → erreur claire "Player not found".' },
+    { n:51, title:'Remove membre connecté', tags:[T.gui('GUI')], steps:'Clic <kbd>✕</kbd> sur membre actuellement connecté → retiré.' },
+    { n:52, title:'Remove membre déconnecté', tags:[T.gui('GUI')], steps:'Clic <kbd>✕</kbd> sur joueur offline → retiré (par UUID).' },
+    { n:53, title:'Remove joueur inconnu', tags:[T.gui('GUI')], steps:'Membre dont pseudo n\'existe pas côté Mojang → remove fonctionne quand même.' },
+    { n:54, title:'Changer rôle', tags:[T.gui('GUI')], steps:'Clic label rôle → cycle MEMBER/MODERATOR/OWNER.' },
+    { n:55, title:'Set parent', tags:[T.gui('GUI')], steps:'Bouton <strong>Set Parent</strong> → popup → nom zone parent → OK. Parent lié.' },
+    { n:56, title:'Clear parent', tags:[T.gui('GUI')], steps:'Bouton <strong>Clear Parent</strong> → parent retiré.' },
+    { n:57, title:'Edit coords', tags:[T.gui('GUI')], steps:'Bouton <strong>Edit</strong> coords → popup 6 EditBox X/Y/Z min+max. Textes centrés.' },
+    { n:58, title:'Save coords', tags:[T.gui('GUI')], steps:'Modifier coords + Save → zone update, visible dans INFO.' },
+    { n:59, title:'Item Blocks picker', tags:[T.gui('GUI')], steps:'Bouton <strong>Item Blocks</strong> → ouvre picker grid items.' },
+    { n:60, title:'Back', tags:[T.gui('GUI')], steps:'Bouton Back → retour ZoneList.' },
+    { n:61, title:'Auto refresh', tags:[T.gui('GUI')], steps:'Modifier flag via commande serveur → écran refresh automatique.' },
+    { n:62, title:'Tooltip flag', tags:[T.gui('GUI')], steps:'Hover sur flag → tooltip description apparaît.' },
+    { n:63, title:'EditBox centrage', tags:[T.gui('GUI')], steps:'Tous les EditBox : texte visuellement centré vertical.' },
+  ]
+},
+{
+  id:'gui-flagconfig', icon:'⚙️', title:'GUI — FlagConfigScreen',
+  desc:'Configuration IntFlag / ListFlag',
+  tests:[
+    { n:70, title:'IntFlag heal-amount', tags:[T.gui('GUI')], steps:'Ouvrir heal-amount → input numérique. Saisir 10 + Save → valeur persistée.' },
+    { n:71, title:'IntFlag bornes', tags:[T.gui('GUI')], steps:'Saisir 999 ou -5 → rejeté ou clampé à plage valide.' },
+    { n:72, title:'ListFlag add', tags:[T.gui('GUI')], steps:'Ouvrir ars-spell-blacklist → entrer <code>projectile</code> + Add → entry dans liste.' },
+    { n:73, title:'ListFlag remove', tags:[T.gui('GUI')], steps:'Clic ✕ sur entry → supprimée.' },
+    { n:74, title:'Autocomplete spells', tags:[T.gui('GUI'),T.mod('Ars/ISB')], steps:'Taper <code>ars_</code> ou <code>iron_</code> → suggestions glyphs/spells.' },
+    { n:75, title:'Reset flag', tags:[T.gui('GUI')], steps:'Bouton Reset → flag revient à défaut.' },
+    { n:76, title:'Save flag', tags:[T.gui('GUI')], steps:'Bouton Save → flag persisté serveur.' },
+    { n:77, title:'EditBox centrage', tags:[T.gui('GUI')], steps:'Input IntFlag et ListFlag : texte centré vertical.' },
+  ]
+},
+{
+  id:'gui-dimdetail', icon:'🌍', title:'GUI — DimDetailScreen',
+  desc:'Flags par dimension',
+  tests:[
+    { n:80, title:'Ouverture', tags:[T.gui('GUI')], steps:'ZoneListScreen → DimFlags → flags dim affichés.' },
+    { n:81, title:'Toggle flag dim', tags:[T.gui('GUI')], steps:'Clic flag → cycle. Zones inherit=true de cette dim sont impactées.' },
+    { n:82, title:'Config flag complexe', tags:[T.gui('GUI')], steps:'Clic int/list flag → ouvre FlagConfigScreen en mode dim.' },
+    { n:83, title:'Picker search', tags:[T.gui('GUI')], steps:'Taper search → flags filtrés. EditBox centré.' },
+    { n:84, title:'Scroll flags', tags:[T.gui('GUI')], steps:'Scroll souris → liste défile sans lag.' },
+    { n:85, title:'Back', tags:[T.gui('GUI')], steps:'Back → retour ZoneListScreen.' },
+  ]
+},
+{
+  id:'gui-zonelogs', icon:'📜', title:'GUI — ZoneLogsScreen',
+  desc:'Affichage audit logs',
+  tests:[
+    { n:90, title:'Ouverture logs', tags:[T.gui('GUI')], steps:'Zone Détails → onglet LOGS → tableau entries.' },
+    { n:91, title:'Filtre joueur', tags:[T.gui('GUI')], steps:'Taper pseudo → logs joueur only. EditBox centré.' },
+    { n:92, title:'Filtre action', tags:[T.gui('GUI')], steps:'Taper action type (ex: break) → logs action only.' },
+    { n:93, title:'Apply filter', tags:[T.gui('GUI')], steps:'Bouton Filter → filtres appliqués sur tableau.' },
+    { n:94, title:'Reset filter', tags:[T.gui('GUI')], steps:'Bouton Reset → filtres vidés.' },
+    { n:95, title:'Refresh', tags:[T.gui('GUI')], steps:'Bouton Refresh → dernières entries rechargées serveur.' },
+  ]
+},
+{
+  id:'flags-blocks', icon:'🧱', title:'Flags Blocks (11)',
+  desc:'Casser/poser/interagir',
+  tests:[
+    { n:100, title:'block-break', tags:[T.flag('block-break')], steps:'Flag OFF → casser bloc en zone → refusé + message.' },
+    { n:101, title:'block-place', tags:[T.flag('block-place')], steps:'Flag OFF → poser bloc en zone → refusé.' },
+    { n:102, title:'block-interact', tags:[T.flag('block-interact')], steps:'Flag OFF → clic droit sur lutrin/jukebox → refusé.' },
+    { n:103, title:'container-access', tags:[T.flag('container-access')], steps:'Flag OFF → ouvrir coffre/baril/hopper → refusé.' },
+    { n:104, title:'door', tags:[T.flag('door')], steps:'Flag OFF → clic porte → ne s\'ouvre pas.' },
+    { n:105, title:'trapdoor', tags:[T.flag('trapdoor')], steps:'Flag OFF → clic trappe → refusé.' },
+    { n:106, title:'button', tags:[T.flag('button')], steps:'Flag OFF → appuyer bouton → refusé.' },
+    { n:107, title:'lever', tags:[T.flag('lever')], steps:'Flag OFF → basculer levier → refusé.' },
+    { n:108, title:'pressure-plate', tags:[T.flag('pressure-plate')], steps:'Flag OFF → marcher sur plaque → pas déclenché.' },
+    { n:109, title:'gate', tags:[T.flag('gate')], steps:'Flag OFF → clic portail bois → refusé.' },
+    { n:110, title:'use-portal', tags:[T.flag('use-portal')], steps:'Flag OFF → entrer portail Nether/End → TP bloqué.' },
+  ]
+},
+{
+  id:'flags-combat', icon:'⚔️', title:'Flags Combat (9)',
+  desc:'PvP, dégâts, attaques',
+  tests:[
+    { n:120, title:'pvp', tags:[T.flag('pvp')], steps:'Flag OFF + 2e joueur → frapper autre joueur → refusé.' },
+    { n:121, title:'player-damage', tags:[T.flag('player-damage')], steps:'Flag ALLOW → chute 5 blocs en zone → aucun dégât.' },
+    { n:122, title:'mob-damage', tags:[T.flag('mob-damage')], steps:'Flag OFF → attaquer mob → refusé.' },
+    { n:123, title:'fall-damage', tags:[T.flag('fall-damage')], steps:'Flag ALLOW → chute haute → no damage.' },
+    { n:124, title:'invincible', tags:[T.flag('invincible')], steps:'Flag ALLOW → tous dégâts annulés + pas de knockback.' },
+    { n:125, title:'attack-animals', tags:[T.flag('attack-animals')], steps:'Flag OFF → frapper vache/mouton → refusé.' },
+    { n:126, title:'attack-monsters', tags:[T.flag('attack-monsters')], steps:'Flag OFF → frapper zombie/skeleton → refusé.' },
+    { n:127, title:'ender-pearl', tags:[T.flag('ender-pearl')], steps:'Flag OFF → lancer pearl → TP bloqué.' },
+    { n:128, title:'chorus-fruit', tags:[T.flag('chorus-fruit')], steps:'Flag OFF → manger chorus → TP bloqué.' },
+  ]
+},
+{
+  id:'flags-mobs', icon:'🐷', title:'Flags Mobs (8)',
+  desc:'Spawn, véhicules, laisses',
+  tests:[
+    { n:130, title:'mob-spawn', tags:[T.flag('mob-spawn')], steps:'Flag OFF + attendre nuit → aucun mob spawn en zone.' },
+    { n:131, title:'animal-spawn', tags:[T.flag('animal-spawn')], steps:'Flag OFF → pas de spawn animaux.' },
+    { n:132, title:'monster-spawn', tags:[T.flag('monster-spawn')], steps:'Flag OFF → pas de spawn monstres hostiles.' },
+    { n:133, title:'villager-spawn', tags:[T.flag('villager-spawn')], steps:'Flag OFF → breed villager → refusé.' },
+    { n:134, title:'vehicle-place', tags:[T.flag('vehicle-place')], steps:'Flag OFF → poser bateau/minecart → refusé.' },
+    { n:135, title:'vehicle-destroy', tags:[T.flag('vehicle-destroy')], steps:'Flag OFF → casser bateau/minecart → refusé.' },
+    { n:136, title:'leash', tags:[T.flag('leash')], steps:'Flag OFF → leasher entity → refusé.' },
+    { n:137, title:'spawn-egg', tags:[T.flag('spawn-egg')], steps:'Flag OFF → utiliser œuf spawn → refusé.' },
+  ]
+},
+{
+  id:'flags-explosions', icon:'💥', title:'Flags Explosions & Propagation (8)',
+  desc:'TNT, creepers, feu, fluides',
+  tests:[
+    { n:140, title:'creeper-explosion', tags:[T.flag('creeper-explosion')], steps:'Flag OFF → creeper explose en zone → pas de dégâts blocs.' },
+    { n:141, title:'tnt-explosion', tags:[T.flag('tnt-explosion')], steps:'Flag OFF → TNT explose → pas de dégâts.' },
+    { n:142, title:'block-explosion', tags:[T.flag('block-explosion')], steps:'Flag OFF → respawn anchor explose en overworld → bloquée.' },
+    { n:143, title:'fire-spread', tags:[T.flag('fire-spread')], steps:'Flag OFF → feu ne se propage pas.' },
+    { n:144, title:'lava-fire', tags:[T.flag('lava-fire')], steps:'Flag OFF → lave proche bois → n\'enflamme pas.' },
+    { n:145, title:'lava-spread', tags:[T.flag('lava-spread')], steps:'Flag OFF → lave coule → stoppée.' },
+    { n:146, title:'water-spread', tags:[T.flag('water-spread')], steps:'Flag OFF → eau coule → stoppée.' },
+    { n:147, title:'leaf-decay', tags:[T.flag('leaf-decay')], steps:'Flag OFF → abattre tronc → feuilles restent.' },
+  ]
+},
+{
+  id:'flags-env', icon:'🌱', title:'Flags Environnement (8)',
+  desc:'Croissance, fonte, propagation',
+  tests:[
+    { n:150, title:'crop-growth', tags:[T.flag('crop-growth')], steps:'Flag OFF → blé/carotte ne pousse pas.' },
+    { n:151, title:'tree-growth', tags:[T.flag('tree-growth')], steps:'Flag OFF → sapling + bonemeal → pas d\'arbre.' },
+    { n:152, title:'farmland-trample', tags:[T.flag('farmland-trample')], steps:'Flag OFF → sauter sur farmland → pas de piétinement.' },
+    { n:153, title:'grass-spread', tags:[T.flag('grass-spread')], steps:'Flag OFF → dirt proche herbe → ne devient pas herbe.' },
+    { n:154, title:'vine-growth', tags:[T.flag('vine-growth')], steps:'Flag OFF → lianes ne s\'étendent pas.' },
+    { n:155, title:'sculk-spread', tags:[T.flag('sculk-spread')], steps:'Flag OFF → sculk catalyst → pas de propagation.' },
+    { n:156, title:'snow-melt', tags:[T.flag('snow-melt')], steps:'Flag OFF → neige proche chaleur → ne fond pas.' },
+    { n:157, title:'ice-melt', tags:[T.flag('ice-melt')], steps:'Flag OFF → glace proche chaleur → ne fond pas.' },
+  ]
+},
+{
+  id:'flags-items', icon:'📦', title:'Flags Items & XP (4)',
+  desc:'Drop, pickup, throw, exp',
+  tests:[
+    { n:160, title:'item-drop', tags:[T.flag('item-drop')], steps:'Flag OFF → Q sur item → refusé.' },
+    { n:161, title:'item-pickup', tags:[T.flag('item-pickup')], steps:'Flag OFF → marcher sur item → pas ramassé.' },
+    { n:162, title:'item-throw', tags:[T.flag('item-throw')], steps:'Flag OFF → lancer snowball/œuf → refusé.' },
+    { n:163, title:'exp-drop', tags:[T.flag('exp-drop')], steps:'Flag OFF → tuer mob/miner → pas d\'XP.' },
+  ]
+},
+{
+  id:'flags-entry', icon:'🚪', title:'Flags Entry / Exit (4)',
+  desc:'Blocage entrée/sortie + bypass',
+  tests:[
+    { n:170, title:'entry deny', tags:[T.flag('entry')], steps:'entry=OFF + Debug → entrer zone → repoussé + message.' },
+    { n:171, title:'exit deny', tags:[T.flag('exit')], steps:'exit=OFF → tenter sortir → bloqué à la frontière.' },
+    { n:172, title:'entry bypass whitelist', tags:[T.flag('entry')], steps:'entry=OFF + joueur whitelisté → peut entrer librement.' },
+    { n:173, title:'entry bypass OP', tags:[T.flag('entry')], steps:'entry=OFF + OP level ≥ bypass (Debug désactivé) → peut entrer.' },
+  ]
+},
+{
+  id:'flags-tools', icon:'🛠️', title:'Flags Vanilla Tools (6)',
+  desc:'Houe, hache, pelle, seau, elytra',
+  tests:[
+    { n:180, title:'till-farmland', tags:[T.flag('till-farmland')], steps:'Flag OFF → houe sur dirt → pas de farmland.' },
+    { n:181, title:'strip-wood', tags:[T.flag('strip-wood')], steps:'Flag OFF → hache sur tronc → pas d\'écorçage.' },
+    { n:182, title:'shovel-path', tags:[T.flag('shovel-path')], steps:'Flag OFF → pelle sur herbe → pas de chemin.' },
+    { n:183, title:'scoop-fluids', tags:[T.flag('scoop-fluids')], steps:'Flag OFF → remplir seau dans eau/lave → refusé.' },
+    { n:184, title:'place-fluids', tags:[T.flag('place-fluids')], steps:'Flag OFF → verser seau → refusé.' },
+    { n:185, title:'use-elytra', tags:[T.flag('use-elytra')], steps:'Flag OFF → décoller avec elytra → tombe immédiatement.' },
+  ]
+},
+{
+  id:'flags-chat', icon:'💬', title:'Flags Chat & Commandes (3)',
+  desc:'Chat, exec-command, blacklist',
+  tests:[
+    { n:190, title:'send-chat', tags:[T.flag('send-chat')], steps:'Flag OFF → envoyer message chat → refusé.' },
+    { n:191, title:'exec-command', tags:[T.flag('exec-command')], steps:'Flag OFF → /kill → refusé.' },
+    { n:192, title:'exec-command-blacklist', tags:[T.flag('exec-command-blacklist')], steps:'Liste = <code>/tpa</code> → /tpa refusé, /home autorisé.' },
+  ]
+},
+{
+  id:'flags-magic-ars', icon:'🔮', title:'Flags Magic — Ars Nouveau (6)',
+  desc:'Spell cast, blacklist, whitelist, movement, scroll',
+  tests:[
+    { n:200, title:'ars-spell-cast', tags:[T.flag('ars-spell-cast'),T.mod('Ars Nouveau')], steps:'Flag OFF → lancer sort Ars → bloqué + message.' },
+    { n:201, title:'ars-spell-blacklist', tags:[T.flag('ars-spell-blacklist'),T.mod('Ars Nouveau')], steps:'Blacklist = <code>glyph_projectile</code> → sort avec projectile bloqué, autres OK.' },
+    { n:202, title:'ars-spell-whitelist', tags:[T.flag('ars-spell-whitelist'),T.mod('Ars Nouveau')], steps:'Whitelist = <code>glyph_self</code> → sorts sans glyph_self bloqués.' },
+    { n:203, title:'spell-movement', tags:[T.flag('spell-movement'),T.mod('Ars Nouveau')], steps:'Flag OFF → sort avec blink/leap/acceleration → bloqué.' },
+    { n:204, title:'ars-warp-scroll', tags:[T.flag('ars-warp-scroll'),T.mod('Ars Nouveau')], steps:'Flag OFF → warp scroll → bloqué (indépendamment de spell-cast).' },
+    { n:205, title:'ars-additions-scroll', tags:[T.flag('ars-additions-scroll'),T.mod('Ars Additions')], steps:'Flag OFF → scroll Ars Additions → bloqué.' },
+  ]
+},
+{
+  id:'flags-magic-isb', icon:'📖', title:'Flags Magic — Iron\'s Spellbooks (3)',
+  desc:'ISB spells',
+  tests:[
+    { n:210, title:'irons-spell-cast', tags:[T.flag('irons-spell-cast'),T.mod('ISB')], steps:'Flag OFF → sort ISB → bloqué.' },
+    { n:211, title:'irons-spell-blacklist', tags:[T.flag('irons-spell-blacklist'),T.mod('ISB')], steps:'Blacklist <code>iceblock</code> → ce sort seul bloqué.' },
+    { n:212, title:'irons-spell-whitelist', tags:[T.flag('irons-spell-whitelist'),T.mod('ISB')], steps:'Whitelist <code>iceblock</code> → autres sorts bloqués.' },
+  ]
+},
+{
+  id:'flags-mods-combat', icon:'🗡️', title:'Flags Mods Combat (3)',
+  desc:'Simply Swords, TF, Mutants',
+  tests:[
+    { n:220, title:'simplyswords-ability', tags:[T.flag('simplyswords-ability'),T.mod('Simply Swords')], steps:'Flag OFF → capacité épée SS → refusée.' },
+    { n:221, title:'tf-projectile', tags:[T.flag('tf-projectile'),T.mod('Twilight Forest')], steps:'Flag OFF → projectile boss TF touche joueur → dégâts bloqués.' },
+    { n:222, title:'mutant-mob-spawn', tags:[T.flag('mutant-mob-spawn'),T.mod('Mutant Monsters')], steps:'Flag OFF → aucun mutant ne spawn en zone.' },
+  ]
+},
+{
+  id:'flags-mods-util', icon:'🎒', title:'Flags Mods Utilitaires (10)',
+  desc:'Carry On, Waystones, Apotheosis, etc.',
+  tests:[
+    { n:230, title:'carryon — bloc', tags:[T.flag('carryon'),T.mod('Carry On')], steps:'Flag OFF → sneak + main vide sur bloc → pas ramassé.' },
+    { n:231, title:'carryon — entity', tags:[T.flag('carryon'),T.mod('Carry On')], steps:'Flag OFF → sneak + main vide sur mob → pas ramassé.' },
+    { n:232, title:'carryon — force drop', tags:[T.flag('carryon'),T.mod('Carry On')], steps:'Entrer zone avec bloc carry → drop forcé au sol.' },
+    { n:233, title:'waystone-use', tags:[T.flag('waystone-use'),T.mod('Waystones')], steps:'Flag OFF → activer waystone → bloqué.' },
+    { n:234, title:'charm-use', tags:[T.flag('charm-use'),T.mod('Apotheosis')], steps:'Flag OFF → utiliser charm → bloqué.' },
+    { n:235, title:'occultism-use', tags:[T.flag('occultism-use'),T.mod('Occultism')], steps:'Flag OFF → utiliser soul gem/ritual → bloqué.' },
+    { n:236, title:'supplementaries-throw', tags:[T.flag('supplementaries-throw'),T.mod('Supp')], steps:'Flag OFF → lancer brique/projectile Supp → bloqué.' },
+    { n:237, title:'rechiseled-use', tags:[T.flag('rechiseled-use'),T.mod('Rechiseled')], steps:'Flag OFF → changer style bloc Rechiseled → refusé.' },
+    { n:238, title:'npc-interact', tags:[T.flag('npc-interact')], steps:'Flag OFF → clic NPC custom → bloqué.' },
+    { n:239, title:'mob-bucket', tags:[T.flag('mob-bucket')], steps:'Flag OFF → bucket axolotl/fish → refusé.' },
+  ]
+},
+{
+  id:'flags-mods-actions', icon:'🤸', title:'Flags Mods Actions (5)',
+  desc:'ParCool, Emotecraft',
+  tests:[
+    { n:250, title:'parcool-actions', tags:[T.flag('parcool-actions'),T.mod('ParCool')], steps:'Flag OFF → wall-jump/vault → bloqué + message chat (1 fois).' },
+    { n:251, title:'parcool sync client', tags:[T.flag('parcool-actions'),T.mod('ParCool')], steps:'Entrer zone deny → message chat apparaît immédiatement.' },
+    { n:252, title:'parcool no spam', tags:[T.flag('parcool-actions'),T.mod('ParCool')], steps:'Rester 30s en zone deny → message NE spam PAS (1 fois max).' },
+    { n:253, title:'emote-use', tags:[T.flag('emote-use'),T.mod('Emotecraft')], steps:'Flag OFF → lancer emote → bloqué + message.' },
+    { n:254, title:'emote no spam', tags:[T.flag('emote-use'),T.mod('Emotecraft')], steps:'Rester en zone → message emote pas en boucle.' },
+  ]
+},
+{
+  id:'flags-config', icon:'🔢', title:'Flags Configurables (11)',
+  desc:'Heal, feed, chunkload, fly, invincible',
+  tests:[
+    { n:260, title:'heal-amount = 0', tags:[T.flag('heal-amount')], steps:'Config 0 → pas de régen.' },
+    { n:261, title:'heal-amount = 10', tags:[T.flag('heal-amount')], steps:'Config 10 → régénère ~10 HP/sec (dégâts continus → HP constant).' },
+    { n:262, title:'feed-amount = 0', tags:[T.flag('feed-amount')], steps:'Config 0 → pas de restauration faim.' },
+    { n:263, title:'feed-amount = 10', tags:[T.flag('feed-amount')], steps:'Config 10 → saturation restaurée.' },
+    { n:264, title:'chunkload ON', tags:[T.flag('chunkload')], steps:'Config true + s\'éloigner → chunks restent chargés (test via fermier afk auto).' },
+    { n:265, title:'chunkload OFF', tags:[T.flag('chunkload')], steps:'Config false → chunks unload normalement.' },
+    { n:266, title:'fly deny survival', tags:[T.flag('fly')], steps:'Flag OFF + attribute creative_flight actif → vol bloqué, mayfly cut.' },
+    { n:267, title:'fly deny créatif', tags:[T.flag('fly')], steps:'Créatif + fly=OFF → vol non bloqué (exempt).' },
+    { n:268, title:'fly deny spectator', tags:[T.flag('fly')], steps:'Spectator + fly=OFF → vol non bloqué.' },
+    { n:269, title:'invincible', tags:[T.flag('invincible')], steps:'Flag ALLOW → no damage + no knockback.' },
+    { n:270, title:'animal-invincible', tags:[T.flag('animal-invincible')], steps:'Flag ALLOW → animaux zone immunisés aux dégâts.' },
+  ]
+},
+{
+  id:'cmd-zone', icon:'⌨️', title:'Commandes /ag zone (13)',
+  desc:'CRUD zones via commande',
+  tests:[
+    { n:300, title:'zone list', tags:[T.cmd('/ag')], steps:'<code>/ag zone list</code> → liste paginée.' },
+    { n:301, title:'zone info', tags:[T.cmd('/ag')], steps:'<code>/ag zone info testzone</code> → détails.' },
+    { n:302, title:'zone create (wand)', tags:[T.cmd('/ag')], steps:'Wand positions + <code>/ag zone create name</code> → créée.' },
+    { n:303, title:'zone add coords', tags:[T.cmd('/ag')], steps:'<code>/ag zone add foo 0 60 0 10 70 10</code> → créée.' },
+    { n:304, title:'zone remove', tags:[T.cmd('/ag')], steps:'<code>/ag zone remove foo</code> → supprimée.' },
+    { n:305, title:'zone copy', tags:[T.cmd('/ag')], steps:'<code>/ag zone copy src dst</code> → flags + membres copiés.' },
+    { n:306, title:'zone flag allow/deny/reset', tags:[T.cmd('/ag')], steps:'<code>/ag zone flag testzone block-break deny</code> → modif.' },
+    { n:307, title:'zone parent set', tags:[T.cmd('/ag')], steps:'<code>/ag zone parent set child parent</code> → lié.' },
+    { n:308, title:'zone parent clear', tags:[T.cmd('/ag')], steps:'<code>/ag zone parent clear child</code> → délié.' },
+    { n:309, title:'whitelist add', tags:[T.cmd('/ag')], steps:'<code>/ag zone whitelist add testzone Foo</code> → ajouté.' },
+    { n:310, title:'whitelist remove', tags:[T.cmd('/ag')], steps:'<code>/ag zone whitelist remove testzone Foo</code> → retiré.' },
+    { n:311, title:'whitelist role', tags:[T.cmd('/ag')], steps:'<code>/ag zone whitelist role testzone Foo OWNER</code> → défini.' },
+    { n:312, title:'zone dimensional', tags:[T.cmd('/ag')], steps:'<code>/ag zone dimensional testzone</code> → affiche dim.' },
+  ]
+},
+{
+  id:'cmd-other', icon:'⌨️', title:'Commandes /ag item/logs/dimflag/admin (17)',
+  desc:'Items, logs, dim flags, admin',
+  tests:[
+    { n:320, title:'item block', tags:[T.cmd('/ag')], steps:'<code>/ag item block minecraft:tnt</code> → bloqué global.' },
+    { n:321, title:'item unblock', tags:[T.cmd('/ag')], steps:'<code>/ag item unblock minecraft:tnt</code> → débloqué.' },
+    { n:322, title:'item list', tags:[T.cmd('/ag')], steps:'<code>/ag item list</code> → liste items.' },
+    { n:323, title:'log all', tags:[T.cmd('/ag')], steps:'<code>/ag log</code> → paginé.' },
+    { n:324, title:'log zone', tags:[T.cmd('/ag')], steps:'<code>/ag log zone testzone</code> → logs zone.' },
+    { n:325, title:'log player', tags:[T.cmd('/ag')], steps:'<code>/ag log player Foo</code> → logs joueur.' },
+    { n:326, title:'dimflag list', tags:[T.cmd('/ag')], steps:'<code>/ag dimflag list</code> → tous flags dim.' },
+    { n:327, title:'dimflag list dim', tags:[T.cmd('/ag')], steps:'<code>/ag dimflag list minecraft:overworld</code> → spécifique.' },
+    { n:328, title:'dimflag clear dim', tags:[T.cmd('/ag')], steps:'<code>/ag dimflag clear minecraft:overworld</code> → reset.' },
+    { n:329, title:'dimflag clear all', tags:[T.cmd('/ag')], steps:'<code>/ag dimflag clear all</code> → reset toutes dims.' },
+    { n:330, title:'gui', tags:[T.cmd('/ag')], steps:'<code>/ag gui</code> → ouvre ZoneListScreen.' },
+    { n:331, title:'wand editor', tags:[T.cmd('/ag')], steps:'<code>/ag wand give editor</code> → wand editor.' },
+    { n:332, title:'wand viewer', tags:[T.cmd('/ag')], steps:'<code>/ag wand give viewer</code> → wand viewer (read-only).' },
+    { n:333, title:'migrate yawp', tags:[T.cmd('/ag')], steps:'<code>/ag migrate yawp</code> → diagnostic + import.' },
+    { n:334, title:'reload', tags:[T.cmd('/ag')], steps:'<code>/ag reload</code> → zones + blocklist rechargées.' },
+    { n:335, title:'help', tags:[T.cmd('/ag')], steps:'<code>/ag help</code> → aide affichée.' },
+    { n:336, title:'alias /arcadiaguard', tags:[T.cmd('/arcadiaguard')], steps:'<code>/arcadiaguard help</code> = <code>/ag help</code>.' },
+  ]
+},
+{
+  id:'permissions', icon:'🔐', title:'Permissions & Rôles (8)',
+  desc:'OP, whitelist, LuckPerms, rôles',
+  tests:[
+    { n:350, title:'OP bypass', tags:[], steps:'OP level ≥ bypass_op_level (config) → toutes actions autorisées même flag=deny.' },
+    { n:351, title:'Non-OP', tags:[], steps:'Non-OP → actions filtrées selon flags.' },
+    { n:352, title:'Rôle MEMBER', tags:[], steps:'Membre MEMBER → voit infos zone, ne modifie pas.' },
+    { n:353, title:'Rôle MODERATOR', tags:[], steps:'MODERATOR → peut gérer whitelist.' },
+    { n:354, title:'Rôle OWNER', tags:[], steps:'OWNER → peut modifier flags + coords.' },
+    { n:355, title:'Whitelist bypass entry', tags:[], steps:'Joueur whitelist + entry=deny → peut entrer.' },
+    { n:356, title:'LuckPerms bypass', tags:[T.mod('LuckPerms')], steps:'Node <code>arcadiaguard.zone.bypass</code> → bypass complet.' },
+    { n:357, title:'LuckPerms role', tags:[T.mod('LuckPerms')], steps:'Node <code>arcadiaguard.zone.testzone.owner</code> → rôle résolu.' },
+  ]
+},
+{
+  id:'migration', icon:'📥', title:'Migration YAWP (6)',
+  desc:'Import régions YAWP',
+  tests:[
+    { n:360, title:'Détection', tags:[T.mod('YAWP')], steps:'YAWP installé + <code>/ag migrate yawp</code> → régions détectées.' },
+    { n:361, title:'Conversion cuboid', tags:[T.mod('YAWP')], steps:'Régions cuboid YAWP → zones AG créées.' },
+    { n:362, title:'Skip non-cuboid', tags:[T.mod('YAWP')], steps:'Régions poly/cylindre → skip + warning message.' },
+    { n:363, title:'Rapport détaillé', tags:[T.mod('YAWP')], steps:'Message final : X importées, Y skipées, Z dimensions.' },
+    { n:364, title:'Idempotent', tags:[T.mod('YAWP')], steps:'Relancer migrate → ne duplique pas, message clair.' },
+    { n:365, title:'GUI refresh', tags:[T.mod('YAWP')], steps:'Après migrate → <code>/ag gui</code> liste immédiatement à jour.' },
+  ]
+},
+{
+  id:'hierarchy', icon:'🌳', title:'Hiérarchie & Priorités (7)',
+  desc:'Parent, priorité, cycles',
+  tests:[
+    { n:370, title:'Parent inherit', tags:[], steps:'Enfant hérite flags parent sans override.' },
+    { n:371, title:'Child override', tags:[], steps:'Enfant override flag → utilise sa valeur, pas celle du parent.' },
+    { n:372, title:'Single parent', tags:[], steps:'Set parent 2 fois → remplace (pas de multi-parent).' },
+    { n:373, title:'Cycle détecté', tags:[], steps:'A→B puis B→A → rejeté avec message.' },
+    { n:374, title:'Même dim obligatoire', tags:[], steps:'Parent overworld + enfant nether → rejeté.' },
+    { n:375, title:'Priority nesting', tags:[], steps:'2 zones overlap (non-parent) + priorité différente → la plus haute gagne.' },
+    { n:376, title:'Delete parent clear enfants', tags:[], steps:'Supprimer parent → enfants parent cleared auto.' },
+  ]
+},
+{
+  id:'audit', icon:'📋', title:'Audit Logs (8)',
+  desc:'Traçabilité actions',
+  tests:[
+    { n:380, title:'Log create zone', tags:[], steps:'Créer zone → entrée log avec timestamp/player/coords.' },
+    { n:381, title:'Log delete zone', tags:[], steps:'Supprimer zone → log.' },
+    { n:382, title:'Log flag change', tags:[], steps:'Modifier flag → log avec old/new value.' },
+    { n:383, title:'Log member add', tags:[], steps:'Add membre → log.' },
+    { n:384, title:'Log member remove', tags:[], steps:'Remove membre → log.' },
+    { n:385, title:'Log action deny', tags:[], steps:'Action bloquée par flag → log avec player+pos+flag.' },
+    { n:386, title:'Rotation quotidienne', tags:[], steps:'Fichier logs rotationne par jour (config/arcadiaguard/logs/YYYY-MM-DD.json).' },
+    { n:387, title:'Async thread', tags:[], steps:'Haute charge (1000 deny/sec) → pas de TPS drop.' },
+  ]
+},
+{
+  id:'client-sync', icon:'🔄', title:'Client Sync (6)',
+  desc:'Payloads S→C',
+  tests:[
+    { n:390, title:'Parcool payload', tags:[T.mod('ParCool')], steps:'Entrer zone deny parcool → ParcoolBlockedPayload reçu côté client.' },
+    { n:391, title:'Parcool client state', tags:[T.mod('ParCool')], steps:'Mixin client ActionProcessor consulte ClientParcoolState.isBlocked().' },
+    { n:392, title:'Emote payload', tags:[T.mod('Emotecraft')], steps:'Entrer zone deny emote → EmoteBlockedPayload reçu.' },
+    { n:393, title:'Emote client hook', tags:[T.mod('Emotecraft')], steps:'Verifier Emotecraft bloque via ClientEmoteBlockedState.' },
+    { n:394, title:'Dim flags payload', tags:[], steps:'Changer dim flag → DimFlagsPayload reçu → cache client à jour.' },
+    { n:395, title:'Item blocks payload', tags:[], steps:'Ajouter item bloqué → ItemBlocksPayload reçu.' },
+  ]
+},
+{
+  id:'wand', icon:'🪄', title:'Wand Tool (8)',
+  desc:'Pos selection + rendu',
+  tests:[
+    { n:400, title:'Left-click pos1', tags:[], steps:'Clic gauche wand → pos1 enregistrée + chat "Pos1 set: X Y Z".' },
+    { n:401, title:'Right-click pos2', tags:[], steps:'Clic droit wand → pos2 enregistrée + chat.' },
+    { n:402, title:'HUD overlay', tags:[], steps:'HUD wand affiche pos1/pos2 en bas d\'écran.' },
+    { n:403, title:'Zone wireframe quartz', tags:[], steps:'Zone sélectionnée → lignes 3D quartz visibles.' },
+    { n:404, title:'Zone coins redstone', tags:[], steps:'Coins zone sélectionnée → accent redstone.' },
+    { n:405, title:'Editor vs Viewer', tags:[], steps:'Wand editor → create zones OK. Viewer → read-only, pas de modif.' },
+    { n:406, title:'Give wand command', tags:[T.cmd('/ag')], steps:'<code>/ag wand give editor</code> → reçue.' },
+    { n:407, title:'Cross-dim refusé', tags:[], steps:'Pos1 overworld + pos2 nether → erreur create.' },
+  ]
+},
+{
+  id:'xdim', icon:'🌐', title:'Cross-Dimension & Events (7)',
+  desc:'Multi-dim, events externes',
+  tests:[
+    { n:410, title:'Créer zone dans nether', tags:[], steps:'TP nether + wand + create → zone stockée correctement.' },
+    { n:411, title:'list toutes dims', tags:[], steps:'<code>/ag zone list</code> → zones toutes dims incluses.' },
+    { n:412, title:'Modifier flag cross-dim', tags:[], steps:'Depuis overworld, modifier flag zone nether → OK (via /ag zone flag).' },
+    { n:413, title:'Delete cross-dim', tags:[], steps:'Depuis overworld, delete zone nether → OK.' },
+    { n:414, title:'Event zone-created', tags:[], steps:'Mod externe listener → ZoneCreatedEvent levé à la création.' },
+    { n:415, title:'Event zone-removed', tags:[], steps:'ZoneRemovedEvent levé au delete.' },
+    { n:416, title:'Event flag-changed', tags:[], steps:'FlagChangedEvent levé sur modif flag.' },
+  ]
+},
+{
+  id:'persistence', icon:'💾', title:'Persistence & Reload (7)',
+  desc:'JSON, reload, state',
+  tests:[
+    { n:420, title:'Fichier JSON', tags:[], steps:'Zone créée → <code>config/arcadiaguard/zones/DIM/zone.json</code> existe.' },
+    { n:421, title:'Reload depuis disque', tags:[T.cmd('/ag')], steps:'<code>/ag reload</code> → zones rechargées correctement.' },
+    { n:422, title:'Missing file detected', tags:[], steps:'Supprimer JSON manuellement + reload → zone disparue du cache.' },
+    { n:423, title:'Orphan dim cleanup', tags:[], steps:'Dim dir sans zones → nettoyé au reload, pas d\'erreur.' },
+    { n:424, title:'Zone disabled', tags:[], steps:'Zone.enabled=false → tous flags ignorés (actions libres).' },
+    { n:425, title:'Inherit dim ON', tags:[], steps:'Zone inherit=true → utilise dim flags si pas d\'override zone.' },
+    { n:426, title:'Inherit dim OFF', tags:[], steps:'Zone inherit=false → ignore dim flags même si configurés.' },
+  ]
+},
+{
+  id:'items-zone', icon:'📦', title:'Items bloqués par zone (S-H20) (8)',
+  desc:'Per-zone item blocklist',
+  tests:[
+    { n:430, title:'Picker ouvre', tags:[T.gui('GUI')], steps:'Bouton Item Blocks dans Détails → picker grid items.' },
+    { n:431, title:'Ajouter item', tags:[T.gui('GUI')], steps:'Clic item dans picker → ajouté à la zone.' },
+    { n:432, title:'Retirer item', tags:[T.gui('GUI')], steps:'Clic item déjà sélectionné → retiré.' },
+    { n:433, title:'RightClick item bloqué', tags:[], steps:'Item bloqué en main + clic droit air/bloc → refusé.' },
+    { n:434, title:'Use block avec item bloqué', tags:[], steps:'Item bloqué en main + clic droit bloc interactif → refusé.' },
+    { n:435, title:'Interact entity', tags:[], steps:'Item bloqué en main + clic droit mob → refusé.' },
+    { n:436, title:'Scoped par zone', tags:[], steps:'Item bloqué zone A → utilisable zone B sans problème.' },
+    { n:437, title:'Sync client', tags:[], steps:'ItemBlocksPayload reçu → cache client à jour.' },
+  ]
+},
+{
+  id:'stability', icon:'⚡', title:'Stabilité & Performance (9)',
+  desc:'Pas de crash, pas de lag',
+  tests:[
+    { n:450, title:'Boot serveur', tags:[], steps:'Server démarre sans crash avec mod.' },
+    { n:451, title:'Boot client', tags:[], steps:'Client démarre sans crash.' },
+    { n:452, title:'Reload à chaud', tags:[], steps:'Créer/supprimer 10 zones → pas de lag.' },
+    { n:453, title:'100 zones', tags:[], steps:'Créer 100 zones → GUI reste fluide.' },
+    { n:454, title:'Heavy flags deny', tags:[], steps:'Zone avec TOUS flags deny → TPS stable.' },
+    { n:455, title:'Frequency kill', tags:[], steps:'Config désactiver handler NEGLIGIBLE → handler ne fire plus.' },
+    { n:456, title:'Mod absent graceful', tags:[], steps:'Retirer un mod optionnel (ex Carry On) → AG log warning, pas de crash.' },
+    { n:457, title:'Event fire massif', tags:[], steps:'Drop stacks 64 items en boucle + zone deny item-pickup → pas de lag.' },
+    { n:458, title:'Payload abuse', tags:[], steps:'Client envoyant payload malformé → serveur log warning, pas de crash.' },
+  ]
+},
+{
+  id:'i18n', icon:'🌐', title:'Messages & i18n (5)',
+  desc:'Traductions, paramètres, throttle',
+  tests:[
+    { n:460, title:'Locale fr_fr', tags:[], steps:'Client fr_fr → messages deny en français.' },
+    { n:461, title:'Locale en_us', tags:[], steps:'Client en_us → messages deny en anglais.' },
+    { n:462, title:'Paramètres', tags:[], steps:'Message include nom zone / flag (via Component.translatable args).' },
+    { n:463, title:'Throttle', tags:[], steps:'Parcool/emote message throttlé → max 1 toutes X secondes.' },
+    { n:464, title:'Actionbar clean', tags:[], steps:'Pas de message actionbar permanent résiduel (ex parcool post-fix).' },
+  ]
+},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// RENDU
+// ═══════════════════════════════════════════════════════════════
+const STORE_KEY = 'arcadiaguard_tests_v15_r6_full';
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function saveState(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch(e) {} }
+let state = loadState();
+
+function render() {
+  const root = document.getElementById('sections-root');
+  root.innerHTML = '';
+  SECTIONS.forEach((sec, si) => {
+    const s = document.createElement('div');
+    s.className = 'section' + (si < 2 ? ' open' : '');
+    s.id = 'sec-' + sec.id;
+    s.innerHTML = `
+      <div class="section-header" onclick="this.parentNode.classList.toggle('open')">
+        <span class="section-icon">${sec.icon}</span>
+        <div style="flex:1">
+          <div class="section-title">${sec.title}</div>
+          <div class="section-desc">${sec.desc}</div>
+        </div>
+        <span class="section-badge" id="badge-${sec.id}">${sec.tests.length} tests</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="body-${sec.id}"></div>
+    `;
+    root.appendChild(s);
+    const body = s.querySelector('#body-' + sec.id);
+    sec.tests.forEach(t => {
+      const id = 't-' + t.n;
+      const saved = state[id] || {};
+      const card = document.createElement('div');
+      card.className = 'test-card' + (saved.status ? ' status-' + saved.status : '');
+      card.id = 'card-' + t.n;
+      const tagsHtml = (t.tags||[]).map(tag => `<span class="tag tag-${tag.c}">${tag.t}</span>`).join('');
+      card.innerHTML = `
+        <div class="test-header">
+          <span class="test-number">#${t.n}</span>
+          <div class="test-title">${t.title}</div>
+          ${tagsHtml}
+        </div>
+        <div class="test-body">
+          <div class="test-steps">${t.steps}</div>
+          <div class="verdict-row">
+            <div class="radio-group">
+              <label class="radio-btn opt-pass${saved.status==='pass'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="pass" ${saved.status==='pass'?'checked':''}>✓ OK
+              </label>
+              <label class="radio-btn opt-fail${saved.status==='fail'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="fail" ${saved.status==='fail'?'checked':''}>✗ KO
+              </label>
+              <label class="radio-btn opt-skip${saved.status==='skip'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="skip" ${saved.status==='skip'?'checked':''}>⊘ Skip
+              </label>
+            </div>
+            <textarea class="notes-area" data-id="${t.n}" placeholder="Notes (obligatoire si KO)">${saved.notes||''}</textarea>
+          </div>
+        </div>
+      `;
+      body.appendChild(card);
+    });
+  });
+  // listeners
+  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', e => {
+    const n = e.target.name.substring(2);
+    const id = 't-' + n;
+    state[id] = state[id] || {};
+    state[id].status = e.target.value;
+    document.getElementById('card-' + n).className = 'test-card status-' + e.target.value;
+    // maj classes selected
+    e.target.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b => b.classList.remove('selected'));
+    e.target.closest('.radio-btn').classList.add('selected');
+    saveState(state);
+    updateStats();
+  }));
+  document.querySelectorAll('.notes-area').forEach(ta => ta.addEventListener('input', e => {
+    const id = 't-' + e.target.dataset.id;
+    state[id] = state[id] || {};
+    state[id].notes = e.target.value;
+    saveState(state);
+  }));
+  updateStats();
+}
+
+function updateStats() {
+  let total = 0, pass = 0, fail = 0, skip = 0;
+  SECTIONS.forEach(sec => {
+    let sp = 0;
+    sec.tests.forEach(t => {
+      total++;
+      const st = state['t-'+t.n]?.status;
+      if (st==='pass') { pass++; sp++; }
+      else if (st==='fail') fail++;
+      else if (st==='skip') skip++;
+    });
+    const badge = document.getElementById('badge-' + sec.id);
+    if (badge) badge.textContent = `${sp}/${sec.tests.length}`;
+  });
+  const done = pass + fail + skip;
+  document.getElementById('prog-text').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').style.width = (done*100/total) + '%';
+  document.getElementById('cnt-pass').textContent = pass + ' succès';
+  document.getElementById('cnt-fail').textContent = fail + ' échecs';
+  document.getElementById('cnt-skip').textContent = skip + ' ignorés';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function saveJSON() {
+  // collect meta
+  const meta = {
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    version: document.getElementById('meta-version').value,
+    server: document.getElementById('meta-server').value,
+    exportedAt: new Date().toISOString(),
+  };
+  const out = { meta, results: {} };
+  SECTIONS.forEach(sec => {
+    out.results[sec.id] = { title: sec.title, tests: {} };
+    sec.tests.forEach(t => {
+      const st = state['t-'+t.n] || {};
+      out.results[sec.id].tests[t.n] = {
+        title: t.title,
+        status: st.status || null,
+        notes: st.notes || ''
+      };
+    });
+  });
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (meta.tester || 'anon').replace(/[^a-z0-9]+/gi,'_');
+  const d = (meta.date || new Date().toISOString().split('T')[0]);
+  a.href = url;
+  a.download = `arcadiaguard-tests-v1.5-r6-full_${name}_${d}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Rapport exporté');
+}
+
+document.getElementById('load-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (data.meta) {
+        document.getElementById('meta-tester').value = data.meta.tester || '';
+        document.getElementById('meta-date').value = data.meta.date || '';
+        document.getElementById('meta-version').value = data.meta.version || '';
+        document.getElementById('meta-server').value = data.meta.server || '';
+      }
+      if (data.results) {
+        state = {};
+        for (const secId in data.results) {
+          for (const tn in data.results[secId].tests) {
+            const entry = data.results[secId].tests[tn];
+            state['t-' + tn] = { status: entry.status, notes: entry.notes };
+          }
+        }
+        saveState(state);
+        render();
+        toast('📂 Rapport chargé');
+      }
+    } catch (err) { toast('❌ Fichier invalide'); }
+  };
+  r.readAsText(f);
+});
+
+// init
+document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
+render();
+</script>
+</body>
+</html>
