@@ -135,7 +135,12 @@ public final class VanillaExtraHandler {
         guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.SEND_CHAT, "send_chat");
     }
 
-    /** Bloque l'execution de commandes slash si le joueur est dans une zone EXEC_COMMAND=deny. */
+    /**
+     * Bloque l'execution de commandes slash selon 2 modes :
+     *  - EXEC_COMMAND=deny -> bloque TOUTES les commandes (sauf /ag)
+     *  - Sinon, si EXEC_COMMAND_BLACKLIST non vide -> bloque les commandes listees
+     * Les deux modes coexistent : deny bloque tout, la blacklist affine.
+     */
     public void onCommand(CommandEvent event) {
         Entity sender = event.getParseResults().getContext().getSource().getEntity();
         if (!(sender instanceof ServerPlayer player)) return;
@@ -145,13 +150,53 @@ public final class VanillaExtraHandler {
         if (zoneOpt.isEmpty()) return;
         ProtectedZone zone = (ProtectedZone) zoneOpt.get();
         if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.EXEC_COMMAND, level)) return;
-        // Exception: toujours autoriser les commandes ArcadiaGuard pour eviter le lock-out.
-        String cmd = event.getParseResults().getReader().getString();
-        if (cmd.startsWith("/ag") || cmd.startsWith("/arcadiaguard")) return;
-        event.setCanceled(true);
-        sendDeny(player, "exec_command", zone.name());
-        guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.EXEC_COMMAND, "exec_command");
+
+        String rawCmd = event.getParseResults().getReader().getString();
+        // Exception : toujours autoriser les commandes ArcadiaGuard (anti lock-out admin).
+        if (rawCmd.startsWith("/ag") || rawCmd.startsWith("/arcadiaguard")) return;
+
+        boolean denyAll = guard.isZoneDenying(zone, BuiltinFlags.EXEC_COMMAND, level);
+        String firstToken = extractCommandToken(rawCmd);
+
+        if (denyAll) {
+            event.setCanceled(true);
+            sendDeny(player, "exec_command", zone.name());
+            guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.EXEC_COMMAND, "exec_command");
+            return;
+        }
+
+        // Mode blacklist : lit la liste et check le 1er token.
+        java.util.List<String> blacklist = readBlacklist(zone);
+        if (blacklist.isEmpty()) return;
+        for (String entry : blacklist) {
+            String normalized = entry.startsWith("/") ? entry.substring(1) : entry;
+            normalized = normalized.toLowerCase(java.util.Locale.ROOT);
+            if (firstToken.equalsIgnoreCase(normalized)) {
+                event.setCanceled(true);
+                sendDeny(player, "exec_command_blacklist", firstToken);
+                guard.auditDenied(player, zone.name(), player.blockPosition(),
+                    BuiltinFlags.EXEC_COMMAND, "exec_command:" + firstToken);
+                return;
+            }
+        }
+    }
+
+    /** Extrait le 1er token d'une commande "/tp Steve 0 0 0" -> "tp". */
+    private static String extractCommandToken(String raw) {
+        int start = raw.startsWith("/") ? 1 : 0;
+        int end = raw.length();
+        for (int i = start; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (c == ' ' || c == '\t') { end = i; break; }
+        }
+        return raw.substring(start, end).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    @SuppressWarnings("unchecked")
+    private java.util.List<String> readBlacklist(ProtectedZone zone) {
+        Object raw = zone.flagValues().getOrDefault(BuiltinFlags.EXEC_COMMAND_BLACKLIST.id(), java.util.List.of());
+        if (!(raw instanceof java.util.List<?> list)) return java.util.List.of();
+        return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();
     }
 
     /** Overload simple pour messages non-parametres. */

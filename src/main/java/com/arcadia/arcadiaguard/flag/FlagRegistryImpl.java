@@ -131,6 +131,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.PLACE_FLUIDS);
         register(BuiltinFlags.SEND_CHAT);
         register(BuiltinFlags.EXEC_COMMAND);
+        register(BuiltinFlags.EXEC_COMMAND_BLACKLIST);
         // Zone configuration
         register(BuiltinFlags.HEAL_AMOUNT);
         register(BuiltinFlags.FEED_AMOUNT);

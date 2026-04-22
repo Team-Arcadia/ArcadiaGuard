@@ -63,6 +63,7 @@
   "arcadiaguard.message.place_fluids": "Vous ne pouvez pas placer de fluide ici.",
   "arcadiaguard.message.send_chat": "Le chat est désactivé dans la zone %1$s.",
   "arcadiaguard.message.exec_command": "Les commandes sont désactivées dans la zone %1$s.",
+  "arcadiaguard.message.exec_command_blacklist": "La commande /%1$s est interdite dans cette zone.",
 
   "arcadiaguard.gui.zone_list.title": "ArcadiaGuard — Zones",
   "arcadiaguard.gui.zone_list.search_placeholder": "Rechercher…",
@@ -447,6 +448,7 @@
   "arcadiaguard.flag.place-fluids.description": "Bloque le placement de fluides depuis un seau.",
   "arcadiaguard.flag.send-chat.description": "Bloque l'envoi de messages dans le chat depuis la zone.",
   "arcadiaguard.flag.exec-command.description": "Bloque l'exécution de commandes slash depuis la zone.",
+  "arcadiaguard.flag.exec-command-blacklist.description": "Liste de commandes interdites (ex: tp, gamemode). Ignoré si exec-command bloque déjà tout.",
   "arcadiaguard.flag.heal-amount.description": "Points de vie r\u00e9g\u00e9n\u00e9r\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9).",
   "arcadiaguard.flag.feed-amount.description": "Points de nourriture restaur\u00e9s par seconde dans la zone (0 = d\u00e9sactiv\u00e9)."
 }

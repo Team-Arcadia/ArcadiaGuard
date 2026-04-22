@@ -114,6 +114,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag PLACE_FLUIDS         = new BooleanFlag("place-fluids",       false, "Bloque le placement de fluides depuis un seau.");
     public static final BooleanFlag SEND_CHAT            = new BooleanFlag("send-chat",          false, "Bloque l'envoi de messages dans le chat depuis la zone.");
     public static final BooleanFlag EXEC_COMMAND         = new BooleanFlag("exec-command",       false, "Bloque l'execution de commandes slash depuis la zone.");
+    public static final ListFlag    EXEC_COMMAND_BLACKLIST = new ListFlag("exec-command-blacklist",                "Liste de commandes interdites (ignore si exec-command=deny bloque deja tout).");
 
     // --- Zone configuration ---
     public static final IntFlag     HEAL_AMOUNT        = new IntFlag("heal-amount",            0,    "Points de vie régénérés par seconde dans la zone (0 = désactivé).");

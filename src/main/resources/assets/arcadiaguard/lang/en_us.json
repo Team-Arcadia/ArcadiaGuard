@@ -63,6 +63,7 @@
   "arcadiaguard.message.place_fluids": "You cannot place fluids here.",
   "arcadiaguard.message.send_chat": "Chat is disabled in zone %1$s.",
   "arcadiaguard.message.exec_command": "Commands are disabled in zone %1$s.",
+  "arcadiaguard.message.exec_command_blacklist": "Command /%1$s is forbidden in this zone.",
 
   "arcadiaguard.gui.zone_list.title": "ArcadiaGuard — Zones",
   "arcadiaguard.gui.zone_list.search_placeholder": "Search…",
@@ -447,6 +448,7 @@
   "arcadiaguard.flag.place-fluids.description": "Blocks fluid placement from a bucket.",
   "arcadiaguard.flag.send-chat.description": "Blocks sending chat messages from the zone.",
   "arcadiaguard.flag.exec-command.description": "Blocks slash command execution from the zone.",
+  "arcadiaguard.flag.exec-command-blacklist.description": "List of forbidden commands (e.g. tp, gamemode). Ignored if exec-command already blocks all.",
   "arcadiaguard.flag.heal-amount.description": "Health points regenerated per second in the zone (0 = disabled).",
   "arcadiaguard.flag.feed-amount.description": "Hunger points restored per second in the zone (0 = disabled)."
 }
