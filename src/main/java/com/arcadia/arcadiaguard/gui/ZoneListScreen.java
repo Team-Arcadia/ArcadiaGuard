@@ -60,6 +60,7 @@ public final class ZoneListScreen extends Screen {
     // Footer fixed buttons (rebuilt each init)
     private CartographiaButton teleportBtn;
     private CartographiaButton detailsBtn;
+    private CartographiaButton deleteBtn;
     private CartographiaButton createBtn;
     private CartographiaButton prevBtn;
     private CartographiaButton nextBtn;
@@ -163,9 +164,17 @@ public final class ZoneListScreen extends Screen {
                     PacketDistributor.sendToServer(GuiActionPayload.requestDetail(filteredZones.get(selectedIndex).name())); });
             addRenderableWidget(detailsBtn);
             cursor += BTN_W_ACTION + 8;
+
+            // Bouton Supprimer la zone selectionnee (avec confirmation)
+            deleteBtn = CartographiaButton.danger(cursor, fy + 6, BTN_W_ACTION, 16,
+                Component.translatable("arcadiaguard.gui.zonelist.btn_delete"),
+                b -> { if (selectedIndex >= 0 && selectedIndex < filteredZones.size()) openDeleteConfirm(); });
+            addRenderableWidget(deleteBtn);
+            cursor += BTN_W_ACTION + 8;
         } else {
             teleportBtn = null;
             detailsBtn  = null;
+            deleteBtn   = null;
         }
 
         createBtn = CartographiaButton.accent(cursor, fy + 6, BTN_W_CREATE, 16,
@@ -263,17 +272,22 @@ public final class ZoneListScreen extends Screen {
         g.drawString(font, "ArcadiaGuard", hx + 20, hy + 1, Colors.ACCENT, false);
         g.drawString(font, Component.translatable("arcadiaguard.gui.zonelist.subtitle").getString(), hx + 20, hy + 11, Colors.TEXT_MUTE, false);
 
+        // Header droit : [ DEBUG ACTIF ]  #X zones — positionnement pour eviter l'overlap.
+        int rightEdge = gx + GUI_W - 8;
         if (debugMode) {
-            int dbx = gx + GUI_W - 100;
-            g.fill(dbx, hy, dbx + 90, hy + 14, Colors.GOOD & 0xFFFFFF | 0x30000000);
-            g.fill(dbx, hy, dbx + 90, hy + 1, Colors.GOOD);
-            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonelist.debug_active").getString(), dbx + 45, hy + 3, Colors.GOOD);
+            int dbw = 90;
+            int dbx = rightEdge - dbw;
+            g.fill(dbx, hy, dbx + dbw, hy + 14, Colors.GOOD & 0xFFFFFF | 0x30000000);
+            g.fill(dbx, hy, dbx + dbw, hy + 1, Colors.GOOD);
+            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonelist.debug_active").getString(), dbx + dbw / 2, hy + 3, Colors.GOOD);
+            rightEdge = dbx - 10; // laisse 10px d'espace avant le compteur
         }
 
         int zoneCount = filteredZones.size();
         String zoneCountKey = "arcadiaguard.gui.zonelist.zone_count." + (zoneCount == 1 ? "one" : "other");
-        g.drawString(font, Component.translatable(zoneCountKey, zoneCount).getString(),
-            gx + GUI_W - (debugMode ? 106 : 70), hy + 6, Colors.TEXT_MUTE, false);
+        String zoneCountText = Component.translatable(zoneCountKey, zoneCount).getString();
+        int zoneCountW = font.width(zoneCountText);
+        g.drawString(font, zoneCountText, rightEdge - zoneCountW, hy + 6, Colors.TEXT_MUTE, false);
         GuiTextures.dividerH(g, gx + 8, gy + HEADER_H, GUI_W - 16);
     }
 
@@ -572,6 +586,28 @@ public final class ZoneListScreen extends Screen {
 
     // ── Interactions ─────────────────────────────────────────────────────────────
 
+    /** Timestamp + index pour detecter un double-clic sur une zone de la table. */
+    private long lastClickAt = 0;
+    private int  lastClickIdx = -1;
+
+    private void openDeleteConfirm() {
+        if (selectedIndex < 0 || selectedIndex >= filteredZones.size()) return;
+        String zoneName = filteredZones.get(selectedIndex).name();
+        minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(
+            confirmed -> {
+                minecraft.setScreen(this);
+                if (confirmed) {
+                    PacketDistributor.sendToServer(GuiActionPayload.deleteZone(zoneName));
+                    selectedIndex = -1;
+                }
+            },
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.title"),
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName),
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.yes"),
+            Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.no")
+        ));
+    }
+
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (super.mouseClicked(mx, my, button)) return true;
@@ -618,8 +654,16 @@ public final class ZoneListScreen extends Screen {
             if (idx >= 0 && idx < filteredZones.size()) {
                 int prevSelected = selectedIndex;
                 selectedIndex = idx;
-                // Rebuild footer buttons to show/hide Téléporter+Détails based on new selection
-                if ((prevSelected < 0) != (selectedIndex < 0)) rebuildWidgets();
+                // Double-clic sur la meme zone -> ouvre le detail
+                long now = System.currentTimeMillis();
+                if (idx == lastClickIdx && now - lastClickAt < 400) {
+                    PacketDistributor.sendToServer(GuiActionPayload.requestDetail(filteredZones.get(idx).name()));
+                    lastClickAt = 0; lastClickIdx = -1;
+                    return true;
+                }
+                lastClickAt = now;
+                lastClickIdx = idx;
+                if ((prevSelected < 0) != (selectedIndex < 0) || prevSelected != selectedIndex) rebuildWidgets();
                 return true;
             }
         }

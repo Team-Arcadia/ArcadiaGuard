@@ -53,6 +53,7 @@ public final class ZoneDetailScreen extends Screen {
     // ── Instance fields ──────────────────────────────────────────────────────────
 
     private final Screen parent;
+    public Screen getParentScreen() { return parent; }
     private Detail detail;
 
     private int gx, gy;
@@ -1011,6 +1012,15 @@ public final class ZoneDetailScreen extends Screen {
         int mc2 = detail.members().size();
         String mcKey = "arcadiaguard.gui.zonedetail.stat_members." + (mc2 == 1 ? "one" : "other");
         g.drawString(font, Component.translatable(mcKey, mc2).getString(), cx, cy + 12, Colors.TEXT_MUTE, false);
+        // Bouton "+" inline aligne sur la section Members (plus logique qu'en footer).
+        int addX = cx + cw - 16;
+        boolean addHov = mx >= addX && mx < addX + 14 && my >= cy && my < cy + 14;
+        g.fill(addX, cy, addX + 14, cy + 14, addHov ? Colors.accentTint(0x30) : Colors.BG_2);
+        g.drawCenteredString(font, "+", addX + 7, cy + 3, addHov ? Colors.ACCENT_HI : Colors.ACCENT);
+        hit(addX, cy, 14, 14, () -> {
+            popup = new PopupState.WhitelistInput();
+            if (whitelistBox != null) setFocused(whitelistBox);
+        });
         cy += 26;
         GuiTextures.dividerH(g, cx - 2, cy, cw); cy += 2;
 
@@ -1339,6 +1349,21 @@ public final class ZoneDetailScreen extends Screen {
                 popup = new PopupState.None();
                 return true;
             }
+        }
+        // ENTER/KP_ENTER : confirme les popups d'input (whitelist add, parent)
+        if ((keyCode == 257 || keyCode == 335)
+                && (popup instanceof PopupState.WhitelistInput || popup instanceof PopupState.ParentInput)) {
+            if (popup instanceof PopupState.WhitelistInput && whitelistBox != null) {
+                String name = whitelistBox.getValue().trim();
+                if (!name.isEmpty())
+                    PacketDistributor.sendToServer(GuiActionPayload.whitelistAdd(detail.name(), name));
+                whitelistBox.setValue("");
+            } else if (popup instanceof PopupState.ParentInput && parentBox != null) {
+                PacketDistributor.sendToServer(GuiActionPayload.setParent(detail.name(), parentBox.getValue().trim()));
+                parentBox.setValue("");
+            }
+            popup = new PopupState.None();
+            return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
