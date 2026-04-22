@@ -60,6 +60,7 @@ public final class ZoneDetailScreen extends Screen {
     private int flagScroll   = 0;
     private int memberScroll = 0;
     private String hoveredFlagDesc = "";
+    private String pickerHoveredDesc = "";
 
     private PopupState popup = new PopupState.None();
     private final List<Hitbox> hitboxes = new ArrayList<>();
@@ -77,6 +78,7 @@ public final class ZoneDetailScreen extends Screen {
     private EditBox whitelistBox;
     private EditBox parentBox;
     private EditBox flagSearchBox;
+    private EditBox activeFlagSearchBox;
     private EditBox[] coordBoxes;
 
     // Footer buttons (recreated each init)
@@ -142,6 +144,17 @@ public final class ZoneDetailScreen extends Screen {
             .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
         flagSearchBox.setVisible(false);
         addRenderableWidget(flagSearchBox);
+
+        // Search box persistante au-dessus de la colonne FLAGS (filtre live la liste
+        // des flags deja configures sans ouvrir le popup d'ajout).
+        activeFlagSearchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, 0, 0, 100, 14,
+            Component.translatable("arcadiaguard.gui.zone_detail.flag_search_hint"));
+        activeFlagSearchBox.setMaxLength(40);
+        activeFlagSearchBox.setBordered(false);
+        activeFlagSearchBox.setTextColor(Colors.TEXT);
+        activeFlagSearchBox.setHint(Component.translatable("arcadiaguard.gui.zonedetail.flag_search_box.hint")
+            .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+        addRenderableWidget(activeFlagSearchBox);
 
         // S-H20 : search box pour l'ItemBlocksPicker
         itemSearchBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, 0, 0, 100, 14,
@@ -314,9 +327,12 @@ public final class ZoneDetailScreen extends Screen {
             closeHov ? Colors.DANGER : Colors.TEXT_MUTE);
         GuiTextures.dividerH(g, px + 4, py + 22, pw - 8);
 
-        int rowHeaderH = 14;
-        int rowY1 = py + 32;
-        int rowY2 = py + 82;
+        // rowHeaderH augmente de 14 -> 20 pour eviter que le label "Corner A/B"
+        // se superpose verticalement avec les labels X/Y/Z situes juste au-dessus
+        // des EditBox (espace vertical garantit 10+ px entre les deux lignes).
+        int rowHeaderH = 20;
+        int rowY1 = py + 30;
+        int rowY2 = py + 88;
         int cellW = (pw - 24) / 3;
         int cellH = 16;
 
@@ -597,10 +613,33 @@ public final class ZoneDetailScreen extends Screen {
             : Component.translatable("arcadiaguard.gui.zonedetail.no_parent_flags").getString();
         g.drawString(font, parentInfo, cx, cy + 12, Colors.TEXT_MUTE, false);
         cy += 26;
+        // Searchbox persistante au-dessus de la liste des flags actifs (filtre live).
+        if (activeFlagSearchBox != null) {
+            g.fill(cx, cy, cx + cw, cy + 18, Colors.BG_0);
+            g.fill(cx, cy,      cx + cw, cy + 1,  Colors.ACCENT_LO);
+            g.fill(cx, cy + 17, cx + cw, cy + 18, Colors.ACCENT_LO);
+            activeFlagSearchBox.setX(cx + 4);
+            activeFlagSearchBox.setY(cy + 3);
+            activeFlagSearchBox.setWidth(cw - 8);
+            activeFlagSearchBox.setVisible(!viewZone);
+        }
+        cy += 22;
         GuiTextures.dividerH(g, cx - 2, cy, cw); cy += 2;
 
+        String activeSearch = activeFlagSearchBox == null ? "" : activeFlagSearchBox.getValue().toLowerCase().trim();
+        // Afficher les flags dont la source est ZONE_OWN, PARENT, ou DIM (si inheritDimFlags=true).
+        // SOURCE_NONE = flag non configure -> cache.
+        // SOURCE_DIM + inheritDimFlags=false -> cache (le client respecte le toggle).
         List<FlagEntry> flags = detail.flags().stream()
-            .filter(f -> !f.inherited())
+            .filter(f -> {
+                byte src = f.source();
+                if (src == FlagEntry.SOURCE_NONE) return false;
+                if (src == FlagEntry.SOURCE_DIM && !detail.inheritDimFlags()) return false;
+                return true;
+            })
+            .filter(f -> activeSearch.isEmpty()
+                || f.label().toLowerCase().contains(activeSearch)
+                || f.id().toLowerCase().contains(activeSearch))
             .toList();
 
         if (flags.isEmpty()) {
@@ -609,7 +648,8 @@ public final class ZoneDetailScreen extends Screen {
             g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.no_flags_hint").getString(), cx + cw / 2,
                 cy + 32, Colors.ACCENT_LO);
         } else {
-            int listH  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4;
+            // listH reduit de 22 pour compenser la searchbox persistante au-dessus.
+            int listH  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4 - 22;
             int maxVis = listH / FLAG_H;
             int end    = Math.min(flagScroll + maxVis + 1, flags.size());
 
@@ -624,7 +664,15 @@ public final class ZoneDetailScreen extends Screen {
                     if (!f.description().isEmpty()) hoveredFlagDesc = Component.translatable(f.description()).getString();
                 }
 
-                g.drawString(font, f.label(), cx + 4, iy + 6, Colors.TEXT, false);
+                // Couleur label : plein pour override local, grise pour herite (parent ou dim).
+                // Un petit indicateur couleur a gauche permet de distinguer visuellement la source.
+                int labelColor = (f.source() == FlagEntry.SOURCE_ZONE_OWN) ? Colors.TEXT : Colors.TEXT_MUTE;
+                if (f.source() == FlagEntry.SOURCE_DIM) {
+                    g.fill(cx, iy + 4, cx + 2, iy + FLAG_H - 4, Colors.ACCENT);
+                } else if (f.source() == FlagEntry.SOURCE_PARENT) {
+                    g.fill(cx, iy + 4, cx + 2, iy + FLAG_H - 4, Colors.VERDIGRIS);
+                }
+                g.drawString(font, f.label(), cx + 4, iy + 6, labelColor, false);
 
                 int bx = cx + cw - 34;
                 int rx = bx - 16;
@@ -644,7 +692,9 @@ public final class ZoneDetailScreen extends Screen {
                 } else {
                     String preview = f.type() == FlagEntry.TYPE_INT ? f.stringValue()
                         : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
-                    g.drawString(font, preview, bx - font.width(preview) + 30, iy + 7, Colors.TEXT_MUTE, false);
+                    // Preview a gauche de la fleche (meme pattern que DimDetailScreen) pour
+                    // eviter le chevauchement avec le bouton ">" positionne a bx+20..bx+34.
+                    g.drawString(font, preview, bx - 2 - font.width(preview), iy + 7, Colors.TEXT_MUTE, false);
                     boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
                     g.fill(bx + 20, iy + 4, bx + 34, iy + FLAG_H - 4,
                         hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
@@ -726,12 +776,15 @@ public final class ZoneDetailScreen extends Screen {
         }
         GuiTextures.dividerH(g, px + 4, searchY + 20, pw - 8);
 
+        // Reserve un encart description en bas du picker (meme pattern que l'onglet FLAGS).
+        int DESC_H_PICKER = 36;
         int listTop = searchY + 22;
-        int listH   = ph - (listTop - py) - 16;
+        int listH   = ph - (listTop - py) - DESC_H_PICKER - 22;
         int maxVis  = listH / PICKER_FLAG_H;
         List<FlagEntry> filtered = pickerFiltered();
         flagPickerScroll = Mth.clamp(flagPickerScroll, 0, Math.max(0, filtered.size() - maxVis));
         int end = Math.min(flagPickerScroll + maxVis + 1, filtered.size());
+        pickerHoveredDesc = "";
 
         for (int i = flagPickerScroll; i < end; i++) {
             FlagEntry f = filtered.get(i);
@@ -753,6 +806,11 @@ public final class ZoneDetailScreen extends Screen {
                 : Component.translatable("arcadiaguard.gui.zonedetail.flag_type.list").getString();
             g.drawString(font, typeTag, px + pw - 8 - font.width(typeTag), iy + 7, Colors.TEXT_MUTE, false);
             GuiTextures.dividerH(g, px + 4, iy + PICKER_FLAG_H - 1, pw - 8);
+
+            // Capture description du flag survole pour l'afficher dans l'encart en bas.
+            if (hov && f.description() != null && !f.description().isEmpty()) {
+                pickerHoveredDesc = Component.translatable(f.description()).getString();
+            }
         }
 
         if (filtered.isEmpty()) {
@@ -766,6 +824,25 @@ public final class ZoneDetailScreen extends Screen {
                 / Math.max(1, filtered.size() - maxVis);
             g.fill(trackX, listTop, trackX + 3, listTop + listH, Colors.BG_0);
             g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, Colors.ACCENT_LO);
+        }
+
+        // Encart description survol (meme style que l'onglet FLAGS).
+        int dy = py + ph - DESC_H_PICKER - 18;
+        GuiTextures.dividerH(g, px + 4, dy, pw - 8);
+        g.fill(px + 6, dy + 2, px + pw - 6, dy + DESC_H_PICKER, Colors.BG_1);
+        g.fill(px + 6, dy + 2, px + 8, dy + DESC_H_PICKER, Colors.ACCENT_LO);
+        String descText = pickerHoveredDesc.isEmpty()
+            ? Component.translatable("arcadiaguard.gui.zonedetail.flag_hover_hint").getString()
+            : pickerHoveredDesc;
+        int descColor = pickerHoveredDesc.isEmpty() ? Colors.TEXT_MUTE : Colors.TEXT;
+        int maxW = pw - 22;
+        java.util.List<net.minecraft.util.FormattedCharSequence> descLines =
+            font.split(net.minecraft.network.chat.Component.literal(descText), maxW);
+        int ly = dy + 6;
+        int maxLines = Math.min(descLines.size(), 2);
+        for (int i = 0; i < maxLines; i++) {
+            g.drawString(font, descLines.get(i), px + 12, ly, descColor, false);
+            ly += 10;
         }
 
         g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.picker_legend").getString(),
@@ -1067,7 +1144,9 @@ public final class ZoneDetailScreen extends Screen {
             final MemberEntry mm = m;
             int rx = cx + cw - 30;
             hit(rx, iy + 4, 26, MBR_H - 8, () ->
-                PacketDistributor.sendToServer(GuiActionPayload.whitelistRemove(detail.name(), mm.name())));
+                // Envoie l'UUID (pas le name) : evite un lookup ProfileCache serveur qui
+                // peut echouer si le joueur n'a jamais ete vu depuis dernier boot.
+                PacketDistributor.sendToServer(GuiActionPayload.whitelistRemove(detail.name(), mm.uuid())));
         }
 
         if (members.isEmpty())
