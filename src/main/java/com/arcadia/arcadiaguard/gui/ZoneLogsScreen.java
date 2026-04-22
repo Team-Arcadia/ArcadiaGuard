@@ -58,7 +58,7 @@ public final class ZoneLogsScreen extends Screen {
 
         // Buttons right-aligned; EditBoxes fill available space to the left
         int editW = Math.max(20, Math.min(140, (GUI_W - 250) / 2));
-        playerFilter = new EditBox(font, gx + 8, filterY, editW, 14, Component.translatable("arcadiaguard.gui.zone_logs.player_filter"));
+        playerFilter = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 8, filterY, editW, 14, Component.translatable("arcadiaguard.gui.zone_logs.player_filter"));
         playerFilter.setMaxLength(40);
         playerFilter.setBordered(false);
         playerFilter.setTextColor(Colors.TEXT);
@@ -66,7 +66,7 @@ public final class ZoneLogsScreen extends Screen {
             .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
         addRenderableWidget(playerFilter);
 
-        actionFilter = new EditBox(font, gx + 8 + editW + 12, filterY, editW, 14, Component.translatable("arcadiaguard.gui.zone_logs.action_filter"));
+        actionFilter = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 8 + editW + 12, filterY, editW, 14, Component.translatable("arcadiaguard.gui.zone_logs.action_filter"));
         actionFilter.setMaxLength(40);
         actionFilter.setBordered(false);
         actionFilter.setTextColor(Colors.TEXT);
