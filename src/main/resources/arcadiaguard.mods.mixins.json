@@ -11,7 +11,9 @@
     "MagnetUpgradeWrapperMixin"
   ],
   "server": [],
-  "client": [],
+  "client": [
+    "ActionProcessorMixin"
+  ],
   "injectors": {
     "defaultRequire": 0
   }

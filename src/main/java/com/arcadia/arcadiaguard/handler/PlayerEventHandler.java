@@ -38,6 +38,8 @@ public final class PlayerEventHandler
     private final Object2IntOpenHashMap<UUID> tickCounter = new Object2IntOpenHashMap<>();
     private final Map<UUID, String> playerCurrentZone = new ConcurrentHashMap<>();
     private final Map<UUID, BlockPos> lastSafePos = new ConcurrentHashMap<>();
+    /** S-H21 : dernier etat envoye au client pour parcool_actions. */
+    private final Map<UUID, Boolean> playerParcoolBlocked = new ConcurrentHashMap<>();
 
     public PlayerEventHandler(GuardService guard, ApotheosisCharmHandler charmHandler) {
         this.guard = guard;
@@ -171,6 +173,20 @@ public final class PlayerEventHandler
         // Track last safe position (outside any zone OR in a zone where ENTRY is allowed)
         if (newZoneName == null) {
             lastSafePos.put(id, pos);
+        }
+
+        // S-H21 : sync du flag PARCOOL_ACTIONS au client (necessaire car l'action
+        // parcool s'execute cote client local, pas sur le serveur).
+        boolean parcoolBlocked = false;
+        if (zoneOpt.isPresent() && !guard.shouldBypass(player) && !guard.isZoneMember(player, zoneOpt.get())) {
+            parcoolBlocked = guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.PARCOOL_ACTIONS, player.serverLevel());
+        }
+        Boolean wasBlocked = playerParcoolBlocked.get(id);
+        if (wasBlocked == null || wasBlocked != parcoolBlocked) {
+            playerParcoolBlocked.put(id, parcoolBlocked);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                player,
+                new com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload(parcoolBlocked));
         }
 
         // HEAL_AMOUNT / FEED_AMOUNT (valeurs par seconde → on tick au pas ZONE_CHECK_INTERVAL=10)
