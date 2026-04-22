@@ -1,6 +1,7 @@
 package com.arcadia.arcadiaguard.mixin;
 
 import com.arcadia.arcadiaguard.client.ClientParcoolState;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,7 +31,7 @@ public abstract class ActionProcessorMixin {
         cancellable = true,
         remap = false
     )
-    private void arcadiaguard$maybeCancelParcoolTick(Object event, CallbackInfo ci) {
+    private void arcadiaguard$maybeCancelParcoolTick(PlayerTickEvent.Post event, CallbackInfo ci) {
         if (!LOADED_LOGGED) {
             LOADED_LOGGED = true;
             com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
@@ -49,21 +50,4 @@ public abstract class ActionProcessorMixin {
         }
     }
 
-    /**
-     * ParCool a plusieurs points d'entree pour triggerer les actions (KeyInput, ClientTick).
-     * On intercepte aussi processAction pour catch les cas ou l'action bypasse onTick.
-     */
-    @Inject(
-        method = "processAction",
-        at = @At("HEAD"),
-        cancellable = true,
-        remap = false,
-        require = 0
-    )
-    private void arcadiaguard$maybeCancelProcessAction(Object player, Object parkour,
-            Object entries, boolean isClient, Object action, CallbackInfo ci) {
-        try {
-            if (ClientParcoolState.isBlocked()) ci.cancel();
-        } catch (Throwable t) { /* fallback silent */ }
-    }
 }

@@ -257,10 +257,8 @@ public final class ZoneDetailScreen extends Screen {
             });
         addRenderableWidget(footerItemBlocksBtn);
 
-        footerDeleteBtn = CartographiaButton.danger(btX5, bfy, btW5, 16,
-            Component.translatable("arcadiaguard.gui.zonedetail.delete"),
-            b -> popup = new PopupState.ConfirmDelete());
-        addRenderableWidget(footerDeleteBtn);
+        // Bouton Supprimer retire du sous-menu (tester feedback): utiliser celui du main menu a la place.
+        footerDeleteBtn = null;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────────
