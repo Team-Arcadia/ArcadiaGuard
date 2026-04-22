@@ -438,6 +438,7 @@
   "arcadiaguard.flag.waystone-use.description": "[Waystones] Autorise/refuse l'utilisation des waystones dans la zone.",
   "arcadiaguard.flag.rechiseled-use.description": "[Rechiseled] Autorise/refuse l'utilisation des blocs Rechiseled dans la zone.",
   "arcadiaguard.flag.ars-additions-scroll.description": "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",
+  "arcadiaguard.flag.ars-warp-scroll.description": "[Ars Nouveau] Bloque spécifiquement le warp scroll (téléport). Indépendant de ars-spell-cast.",
   "arcadiaguard.flag.chunkload.description": "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).",
   "arcadiaguard.flag.fly.description": "Bloque le vol vanilla (mayfly) dans la zone. Creative/spectator/OP ignorés.",
   "arcadiaguard.flag.apotheosis-fly.description": "[Apotheosis] Bloque le vol via attribut neoforge:creative_flight (affixe unbound).",

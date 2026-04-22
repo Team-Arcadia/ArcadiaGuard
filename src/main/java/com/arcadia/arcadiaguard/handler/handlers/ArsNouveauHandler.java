@@ -83,22 +83,23 @@ public final class ArsNouveauHandler extends AbstractSpellHandler
         String path = key.getPath();
         if (!"warp_scroll".equals(path) && !"stable_warp_scroll".equals(path)) return;
 
-        // Bloque TOUJOURS le warp scroll si ARS_SPELL_CAST=deny a la pos joueur
-        // (avant: seulement si shift OU destination, ce qui laissait passer le tp normal).
+        // 2 flags : ARS_WARP_SCROLL (specifique) OU ARS_SPELL_CAST (general).
+        // Le warp scroll est bloque si l'UN des deux est deny a la pos du joueur OU de la destination.
         BlockPos playerPos = player.blockPosition();
-        if (guardService.blockIfFlagDenied(player, playerPos, BuiltinFlags.ARS_SPELL_CAST,
-                key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
-            event.setCanceled(true);
-            return;
-        }
-
-        // Check egalement la destination si le scroll a une pos enregistree.
         BlockPos destination = warpScrollDestination(stack);
-        if (destination != null
-                && guardService.blockIfFlagDenied(player, destination, BuiltinFlags.ARS_SPELL_CAST,
-                    key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) {
+
+        if (checkWarpDenied(player, playerPos, key)
+                || (destination != null && checkWarpDenied(player, destination, key))) {
             event.setCanceled(true);
         }
+    }
+
+    private boolean checkWarpDenied(ServerPlayer player, BlockPos pos, ResourceLocation key) {
+        // Priorite au flag specifique ars-warp-scroll pour le message, puis fallback sur ars-spell-cast.
+        if (guardService.blockIfFlagDenied(player, pos, BuiltinFlags.ARS_WARP_SCROLL,
+                key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked()) return true;
+        return guardService.blockIfFlagDenied(player, pos, BuiltinFlags.ARS_SPELL_CAST,
+                key.toString(), ArcadiaGuardConfig.MESSAGE_ARS_NOUVEAU.get()).blocked();
     }
 
     @Override
