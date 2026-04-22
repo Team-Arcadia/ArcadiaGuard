@@ -70,12 +70,29 @@ public final class ZoneManager implements IZoneManager {
             net.minecraft.core.registries.Registries.DIMENSION,
             net.minecraft.resources.ResourceLocation.parse(zone.dimension())));
         final Level level = resolvedLevel != null ? resolvedLevel : player.serverLevel();
+        // Dim flags pour determiner la source d'un flag herite (utilise pour le rendu client).
+        java.util.Map<String, Object> dimFlags = com.arcadia.arcadiaguard.ArcadiaGuard.dimFlagStore().flags(zone.dimension());
+        @SuppressWarnings("unchecked")
+        java.util.function.Function<String, Optional<ProtectedZone>> parentLookup =
+            n -> (Optional<ProtectedZone>)(Optional<?>) this.internal.get(level, n);
         List<FlagEntry> flags = new ArrayList<>();
         for (Flag<?> flag : this.flagRegistry.all()) {
             String mod = flag.requiredMod();
             if (!mod.isEmpty() && !ModList.get().isLoaded(mod)) continue;
             Object raw = zone.flagValues().get(flag.id());
             boolean inherited = (raw == null);
+            // Calcul de la source : OWN si override local, PARENT si parent chain a override,
+            // DIM si dim flags configure et zone.inheritDimFlags, sinon NONE.
+            byte source;
+            if (raw != null) {
+                source = FlagEntry.SOURCE_ZONE_OWN;
+            } else if (zone.parent() != null && parentHasOverride(zone, flag, parentLookup)) {
+                source = FlagEntry.SOURCE_PARENT;
+            } else if (zone.inheritDimFlags() && dimFlags != null && dimFlags.containsKey(flag.id())) {
+                source = FlagEntry.SOURCE_DIM;
+            } else {
+                source = FlagEntry.SOURCE_NONE;
+            }
             byte type;
             boolean boolVal = false;
             String strVal;
@@ -83,20 +100,22 @@ public final class ZoneManager implements IZoneManager {
                 type = FlagEntry.TYPE_BOOL;
                 if (raw instanceof Boolean b) { boolVal = b; }
                 else {
-                    @SuppressWarnings("unchecked")
-                    java.util.function.Function<String, Optional<ProtectedZone>> lookup =
-                        n -> (Optional<ProtectedZone>)(Optional<?>) this.internal.get(level, n);
-                    boolVal = FlagResolver.resolve(zone, bf, lookup);
+                    boolVal = FlagResolver.resolve(zone, bf, parentLookup);
                 }
                 strVal = Boolean.toString(boolVal);
             } else if (flag instanceof IntFlag intF) {
                 type = FlagEntry.TYPE_INT;
-                int v = raw instanceof Integer i ? i : intF.defaultValue();
+                int v;
+                if (raw instanceof Integer i) v = i;
+                else if (source == FlagEntry.SOURCE_DIM && dimFlags.get(flag.id()) instanceof Integer di) v = di;
+                else v = intF.defaultValue();
                 strVal = Integer.toString(v);
             } else if (flag instanceof ListFlag) {
                 type = FlagEntry.TYPE_LIST;
                 @SuppressWarnings("unchecked")
-                List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
+                List<String> v = raw instanceof List<?> l ? (List<String>) l
+                    : (source == FlagEntry.SOURCE_DIM && dimFlags.get(flag.id()) instanceof List<?> dl
+                        ? (List<String>) dl : List.of());
                 String joined = String.join(",", v);
                 strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
             } else { continue; }
@@ -104,7 +123,7 @@ public final class ZoneManager implements IZoneManager {
             // Component.translatable() avec sa locale.
             String desc = "arcadiaguard.flag." + flag.id() + ".description";
             flags.add(new FlagEntry(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
-                boolVal, inherited, desc != null ? desc : "", type, strVal));
+                boolVal, inherited, desc != null ? desc : "", type, strVal, source));
         }
         List<MemberEntry> members = new ArrayList<>();
         for (UUID uuid : zone.whitelistedPlayers()) {
@@ -122,6 +141,24 @@ public final class ZoneManager implements IZoneManager {
             zone.parent(), flags, members, zone.enabled(), zone.inheritDimFlags(),
             blockedItems);
         PacketDistributor.sendToPlayer(player, new ZoneDetailPayload(detail));
+    }
+
+    /**
+     * Parcourt la parent chain d'une zone pour determiner si un ancetre a un override
+     * explicite pour ce flag. Utilise pour marquer SOURCE_PARENT cote payload GUI.
+     */
+    private boolean parentHasOverride(ProtectedZone zone, Flag<?> flag,
+                                       java.util.function.Function<String, Optional<ProtectedZone>> parentLookup) {
+        if (zone.parent() == null) return false;
+        int depth = 0;
+        ProtectedZone cur = parentLookup.apply(zone.parent()).orElse(null);
+        while (cur != null && depth < 10) {
+            if (cur.flagValues().get(flag.id()) != null) return true;
+            if (cur.parent() == null) return false;
+            cur = parentLookup.apply(cur.parent()).orElse(null);
+            depth++;
+        }
+        return false;
     }
 
     public void sendRefreshedList(ServerPlayer player) {
