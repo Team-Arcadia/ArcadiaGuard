@@ -23,18 +23,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.Level;
 
 public final class GuardService implements IGuardService {
 
     public record GuardResult(boolean blocked, String zoneName) {}
-
-    /**
-     * C6: profiler push/pop gated behind a system property so they don't run on
-     * every hot-path call in production. Enable with {@code -Darcadiaguard.profile=true}.
-     */
-    private static final boolean PROFILE = Boolean.getBoolean("arcadiaguard.profile");
 
     private final ZoneManager zoneManager;
     private final ArcadiaGuardAuditLogger auditLogger;
@@ -181,23 +174,16 @@ public final class GuardService implements IGuardService {
     }
 
     public GuardResult blockIfProtected(ServerPlayer player, BlockPos pos, String actionName, String featureKey, String message) {
-        // C6: only push/pop profiler when explicitly enabled via system property
-        ProfilerFiller profiler = PROFILE ? player.getServer().getProfiler() : null;
-        if (profiler != null) profiler.push("arcadiaguard");
-        try {
-            if (shouldBypass(player)) return new GuardResult(false, "");
+        if (shouldBypass(player)) return new GuardResult(false, "");
 
-            ZoneCheckResult result = this.zoneManager.check(player, pos);
-            if (!result.blocked()) return new GuardResult(false, "");
+        ZoneCheckResult result = this.zoneManager.check(player, pos);
+        if (!result.blocked()) return new GuardResult(false, "");
 
-            // Actionbar (true) au lieu du chat pour eviter le spam lors
-            // d'actions repetitives (casse, pose, interactions, etc.).
-            player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
-            this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, result.zoneName(), pos);
-            return new GuardResult(true, result.zoneName());
-        } finally {
-            if (profiler != null) profiler.pop();
-        }
+        // Actionbar (true) au lieu du chat pour eviter le spam lors
+        // d'actions repetitives (casse, pose, interactions, etc.).
+        player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
+        this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, result.zoneName(), pos);
+        return new GuardResult(true, result.zoneName());
     }
 
     /**
@@ -207,37 +193,30 @@ public final class GuardService implements IGuardService {
      */
     public GuardResult blockIfFlagDenied(ServerPlayer player, BlockPos pos, BooleanFlag flag,
                                          String actionName, String message) {
-        // C6: only push/pop profiler when explicitly enabled via system property
-        ProfilerFiller profiler = PROFILE ? player.getServer().getProfiler() : null;
-        if (profiler != null) profiler.push("arcadiaguard");
-        try {
-            if (shouldBypass(player)) return new GuardResult(false, "");
+        if (shouldBypass(player)) return new GuardResult(false, "");
 
-            Optional<ProtectedZone> zoneOpt = this.zoneManager.checkZone(player, pos);
-            Optional<Boolean> resolved;
-            String zoneName;
-            if (zoneOpt.isPresent()) {
-                @SuppressWarnings("unchecked")
-                Function<String, Optional<ProtectedZone>> lookup = name ->
-                    (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(player.serverLevel(), name);
-                Function<String, java.util.Map<String, Object>> dimLookup = dim -> this.dimFlagStore.flags(dim);
-                resolved = FlagResolver.resolveOptional(zoneOpt.get(), flag, lookup, dimLookup);
-                zoneName = zoneOpt.get().name();
-            } else {
-                // Pas de zone → fallback direct sur les flags de dimension.
-                resolved = resolveDimFlag(player.level(), flag);
-                zoneName = "(dimension)";
-            }
-
-            // Flag non défini quelque part → le mod n'intervient pas.
-            if (resolved.isEmpty() || resolved.get()) return new GuardResult(false, "");
-
-            player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
-            this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, zoneName, pos);
-            return new GuardResult(true, zoneName);
-        } finally {
-            if (profiler != null) profiler.pop();
+        Optional<ProtectedZone> zoneOpt = this.zoneManager.checkZone(player, pos);
+        Optional<Boolean> resolved;
+        String zoneName;
+        if (zoneOpt.isPresent()) {
+            @SuppressWarnings("unchecked")
+            Function<String, Optional<ProtectedZone>> lookup = name ->
+                (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(player.serverLevel(), name);
+            Function<String, java.util.Map<String, Object>> dimLookup = dim -> this.dimFlagStore.flags(dim);
+            resolved = FlagResolver.resolveOptional(zoneOpt.get(), flag, lookup, dimLookup);
+            zoneName = zoneOpt.get().name();
+        } else {
+            // Pas de zone → fallback direct sur les flags de dimension.
+            resolved = resolveDimFlag(player.level(), flag);
+            zoneName = "(dimension)";
         }
+
+        // Flag non défini quelque part → le mod n'intervient pas.
+        if (resolved.isEmpty() || resolved.get()) return new GuardResult(false, "");
+
+        player.displayClientMessage(Component.translatable(message).withStyle(ChatFormatting.RED), true);
+        this.auditLogger.logBlockedAction(player.getGameProfile().getName(), actionName, zoneName, pos);
+        return new GuardResult(true, zoneName);
     }
 
     /**
