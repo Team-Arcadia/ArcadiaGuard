@@ -36,6 +36,11 @@ public final class ArcadiaGuardClient {
                     Screen current = mc.screen;
                     if (current instanceof ZoneListScreen zls) {
                         zls.refresh(payload);
+                    } else if (current instanceof ZoneDetailScreen zds
+                            && zds.getParentScreen() instanceof ZoneListScreen pzls) {
+                        // Update silencieux du parent ZoneListScreen sans navigation —
+                        // actualise le badge "sous zones" apres setParent sans fermer le detail.
+                        pzls.refresh(payload);
                     } else {
                         mc.setScreen(new ZoneListScreen(
                             payload.zones(),

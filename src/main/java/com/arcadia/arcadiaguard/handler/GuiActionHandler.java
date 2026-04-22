@@ -373,8 +373,10 @@ public final class GuiActionHandler {
         }
         postModify(player, zoneName, ZoneLifecycleEvent.ModifyZone.Kind.SET_PARENT,
             parentName.isEmpty() ? null : parentName, null);
-        // Ne PAS renvoyer le OpenGuiPayload ici : il ferme la ZoneDetailScreen et retombe
-        // sur la liste. postModify a deja renvoye le detail via sendDetailToPlayer.
+        // Renvoie la liste mise a jour pour que le badge "sous zones" s'actualise sur le
+        // parent. Le client gere intelligemment : si la ZoneDetailScreen est ouverte, il
+        // ne navigue pas (juste mise a jour du cache pour la prochaine ouverture de la liste).
+        ArcadiaGuard.zoneManager().sendRefreshedList(player);
     }
 
     /**
