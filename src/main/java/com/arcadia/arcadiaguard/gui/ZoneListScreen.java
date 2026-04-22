@@ -279,7 +279,7 @@ public final class ZoneListScreen extends Screen {
             int dbx = rightEdge - dbw;
             g.fill(dbx, hy, dbx + dbw, hy + 14, Colors.GOOD & 0xFFFFFF | 0x30000000);
             g.fill(dbx, hy, dbx + dbw, hy + 1, Colors.GOOD);
-            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonelist.debug_active").getString(), dbx + dbw / 2, hy + 3, Colors.GOOD);
+            g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonelist.debug_active").getString(), dbx + dbw / 2, hy + 4, Colors.GOOD);
             rightEdge = dbx - 10; // laisse 10px d'espace avant le compteur
         }
 
