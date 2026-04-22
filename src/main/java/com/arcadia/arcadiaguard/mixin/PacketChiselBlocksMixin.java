@@ -26,7 +26,10 @@ public abstract class PacketChiselBlocksMixin {
     /** Rate-limiter : log l'echec une seule fois par session serveur. */
     private static boolean WARNED = false;
 
-    @Inject(method = "handle", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(
+        method = "handle(Lcom/supermartijn642/core/network/PacketContext;)V",
+        at = @At("HEAD"), cancellable = true, remap = false
+    )
     private void arcadiaguard$blockChisel(Object context, CallbackInfo ci) {
         try {
             Object player = context.getClass().getMethod("getPlayer").invoke(context);

@@ -24,7 +24,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "net.geforcemods.securitycraft.blocks.reinforced.ReinforcedPressurePlateBlock", remap = false)
 public abstract class ReinforcedPressurePlateBlockMixin {
 
-    @Inject(method = "entityInside", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(
+        method = "entityInside(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/Entity;)V",
+        at = @At("HEAD"), cancellable = true, remap = false
+    )
     private void arcadiaguard$blockPressurePlate(BlockState state, Level level, BlockPos pos,
             Entity entity, CallbackInfo ci) {
         if (level.isClientSide()) return;
