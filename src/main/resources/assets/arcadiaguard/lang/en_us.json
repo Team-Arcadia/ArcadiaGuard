@@ -443,6 +443,8 @@
   "arcadiaguard.flag.rechiseled-use.description": "[Rechiseled] Allow/deny use of Rechiseled blocks.",
   "arcadiaguard.flag.ars-additions-scroll.description": "[Ars Additions] Allow/deny use of Ars Additions scrolls.",
   "arcadiaguard.flag.ars-warp-scroll.description": "[Ars Nouveau] Blocks warp scroll (teleport) specifically. Independent of ars-spell-cast.",
+  "arcadiaguard.flag.carryon.description": "[Carry On] Blocks picking up and carrying blocks/entities via the Carry On mod.",
+  "arcadiaguard.message.carryon": "Carry On is disabled in this zone.",
   "arcadiaguard.flag.chunkload.description": "Force permanent chunk loading for the zone (ON green = ArcadiaGuard tickets).",
   "arcadiaguard.flag.fly.description": "Blocks flight in the zone (mayfly + creative_flight attribute from Apotheosis/Curios/etc.). Creative/spectator/OP ignored.",
   "arcadiaguard.flag.use-elytra.description": "Blocks elytra usage (flight/gliding) in the zone.",

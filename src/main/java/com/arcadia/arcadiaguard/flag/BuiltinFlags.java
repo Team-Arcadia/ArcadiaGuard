@@ -101,6 +101,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag RECHISELED_USE      = new BooleanFlag("rechiseled-use",      false, "[Rechiseled] Autorise/refuse l'utilisation des blocs Rechiseled dans la zone.",          "rechiseled");
     public static final BooleanFlag ARS_ADDITIONS_SCROLL = new BooleanFlag("ars-additions-scroll", false, "[Ars Additions] Autorise/refuse l'utilisation des parchemins Ars Additions.",         "ars_additions");
     public static final BooleanFlag ARS_WARP_SCROLL     = new BooleanFlag("ars-warp-scroll",     false, "[Ars Nouveau] Bloque specifiquement le warp scroll (teleport). Independant de ars-spell-cast.", "ars_nouveau");
+    public static final BooleanFlag CARRYON             = new BooleanFlag("carryon",             false, "[Carry On] Bloque le ramassage/transport de blocs et entites via le mod Carry On.", "carryon");
     public static final BooleanFlag CHUNKLOAD            = new BooleanFlag("chunkload",          false, "Force le chargement permanent des chunks de la zone (ON vert = tickets ArcadiaGuard).");
     public static final BooleanFlag FLY                  = new BooleanFlag("fly",                false, "Bloque le vol dans la zone (mayfly + attribut neoforge:creative_flight). Creative/spectator/OP ignores.");
 
