@@ -322,6 +322,48 @@ public final class GuiActionHandler {
     private static void whitelistAction(ServerPlayer player, GuiActionPayload p, boolean add) {
         String targetName = p.arg1();
         MinecraftServer server = player.getServer();
+
+        // REMOVE : pas besoin de ProfileCache. Cherche directement dans les membres existants
+        // de la zone par nom (case-insensitive) — permet de retirer un joueur inconnu du
+        // serveur / fake name / banni sans etre bloque par un lookup Mojang qui echoue.
+        if (!add) {
+            Level zoneLevel = resolveZoneLevel(player, p.zoneName());
+            @SuppressWarnings("unchecked")
+            var zoneOpt = (Optional<com.arcadia.arcadiaguard.zone.ProtectedZone>)(Optional<?>)
+                ArcadiaGuard.zoneManager().get(zoneLevel, p.zoneName());
+            if (zoneOpt.isEmpty()) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.zone_not_found", p.zoneName()).withStyle(ChatFormatting.RED));
+                return;
+            }
+            // Iteration sur memberRoles (Map<UUID, Role>) avec resolution du nom via ProfileCache
+            // best-effort (si le cache connaît le nom, on match). Sinon fallback sur comparaison
+            // par UUID string si l'admin a entre un UUID brut.
+            UUID matchedUuid = null;
+            String matchedName = targetName;
+            var cache = server.getProfileCache();
+            if (cache != null) {
+                for (UUID uuid : zoneOpt.get().memberRoles().keySet()) {
+                    var name = cache.get(uuid).map(GameProfile::getName).orElse(null);
+                    if (name != null && name.equalsIgnoreCase(targetName)) {
+                        matchedUuid = uuid;
+                        matchedName = name;
+                        break;
+                    }
+                }
+            }
+            // Fallback: essayer de parser targetName comme UUID direct
+            if (matchedUuid == null) {
+                try { matchedUuid = UUID.fromString(targetName); } catch (IllegalArgumentException ignored) {}
+            }
+            if (matchedUuid == null) {
+                player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
+                return;
+            }
+            postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_REMOVE, matchedUuid, matchedName);
+            return;
+        }
+
+        // ADD : on garde le ProfileCache lookup async (UUID authoritatif necessaire).
         // C2: ProfileCache.get(name) may block on a network lookup (HTTP miss).
         // Dispatch to background thread, then re-enter main thread for zone mutation.
         CompletableFuture.supplyAsync(() -> {
@@ -335,16 +377,14 @@ public final class GuiActionHandler {
             ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] ProfileCache lookup timed out for '{}'", targetName);
             return Optional.<GameProfile>empty();
         }).thenAcceptAsync(optProfile -> {
-            // Re-check: le joueur a pu se deconnecter pendant le lookup async.
             if (player.hasDisconnected() || !player.isAlive()) return;
             if (optProfile == null || optProfile.isEmpty()) {
                 player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.player_not_found", targetName).withStyle(ChatFormatting.RED));
                 return;
             }
             GameProfile profile = optProfile.get();
-            var kind = add ? ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_ADD
-                           : ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_REMOVE;
-            postModify(player, p.zoneName(), kind, profile.getId(), profile.getName());
+            postModify(player, p.zoneName(), ZoneLifecycleEvent.ModifyZone.Kind.WHITELIST_ADD,
+                profile.getId(), profile.getName());
         }, server);
     }
 
