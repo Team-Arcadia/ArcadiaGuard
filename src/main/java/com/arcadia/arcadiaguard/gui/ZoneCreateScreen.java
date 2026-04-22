@@ -40,7 +40,7 @@ public final class ZoneCreateScreen extends Screen {
         gx = (width  - GUI_W) / 2;
         gy = (height - GUI_H) / 2;
 
-        nameBox = new EditBox(font, gx + 14, gy + 55, GUI_W - 28, 16,
+        nameBox = new EditBox(font, gx + 14, gy + 57, GUI_W - 28, 16,
             Component.translatable("arcadiaguard.gui.zone_create.name_hint"));
         nameBox.setMaxLength(64);
         nameBox.setBordered(false);
