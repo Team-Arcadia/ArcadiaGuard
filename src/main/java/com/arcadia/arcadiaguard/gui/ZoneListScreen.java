@@ -285,15 +285,42 @@ public final class ZoneListScreen extends Screen {
 
         drawSectionLabel(g, sx, sy, Component.translatable("arcadiaguard.gui.zonelist.section_dimension").getString());
         sy += 12;
-        sy = renderDimRow(g, mx, my, sx, sy, "", Component.translatable("arcadiaguard.gui.zonelist.dim_all").getString(), Colors.ACCENT, countDim(""), false);
-        sy = renderDimRow(g, mx, my, sx, sy, "minecraft:overworld",  "Overworld", Colors.VERDIGRIS, countDim("minecraft:overworld"),  true);
-        sy = renderDimRow(g, mx, my, sx, sy, "minecraft:the_nether", "Nether",    Colors.DANGER,    countDim("minecraft:the_nether"),   true);
-        sy = renderDimRow(g, mx, my, sx, sy, "minecraft:the_end",    "The End",   Colors.ACCENT_HI, countDim("minecraft:the_end"),       true);
+
+        // Scroll clippe pour la liste des dimensions (peut deborder si beaucoup de dim mods).
+        int dimListTop = sy;
+        int filtersH = 8 + 12 + 3 * 18; // gap + label + 3 filter rows
+        int dimListBottom = gy + GUI_H - FOOTER_H - filtersH - 4;
+        if (dimListBottom < dimListTop + 36) dimListBottom = dimListTop + 36; // min safety
+        dimListAreaTop = dimListTop;
+        dimListAreaBottom = dimListBottom;
+
+        int totalRows = 4 + extraDims.size(); // all + OW + Nether + End + extras
+        int contentH = totalRows * 18;
+        int viewH = dimListBottom - dimListTop;
+        int maxScroll = Math.max(0, contentH - viewH);
+        sidebarScrollOffset = Mth.clamp(sidebarScrollOffset, 0, maxScroll);
+
+        g.enableScissor(gx, dimListTop, gx + SIDEBAR_W, dimListBottom);
+        int rowY = dimListTop - sidebarScrollOffset;
+        rowY = renderDimRow(g, mx, my, sx, rowY, "", Component.translatable("arcadiaguard.gui.zonelist.dim_all").getString(), Colors.ACCENT, countDim(""), false);
+        rowY = renderDimRow(g, mx, my, sx, rowY, "minecraft:overworld",  "Overworld", Colors.VERDIGRIS, countDim("minecraft:overworld"),  true);
+        rowY = renderDimRow(g, mx, my, sx, rowY, "minecraft:the_nether", "Nether",    Colors.DANGER,    countDim("minecraft:the_nether"),   true);
+        rowY = renderDimRow(g, mx, my, sx, rowY, "minecraft:the_end",    "The End",   Colors.ACCENT_HI, countDim("minecraft:the_end"),       true);
         for (String dim : extraDims) {
-            sy = renderDimRow(g, mx, my, sx, sy, dim, shortDim(dim), Colors.TEXT_MUTE, countDim(dim), true);
+            rowY = renderDimRow(g, mx, my, sx, rowY, dim, shortDim(dim), Colors.TEXT_MUTE, countDim(dim), true);
+        }
+        g.disableScissor();
+
+        // Indicateur scroll si overflow (barre verticale fine a droite).
+        if (maxScroll > 0) {
+            int barX = gx + SIDEBAR_W - 6;
+            int barH = Math.max(12, viewH * viewH / contentH);
+            int barY = dimListTop + (sidebarScrollOffset * (viewH - barH)) / maxScroll;
+            g.fill(barX, dimListTop, barX + 2, dimListBottom, 0x30FFFFFF);
+            g.fill(barX, barY, barX + 2, barY + barH, Colors.ACCENT_LO);
         }
 
-        sy += 8;
+        sy = dimListBottom + 8;
         drawSectionLabel(g, sx, sy, Component.translatable("arcadiaguard.gui.zonelist.section_filters").getString());
         sy += 12;
         int allCount    = allZones.size();
@@ -308,6 +335,10 @@ public final class ZoneListScreen extends Screen {
 
         GuiTextures.dividerV(g, gx + SIDEBAR_W, gy + HEADER_H, GUI_H - HEADER_H - FOOTER_H);
     }
+
+    private int sidebarScrollOffset = 0;
+    private int dimListAreaTop = 0;
+    private int dimListAreaBottom = 0;
 
     private Rect filterRow(GuiGraphics g, int mx, int my, int sx, int sy,
                            ParentFilter filter, String label, int count) {
@@ -546,20 +577,23 @@ public final class ZoneListScreen extends Screen {
         if (super.mouseClicked(mx, my, button)) return true;
         int imx = (int) mx, imy = (int) my;
 
-        // Sidebar — dim rows (gear takes priority over row)
-        for (DimHit dh : dimHits) {
-            if (dh.gear != null && dh.gear.hit(imx, imy)) {
-                if (!dh.dim.isEmpty()) {
-                    PacketDistributor.sendToServer(GuiActionPayload.requestDimDetail(dh.dim));
+        // Sidebar — dim rows (gear takes priority over row). Filtre les clics HORS de l'area
+        // scrollable car les rects existent meme pour les rows masques par scissor.
+        if (imy >= dimListAreaTop && imy < dimListAreaBottom) {
+            for (DimHit dh : dimHits) {
+                if (dh.gear != null && dh.gear.hit(imx, imy)) {
+                    if (!dh.dim.isEmpty()) {
+                        PacketDistributor.sendToServer(GuiActionPayload.requestDimDetail(dh.dim));
+                    }
+                    return true;
                 }
-                return true;
-            }
-            if (dh.row.hit(imx, imy)) {
-                dimFilter = dh.dim;
-                scrollOffset = 0;
-                selectedIndex = -1;
-                rebuildWidgets();
-                return true;
+                if (dh.row.hit(imx, imy)) {
+                    dimFilter = dh.dim;
+                    scrollOffset = 0;
+                    selectedIndex = -1;
+                    rebuildWidgets();
+                    return true;
+                }
             }
         }
 
@@ -635,6 +669,11 @@ public final class ZoneListScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mx, double my, double dx, double dy) {
         if (super.mouseScrolled(mx, my, dx, dy)) return true;
+        // Si le curseur est dans la liste des dimensions (sidebar), scroll la sidebar.
+        if (mx >= gx && mx < gx + SIDEBAR_W && my >= dimListAreaTop && my < dimListAreaBottom) {
+            sidebarScrollOffset = Math.max(0, sidebarScrollOffset - (int)(dy * 18));
+            return true;
+        }
         int listH  = GUI_H - HEADER_H - FOOTER_H - 60;
         int maxVis = listH / ITEM_H;
         int total  = filteredZones.size();
