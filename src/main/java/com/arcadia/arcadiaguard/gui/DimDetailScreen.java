@@ -431,10 +431,11 @@ public final class DimDetailScreen extends Screen {
         }
 
         // Clics sur les flags configurés
+        // cy = gy+HDR_H+6 (base) +20 (titre) +22 (searchbox+div) +4 (div) = gy+HDR_H+52
         int cx = gx + 8;
-        int cy = gy + HDR_H + 34;
+        int cy = gy + HDR_H + 52;
         int cw = GUI_W - 16;
-        int listH  = GUI_H - HDR_H - FTR_H - 34 - DESC_H - 4;
+        int listH  = GUI_H - HDR_H - FTR_H - DESC_H - 60;
         List<FlagInfo> flags = data.flags().stream().filter(FlagInfo::configured).toList();
 
         if (imx >= cx && imx < cx + cw && imy >= cy && imy < cy + listH) {
@@ -485,7 +486,7 @@ public final class DimDetailScreen extends Screen {
                 0, Math.max(0, pickerFiltered().size() - maxVis));
             return true;
         }
-        int listH  = GUI_H - HDR_H - FTR_H - 34 - DESC_H - 4;
+        int listH  = GUI_H - HDR_H - FTR_H - DESC_H - 60;
         int maxVis = listH / FLAG_H;
         int configuredCount = (int) data.flags().stream().filter(FlagInfo::configured).count();
         scroll = Mth.clamp((int)(scroll - dy), 0, Math.max(0, configuredCount - maxVis));
