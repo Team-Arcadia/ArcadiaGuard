@@ -257,6 +257,7 @@
   "arcadiaguard.command.gui_opened": "Interface opened.",
   "arcadiaguard.command.wand_given": "Given: Zone Editor",
   "arcadiaguard.command.reloaded": "ArcadiaGuard reloaded.",
+  "arcadiaguard.command.zone.invalid_name": "Invalid zone name: \"%1$s\" — use letters, digits, - or _ (max 64).",
   "arcadiaguard.command.zone.not_found": "Zone not found: %1$s",
   "arcadiaguard.command.zone.created": "Zone created: %1$s",
   "arcadiaguard.command.zone.already_exists": "Zone already exists: %1$s",
