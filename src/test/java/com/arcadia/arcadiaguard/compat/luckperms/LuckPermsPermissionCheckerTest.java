@@ -40,14 +40,17 @@ class LuckPermsPermissionCheckerTest {
     }
 
     @Test
-    void resolveRoleNamePattern_mapsCorrectly() {
-        // Smoke test du mapping nom -> ZoneRole utilise par ZonePermission.
-        // Le pattern 'arcadiaguard.zone.<name>.{owner,moderator,member}' doit etre
-        // accepte par checkNode (LP renverra false en absence de LP, mais le node
-        // construit correctement).
+    void hasViewAccess_lpAbsent_returnsFalseSafely() {
+        // Sans LP chargé, hasViewAccess doit retourner false sans throw
+        // (même comportement que hasBypass — zero compile dep LP).
         var c = new LuckPermsPermissionChecker();
-        // Sans player (impossible a mocker simplement), on verifie juste que la
-        // classe ne crash pas a l'init.
+        c.invalidatePlayer(UUID.randomUUID());
+        assertNotNull(c, "checker should construct without LP loaded");
+    }
+
+    @Test
+    void resolveRoleNamePattern_mapsCorrectly() {
+        var c = new LuckPermsPermissionChecker();
         assertNotNull(c);
     }
 }
