@@ -4,14 +4,19 @@ import static net.minecraft.commands.Commands.literal;
 import static net.minecraft.commands.Commands.argument;
 
 import com.arcadia.arcadiaguard.ArcadiaGuard;
-import com.arcadia.arcadiaguard.flag.BuiltinFlags;
+import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
+import com.arcadia.arcadiaguard.api.flag.Flag;
+import com.arcadia.arcadiaguard.api.flag.IntFlag;
+import com.arcadia.arcadiaguard.api.flag.ListFlag;
 import com.arcadia.arcadiaguard.item.ModItems;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -19,18 +24,21 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Commande /ag testsetup — aide les testeurs humains à configurer rapidement
- * les zones de test pour la procédure HTML de test manuel.
+ * Commande /ag testsetup — aide les testeurs humains a configurer rapidement
+ * un environnement dense pour eprouver le panel (scroll, hierarchie, flags varies).
  *
  * <pre>
- * /ag testsetup all        → crée toutes les zones de test + donne le wand
- * /ag testsetup clean      → supprime toutes les zones "agt-*"
- * /ag testsetup tp <n>     → téléporte au centre de la zone n (1-23)
- * /ag testsetup list       → liste toutes les zones de test créées
+ * /ag testsetup all        -> cree 100 zones hierarchiques (20 roots / 50 enfants / 30 petits-enfants),
+ *                             un flag different par zone, en grille 10x10 autour du joueur
+ * /ag testsetup removeall  -> supprime TOUTES les zones de TOUTES les dimensions (remise a zero)
+ * /ag testsetup clean      -> supprime uniquement les zones creees par cette commande (prefixe "agt-")
+ * /ag testsetup tp n       -> teleporte au centre de la zone agt-NNN
+ * /ag testsetup list       -> liste les zones de test existantes
  * </pre>
  */
 public final class TestSetupCommand {
@@ -40,46 +48,45 @@ public final class TestSetupCommand {
     /** Prefixe de toutes les zones creees par cette commande. */
     private static final String PREFIX = "agt-";
 
-    /** Rayon par defaut de chaque zone de test (en blocs). */
+    /** Nombre total de zones generees. */
+    private static final int TOTAL_ZONES = 100;
+
+    /** 20 zones "racines" (sans parent). */
+    private static final int ROOT_COUNT = 20;
+
+    /** 50 zones enfants (parent = une root). Indices [ROOT_COUNT, ROOT_COUNT+CHILD_COUNT). */
+    private static final int CHILD_COUNT = 50;
+
+    /** 30 zones petites-enfants (parent = un enfant). Indices [70, 100). */
+    private static final int GRANDCHILD_COUNT = TOTAL_ZONES - ROOT_COUNT - CHILD_COUNT;
+
+    /** Rayon par defaut de chaque zone (en blocs). */
     private static final int RADIUS = 10;
 
-    /** Distance entre le centre de deux zones adjacentes. */
+    /** Distance entre le centre de deux zones adjacentes dans la grille. */
     private static final int SPACING = 30;
 
-    // ── Définition de chaque zone de test ────────────────────────────────────
+    /** Colonnes de la grille (10 colonnes x 10 rangees = 100 zones). */
+    private static final int GRID_COLS = 10;
 
-    private record ZoneDef(int num, String shortName, String desc, String flagId, Object flagValue) {}
+    /**
+     * Nombre de zones creees par tick serveur. Trade-off entre rapidite et TPS :
+     * 5 zones/tick × 20 tps = 100 zones/sec, soit ~10 s pour 10 dims.
+     * Le throttle evite un stall serveur sur un modpack a nombreuses dimensions.
+     */
+    private static final int ZONES_PER_TICK = 5;
 
-    private static final List<ZoneDef> ZONES = List.of(
-        // Mouvements
-        new ZoneDef( 1, "entry",       "T-01 Blocage d'entrée",                BuiltinFlags.ENTRY.id(),            false),
-        new ZoneDef( 2, "exit",        "T-02 Blocage de sortie",               BuiltinFlags.EXIT.id(),             false),
-        new ZoneDef( 3, "fly",         "T-03 Blocage du vol",                  BuiltinFlags.FLY.id(),              false),
-        new ZoneDef( 4, "elytra",      "T-04 Blocage de l'élytre",             BuiltinFlags.USE_ELYTRA.id(),       false),
-        new ZoneDef( 5, "portal",      "T-05 Blocage des portails",            BuiltinFlags.USE_PORTAL.id(),       false),
-        // Combat
-        new ZoneDef( 6, "pvp",         "T-06 PvP bloqué",                      BuiltinFlags.PVP.id(),              false),
-        new ZoneDef( 7, "enderpearl",  "T-07 Perle de l'End bloquée",          BuiltinFlags.ENDER_PEARL.id(),      false),
-        new ZoneDef( 8, "heal",        "T-08 Regen santé (heal-amount=4)",      BuiltinFlags.HEAL_AMOUNT.id(),      4),
-        // Inventaire & Chat
-        new ZoneDef( 9, "itemdrop",    "T-09 Drop d'objet bloqué",             BuiltinFlags.ITEM_DROP.id(),        false),
-        new ZoneDef(10, "chat",        "T-10 Chat bloqué",                     BuiltinFlags.SEND_CHAT.id(),        false),
-        new ZoneDef(11, "command",     "T-11 Commande /home bloquée",          BuiltinFlags.EXEC_COMMAND_BLACKLIST.id(), List.of("home", "spawn", "tpa")),
-        // Wand — zone vide pour pratiquer la selection
-        new ZoneDef(12, "wand",        "T-12 Zone vide (pratique wand)",        null,                               null),
-        // GUI — zone riche avec plusieurs flags pour tester l'interface
-        new ZoneDef(13, "gui",         "T-13/14/16 Zone GUI multi-flags",       BuiltinFlags.BLOCK_BREAK.id(),      false),
-        // Whitelist
-        new ZoneDef(17, "whitelist",   "T-17 Whitelist bypass (entry=deny)",    BuiltinFlags.ENTRY.id(),            false),
-        // Audit
-        new ZoneDef(18, "audit",       "T-18 Journal d'audit (block-break=deny)",BuiltinFlags.BLOCK_BREAK.id(),     false),
-        // Mods tiers
-        new ZoneDef(19, "ars",         "T-19 Ars Nouveau sorts bloqués",        BuiltinFlags.ARS_SPELL_CAST.id(),   false),
-        new ZoneDef(20, "irons",       "T-20 Iron's Spellbooks sorts bloqués",  BuiltinFlags.IRONS_SPELL_CAST.id(), false),
-        new ZoneDef(21, "waystones",   "T-21 Waystones bloquées",               BuiltinFlags.WAYSTONE_USE.id(),     false),
-        new ZoneDef(22, "carryon",     "T-22 Carry On bloqué",                  BuiltinFlags.CARRYON.id(),          false),
-        new ZoneDef(23, "parcool",     "T-23 ParCool bloqué",                   BuiltinFlags.PARCOOL_ACTIONS.id(),  false)
-    );
+    /** File d'attente partagee des operations de setup restantes. */
+    private static final Deque<Runnable> PENDING = new ArrayDeque<>();
+
+    /** Indique qu'une passe de setup est en cours (bloque les appels concurrents). */
+    private static volatile boolean setupRunning = false;
+
+    /** Expose la file pour permettre a d'autres commandes (ex: /ag diagnostic) de chainer leurs taches. */
+    public static void enqueue(Runnable task) { PENDING.addLast(task); }
+
+    /** True si la file contient encore au moins une tache. */
+    public static boolean isQueueBusy() { return !PENDING.isEmpty(); }
 
     // ── Brigadier ────────────────────────────────────────────────────────────
 
@@ -87,11 +94,12 @@ public final class TestSetupCommand {
         return literal("testsetup")
             .requires(src -> src.hasPermission(2))
             .executes(TestSetupCommand::showHelp)
-            .then(literal("all")   .executes(TestSetupCommand::setupAll))
-            .then(literal("clean") .executes(TestSetupCommand::clean))
-            .then(literal("list")  .executes(TestSetupCommand::listZones))
+            .then(literal("all")       .executes(TestSetupCommand::setupAll))
+            .then(literal("removeall") .executes(TestSetupCommand::removeAll))
+            .then(literal("clean")     .executes(TestSetupCommand::clean))
+            .then(literal("list")      .executes(TestSetupCommand::listZones))
             .then(literal("tp")
-                .then(argument("num", IntegerArgumentType.integer(1, 23))
+                .then(argument("num", IntegerArgumentType.integer(1, TOTAL_ZONES))
                     .executes(TestSetupCommand::tp)));
     }
 
@@ -100,139 +108,205 @@ public final class TestSetupCommand {
     private static int showHelp(CommandContext<CommandSourceStack> ctx) {
         var src = ctx.getSource();
         src.sendSuccess(() -> Component.literal("━━ ArcadiaGuard TestSetup ━━").withStyle(ChatFormatting.GOLD), false);
-        sendCmd(src, "/ag testsetup all",    "Créer toutes les zones de test + donner le wand");
-        sendCmd(src, "/ag testsetup clean",  "Supprimer toutes les zones agt-*");
-        sendCmd(src, "/ag testsetup list",   "Lister les zones de test créées");
-        sendCmd(src, "/ag testsetup tp <n>", "Téléporter au centre de la zone n (1-23)");
+        sendCmd(src, "/ag testsetup all",       "Créer 100 zones hiérarchiques (root/enfant/petit-enfant) + donner le wand");
+        sendCmd(src, "/ag testsetup removeall", "⚠ Supprimer TOUTES les zones de toutes les dimensions");
+        sendCmd(src, "/ag testsetup clean",     "Supprimer uniquement les zones agt-*");
+        sendCmd(src, "/ag testsetup list",      "Lister les zones de test créées");
+        sendCmd(src, "/ag testsetup tp <n>",    "Téléporter au centre de la zone n (1-" + TOTAL_ZONES + ")");
         return 1;
     }
 
     private static int setupAll(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        ServerLevel level   = player.serverLevel();
-        BlockPos origin     = player.blockPosition();
-        String dim          = level.dimension().location().toString();
-
-        int created = 0;
-        int skipped = 0;
-
-        // ── Zones numérotées en grille (5 colonnes, Z+SPACING par rangée) ──
-        for (int i = 0; i < ZONES.size(); i++) {
-            ZoneDef def = ZONES.get(i);
-            int col = i % 5;
-            int row = i / 5;
-            BlockPos center = origin.offset(col * SPACING, 0, row * SPACING);
-            String name = PREFIX + def.shortName();
-
-            if (ArcadiaGuard.zoneManager().get(level, name).isPresent()) {
-                skipped++;
-                continue;
-            }
-
-            ProtectedZone zone = new ProtectedZone(name, dim,
-                center.offset(-RADIUS, -RADIUS, -RADIUS),
-                center.offset( RADIUS,  RADIUS,  RADIUS));
-
-            if (def.flagId() != null) {
-                zone.setFlag(def.flagId(), def.flagValue());
-            }
-            ArcadiaGuard.zoneManager().add(level, zone);
-            created++;
+        if (setupRunning) {
+            ctx.getSource().sendFailure(Component.literal(
+                "⏳ Setup déjà en cours — attends la fin (ou /ag testsetup list)"));
+            return 0;
         }
-
-        // ── Zone GUI enrichie (T-13/14/16) — flags supplémentaires ──
-        ArcadiaGuard.zoneManager().get(level, PREFIX + "gui").ifPresent(z -> {
-            ProtectedZone pz = (ProtectedZone) z;
-            pz.setFlag(BuiltinFlags.PVP.id(),          false);
-            pz.setFlag(BuiltinFlags.DOOR.id(),          false);
-            pz.setFlag(BuiltinFlags.CONTAINER_ACCESS.id(), false);
-            pz.setFlag(BuiltinFlags.ITEM_DROP.id(),     false);
+        CommandSourceStack src = ctx.getSource();
+        int dims = scheduleSetupAll(player, () -> {
+            player.getInventory().add(ModItems.ZONE_EDITOR.get().getDefaultInstance());
+            src.sendSuccess(() -> Component.literal(
+                "✅ TestSetup terminé · " + ROOT_COUNT + " root / " + CHILD_COUNT + " enfant / "
+                + GRANDCHILD_COUNT + " petit-enfant par dim")
+                .withStyle(ChatFormatting.GREEN), false);
         });
-
-        // ── Zones parent/enfant pour T-15 (badge INH) ──
-        String parentName = PREFIX + "parent";
-        String childName  = PREFIX + "child";
-        if (ArcadiaGuard.zoneManager().get(level, parentName).isEmpty()) {
-            int col = 3; int row = 3;
-            BlockPos center = origin.offset(col * SPACING, 0, row * SPACING);
-            ProtectedZone parent = new ProtectedZone(parentName, dim,
-                center.offset(-15, -RADIUS, -15), center.offset(15, RADIUS, 15));
-            parent.setFlag(BuiltinFlags.BLOCK_BREAK.id(), false);
-            parent.setFlag(BuiltinFlags.DOOR.id(), false);
-            ArcadiaGuard.zoneManager().add(level, parent);
-
-            ProtectedZone child = new ProtectedZone(childName, dim,
-                center.offset(-6, -RADIUS, -6), center.offset(6, RADIUS, 6));
-            child.setParent(parentName);
-            ArcadiaGuard.zoneManager().add(level, child);
-            created += 2;
-        }
-
-        // ── Donner le wand ──
-        player.getInventory().add(ModItems.ZONE_EDITOR.get().getDefaultInstance());
-
-        // ── Résumé ──
-        final int c = created, s = skipped;
+        int totalOps = PENDING.size();
+        int estSeconds = Math.max(1, totalOps / ZONES_PER_TICK / 20);
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "✅ TestSetup terminé : " + c + " zones créées" +
-            (s > 0 ? ", " + s + " déjà existantes (ignorées)" : "") +
-            " · Wand donné")
-            .withStyle(ChatFormatting.GREEN), false);
-
-        ctx.getSource().sendSuccess(() -> Component.literal(
-            "📍 Zones créées à partir de " + origin.toShortString() +
-            " · Utilise /ag testsetup tp <n> pour te téléporter")
+            "⏳ TestSetup en cours — " + TOTAL_ZONES + "×" + dims + " zones, "
+            + ZONES_PER_TICK + "/tick, ≈" + estSeconds + " s")
             .withStyle(ChatFormatting.GRAY), false);
-
-        // Afficher la table des zones
-        return printZoneTable(ctx.getSource(), level, origin);
+        return 1;
     }
 
-    private static int clean(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        ServerLevel level = ctx.getSource().getLevel();
-        int removed = 0;
+    /**
+     * Planifie la creation idempotente des 100 zones par dimension autour de {@code player}.
+     * Toutes les taches sont ajoutees a la file {@link #PENDING} et executees au rythme
+     * de {@link #ZONES_PER_TICK} par tick serveur. Le {@code onComplete} est execute a la fin.
+     *
+     * @return le nombre de dimensions qui seront traitees
+     */
+    public static int scheduleSetupAll(ServerPlayer player, Runnable onComplete) {
+        ServerLevel currentLevel = player.serverLevel();
+        MinecraftServer server = player.getServer();
 
-        // Zones numérotées
-        for (ZoneDef def : ZONES) {
-            if (ArcadiaGuard.zoneManager().remove(level, PREFIX + def.shortName())) removed++;
+        List<Flag<?>> flags = new ArrayList<>();
+        for (Flag<?> f : ArcadiaGuard.flagRegistry().all()) {
+            String mod = f.requiredMod();
+            if (mod.isEmpty() || net.neoforged.fml.ModList.get().isLoaded(mod)) flags.add(f);
         }
-        // Zones parent/enfant
-        if (ArcadiaGuard.zoneManager().remove(level, PREFIX + "child"))  removed++;
-        if (ArcadiaGuard.zoneManager().remove(level, PREFIX + "parent")) removed++;
+
+        List<ServerLevel> targetLevels = new ArrayList<>();
+        targetLevels.add(currentLevel);
+        for (ServerLevel lvl : server.getAllLevels()) {
+            if (lvl != currentLevel) targetLevels.add(lvl);
+        }
+
+        for (ServerLevel level : targetLevels) {
+            BlockPos origin = (level == currentLevel) ? player.blockPosition() : new BlockPos(0, 64, 0);
+            String dim = level.dimension().location().toString();
+            String dimSuffix = shortDimSuffix(dim);
+
+            for (int i = 0; i < TOTAL_ZONES; i++) {
+                final int idx = i;
+                PENDING.addLast(() -> {
+                    String name = zoneName(idx, dimSuffix);
+                    if (ArcadiaGuard.zoneManager().get(level, name).isPresent()) return;
+                    int col = idx % GRID_COLS;
+                    int row = idx / GRID_COLS;
+                    BlockPos center = origin.offset(col * SPACING, 0, row * SPACING);
+                    ProtectedZone zone = new ProtectedZone(name, dim,
+                        center.offset(-RADIUS, -RADIUS, -RADIUS),
+                        center.offset( RADIUS,  RADIUS,  RADIUS));
+                    if (!flags.isEmpty()) {
+                        Flag<?> flag = flags.get(idx % flags.size());
+                        Object value = demoValueFor(flag);
+                        if (value != null) zone.setFlag(flag.id(), value);
+                    }
+                    ArcadiaGuard.zoneManager().add(level, zone);
+                });
+            }
+            PENDING.addLast(() -> linkHierarchy(level, dimSuffix));
+        }
+
+        PENDING.addLast(() -> {
+            setupRunning = false;
+            if (onComplete != null) onComplete.run();
+        });
+        setupRunning = true;
+        return targetLevels.size();
+    }
+
+    /**
+     * Applique les liens parent/enfant/petit-enfant sur les zones d'un level.
+     * Appelee apres la creation des bounds (passe 2 du setup).
+     */
+    private static void linkHierarchy(ServerLevel level, String dimSuffix) {
+        for (int i = ROOT_COUNT; i < ROOT_COUNT + CHILD_COUNT; i++) {
+            int parentIdx = (i - ROOT_COUNT) % ROOT_COUNT;
+            ArcadiaGuard.zoneManager().get(level, zoneName(i, dimSuffix))
+                .ifPresent(z -> ((ProtectedZone) z).setParent(zoneName(parentIdx, dimSuffix)));
+        }
+        for (int i = ROOT_COUNT + CHILD_COUNT; i < TOTAL_ZONES; i++) {
+            int parentIdx = ROOT_COUNT + ((i - ROOT_COUNT - CHILD_COUNT) % CHILD_COUNT);
+            ArcadiaGuard.zoneManager().get(level, zoneName(i, dimSuffix))
+                .ifPresent(z -> ((ProtectedZone) z).setParent(zoneName(parentIdx, dimSuffix)));
+        }
+    }
+
+    /**
+     * Hook tick serveur : depile jusqu'a {@link #ZONES_PER_TICK} operations par tick.
+     * A brancher sur {@link net.neoforged.neoforge.event.tick.ServerTickEvent.Post} via
+     * NeoForge EVENT_BUS — enregistrement effectue une seule fois dans {@link #build()}.
+     */
+    public static void onServerTick() {
+        for (int i = 0; i < ZONES_PER_TICK && !PENDING.isEmpty(); i++) {
+            try {
+                PENDING.pollFirst().run();
+            } catch (Exception e) {
+                ArcadiaGuard.LOGGER.error("[ArcadiaGuard] TestSetup tick task failed", e);
+            }
+        }
+    }
+
+    /**
+     * Supprime TOUTES les zones de TOUTES les dimensions — remise a zero totale.
+     * A manipuler avec precaution : aucun filtre de prefixe, aucune confirmation.
+     */
+    private static int removeAll(CommandContext<CommandSourceStack> ctx) {
+        MinecraftServer server = ctx.getSource().getServer();
+
+        // Collecte defensive : on liste toutes les zones avant suppression pour ne pas
+        // muter la collection pendant l'iteration (remove() modifie la map sous-jacente).
+        List<ZoneRef> targets = new ArrayList<>();
+        for (ServerLevel lvl : server.getAllLevels()) {
+            for (var iz : ArcadiaGuard.zoneManager().zones(lvl)) {
+                targets.add(new ZoneRef(lvl, iz.name()));
+            }
+        }
+
+        int removed = 0;
+        for (ZoneRef t : targets) {
+            if (ArcadiaGuard.zoneManager().remove(t.level, t.name)) removed++;
+        }
 
         final int r = removed;
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "🗑️ " + r + " zones de test supprimées (agt-*)")
+            "🗑 RemoveAll : " + r + " zone" + (r > 1 ? "s" : "") + " supprimée" + (r > 1 ? "s" : "") +
+            " (toutes dimensions confondues)")
+            .withStyle(ChatFormatting.RED), true);
+        return r;
+    }
+
+    private static int clean(CommandContext<CommandSourceStack> ctx) {
+        MinecraftServer server = ctx.getSource().getServer();
+        int removed = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            String dimSuffix = shortDimSuffix(level.dimension().location().toString());
+            for (int i = 0; i < TOTAL_ZONES; i++) {
+                if (ArcadiaGuard.zoneManager().remove(level, zoneName(i, dimSuffix))) removed++;
+            }
+        }
+        final int r = removed;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "🗑 " + r + " zones agt-* supprimées (toutes dimensions)")
             .withStyle(ChatFormatting.YELLOW), false);
         return r;
     }
 
-    private static int listZones(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-        ServerLevel level = ctx.getSource().getLevel();
-        // On cherche l'origin dans les zones existantes (on ne la connaît pas ici)
-        return printZoneTable(ctx.getSource(), level, null);
+    private static int listZones(CommandContext<CommandSourceStack> ctx) {
+        MinecraftServer server = ctx.getSource().getServer();
+        int existing = 0;
+        int dimCount = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            dimCount++;
+            String dimSuffix = shortDimSuffix(level.dimension().location().toString());
+            for (int i = 0; i < TOTAL_ZONES; i++) {
+                if (ArcadiaGuard.zoneManager().get(level, zoneName(i, dimSuffix)).isPresent()) existing++;
+            }
+        }
+        final int e = existing;
+        final int total = TOTAL_ZONES * dimCount;
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Zones agt-* présentes : " + e + " / " + total + " (toutes dimensions)")
+            .withStyle(ChatFormatting.AQUA), false);
+        return existing;
     }
 
     private static int tp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         int num = IntegerArgumentType.getInteger(ctx, "num");
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel level   = player.serverLevel();
+        String dimSuffix = shortDimSuffix(level.dimension().location().toString());
 
-        // Trouver la zone par numéro
-        ZoneDef def = ZONES.stream().filter(z -> z.num() == num).findFirst().orElse(null);
-        if (def == null) {
-            ctx.getSource().sendFailure(Component.literal("Zone n°" + num + " inconnue."));
-            return 0;
-        }
-
-        String name = PREFIX + def.shortName();
+        String name = zoneName(num - 1, dimSuffix);
         var found = ArcadiaGuard.zoneManager().get(level, name);
         if (found.isEmpty()) {
             ctx.getSource().sendFailure(Component.literal(
-                "Zone " + name + " introuvable — lance d'abord /ag testsetup all"));
+                "Zone " + name + " introuvable — lance /ag testsetup all"));
             return 0;
         }
-
         ProtectedZone zone = (ProtectedZone) found.get();
         double cx = (zone.minX() + zone.maxX()) / 2.0;
         double cy =  zone.maxY() + 1;
@@ -240,53 +314,56 @@ public final class TestSetupCommand {
         player.teleportTo(level, cx, cy, cz, player.getYRot(), player.getXRot());
 
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "📍 Téléportation → " + name + " — " + def.desc())
+            "📍 Téléportation → " + name)
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private static int printZoneTable(CommandSourceStack src, ServerLevel level, BlockPos origin) {
-        src.sendSuccess(() -> Component.literal(
-            "┌─── Zones de test ArcadiaGuard (" + PREFIX + "*) ───┐")
-            .withStyle(ChatFormatting.DARK_AQUA), false);
-
-        for (ZoneDef def : ZONES) {
-            String name = PREFIX + def.shortName();
-            boolean exists = ArcadiaGuard.zoneManager().get(level, name).isPresent();
-            ChatFormatting color = exists ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY;
-            String status = exists ? "✅" : "✗ ";
-
-            MutableComponent tpBtn = Component.literal(" [tp]")
-                .withStyle(s -> s
-                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                        "/ag testsetup tp " + def.num()))
-                    .withColor(ChatFormatting.AQUA)
-                    .withUnderlined(true));
-
-            MutableComponent line = Component.literal(
-                "  " + status + " T-" + String.format("%02d", def.num()) +
-                " · " + def.desc())
-                .withStyle(color);
-
-            if (exists) line = line.append(tpBtn);
-            final MutableComponent finalLine = line;
-            src.sendSuccess(() -> finalLine, false);
-        }
-
-        // Zones parent/enfant
-        boolean parentExists = ArcadiaGuard.zoneManager().get(level, PREFIX + "parent").isPresent();
-        boolean childExists  = ArcadiaGuard.zoneManager().get(level, PREFIX + "child").isPresent();
-        ChatFormatting pc = parentExists ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY;
-        src.sendSuccess(() -> Component.literal(
-            "  " + (parentExists ? "✅" : "✗ ") + " T-15 · Badge INH — " + PREFIX + "parent + " + PREFIX + "child")
-            .withStyle(pc), false);
-
-        src.sendSuccess(() -> Component.literal("└────────────────────────────────────────────┘")
-            .withStyle(ChatFormatting.DARK_AQUA), false);
-        return 1;
+    /**
+     * Nom canonique d'une zone indexee dans une dimension donnee.
+     * Ex : (0, "overworld") -> "agt-001-overworld", (56, "the_nether") -> "agt-057-the_nether".
+     * Le suffixe de dimension garantit l'unicite cross-dim (sinon click "Détails"
+     * en vue ALL du panel tombe sur la premiere dim trouvee, pas forcement la bonne).
+     */
+    private static String zoneName(int index, String dimSuffix) {
+        return PREFIX + String.format("%03d", index + 1) + "-" + dimSuffix;
     }
+
+    /**
+     * Extrait un suffixe court et file-system-safe depuis un dim key.
+     * Exemples : "minecraft:overworld" -> "overworld", "aether:the_aether" -> "the_aether",
+     * "twilightforest:twilight_forest" -> "twilight_fores" (tronque a 16 chars).
+     * Seuls [a-z0-9_-] sont conserves, pour rester compatible avec
+     * {@link com.arcadia.arcadiaguard.ArcadiaGuardPaths#isValidZoneName(String)}.
+     */
+    private static String shortDimSuffix(String dimKey) {
+        int sep = dimKey.indexOf(':');
+        String path = sep >= 0 ? dimKey.substring(sep + 1) : dimKey;
+        StringBuilder sb = new StringBuilder(Math.min(path.length(), 16));
+        for (int i = 0; i < path.length() && sb.length() < 16; i++) {
+            char c = Character.toLowerCase(path.charAt(i));
+            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-') {
+                sb.append(c);
+            }
+        }
+        return sb.isEmpty() ? "dim" : sb.toString();
+    }
+
+    /**
+     * Valeur de demonstration a appliquer pour un flag donne, ou {@code null}
+     * si le type du flag n'est pas supporte (pas de setter pertinent).
+     */
+    private static Object demoValueFor(Flag<?> flag) {
+        if (flag instanceof BooleanFlag) return false;            // interdit l'action
+        if (flag instanceof IntFlag) return 1;                    // valeur non-defaut triviale
+        if (flag instanceof ListFlag) return List.of("demo");     // liste non vide
+        return null;
+    }
+
+    /** Simple paire (level, zoneName) pour itérer les suppressions sans muter la collection source. */
+    private record ZoneRef(ServerLevel level, String name) {}
 
     private static void sendCmd(CommandSourceStack src, String cmd, String desc) {
         MutableComponent line = Component.literal("  ")

@@ -57,6 +57,10 @@ public final class ArcadiaGuard {
         PacketHandler.register(modBus);
         com.arcadia.arcadiaguard.test.ArcadiaGuardTestRegistry.register(modBus);
         com.arcadia.arcadiaguard.selftest.SelfTestCommand.registerBuiltinScenarios();
+        // Tick hook pour /ag testsetup all — depile les creations asynchrones tick par tick.
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+                com.arcadia.arcadiaguard.selftest.TestSetupCommand.onServerTick());
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             // Indirect call via FQN string + reflection ensures the client class
