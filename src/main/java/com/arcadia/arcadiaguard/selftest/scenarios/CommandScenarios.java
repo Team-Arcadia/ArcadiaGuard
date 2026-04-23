@@ -206,7 +206,7 @@ public final class CommandScenarios {
             ArcadiaGuard.zoneManager().add(ctx.level(), parent);
             ArcadiaGuard.zoneManager().add(ctx.level(), child);
 
-            int rc = exec(ctx, "ag zone parent " + cName + " " + pName);
+            int rc = exec(ctx, "ag zone parent set " + cName + " " + pName);
             var z = (com.arcadia.arcadiaguard.zone.ProtectedZone)
                 ArcadiaGuard.zoneManager().get(ctx.level(), cName).orElseThrow();
             boolean parentSet = pName.equals(z.parent());
