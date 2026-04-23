@@ -707,9 +707,8 @@ public final class ZoneDetailScreen extends Screen {
                 } else {
                     String preview = f.type() == FlagEntry.TYPE_INT ? f.stringValue()
                         : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
-                    // Preview a gauche de la fleche (meme pattern que DimDetailScreen) pour
-                    // eviter le chevauchement avec le bouton ">" positionne a bx+20..bx+34.
-                    g.drawString(font, preview, bx - 2 - font.width(preview), iy + 7, Colors.TEXT_MUTE, false);
+                    // Aligné à droite, se terminant 4px avant le reset ✕ (bx-18..bx-4)
+                    g.drawString(font, preview, bx - 22 - font.width(preview), iy + 7, Colors.TEXT_MUTE, false);
                     boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
                     g.fill(bx + 20, iy + 4, bx + 34, iy + FLAG_H - 4,
                         hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
