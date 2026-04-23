@@ -57,7 +57,7 @@ class OpenGuiPayloadTest {
     void viewOnly_true_preservedInRecord() {
         var payload = new OpenGuiPayload(List.of(),
             OpenGuiPayload.NO_POS, OpenGuiPayload.NO_POS,
-            false, 1, 50, 1, true);
+            false, true);
         assertTrue(payload.viewOnly());
     }
 
@@ -65,7 +65,7 @@ class OpenGuiPayloadTest {
     void viewOnly_false_preservedInRecord() {
         var payload = new OpenGuiPayload(List.of(),
             OpenGuiPayload.NO_POS, OpenGuiPayload.NO_POS,
-            false, 1, 50, 1, false);
+            false, false);
         assertFalse(payload.viewOnly());
     }
 
