@@ -162,4 +162,75 @@ public final class CommandScenarios {
                            : ScenarioResult.fail(id(), "exit code " + rc, ms(s));
         }
     };
+
+    public static final Scenario CMD_ZONE_COPY = new Scenario() {
+        @Override public String id() { return "cmd-zone-copy"; }
+        @Override public String category() { return "commands"; }
+        @Override public ScenarioResult run(TestContext ctx) {
+            long s = System.nanoTime();
+            ctx.setupEmptyZone(3);
+            ctx.setFlag("block-break", false);
+            String copyName = ctx.zoneName() + "-copy";
+            int rc = exec(ctx, "ag zone copy " + ctx.zoneName() + " " + copyName);
+            boolean copyExists = ArcadiaGuard.zoneManager().get(ctx.level(), copyName).isPresent();
+            // Verifier que le flag a ete copie
+            boolean flagCopied = false;
+            if (copyExists) {
+                var copy = (com.arcadia.arcadiaguard.zone.ProtectedZone)
+                    ArcadiaGuard.zoneManager().get(ctx.level(), copyName).orElseThrow();
+                flagCopied = Boolean.FALSE.equals(copy.flagValues().get("block-break"));
+                ArcadiaGuard.zoneManager().remove(ctx.level(), copyName);
+            }
+            long elapsed = ms(s);
+            if (rc < 0) return ScenarioResult.fail(id(), "copy command exit " + rc, elapsed);
+            if (!copyExists) return ScenarioResult.fail(id(), "la copie n'existe pas dans le registry", elapsed);
+            if (!flagCopied) return ScenarioResult.fail(id(), "le flag block-break n'a pas ete copie", elapsed);
+            return ScenarioResult.pass(id(), elapsed);
+        }
+    };
+
+    public static final Scenario CMD_ZONE_PARENT = new Scenario() {
+        @Override public String id() { return "cmd-zone-parent"; }
+        @Override public String category() { return "commands"; }
+        @Override public ScenarioResult run(TestContext ctx) {
+            long s = System.nanoTime();
+            // Creer deux zones : parent (p) et enfant (c)
+            String pName = "selftest-p-" + UUID.randomUUID().toString().substring(0, 6);
+            String cName = "selftest-c-" + UUID.randomUUID().toString().substring(0, 6);
+            var pos = ctx.player().blockPosition();
+            String dim = ctx.level().dimension().location().toString();
+            var parent = new com.arcadia.arcadiaguard.zone.ProtectedZone(pName, dim,
+                pos.offset(-8, -2, -8), pos.offset(8, 8, 8));
+            var child = new com.arcadia.arcadiaguard.zone.ProtectedZone(cName, dim,
+                pos.offset(-3, -1, -3), pos.offset(3, 5, 3));
+            ArcadiaGuard.zoneManager().add(ctx.level(), parent);
+            ArcadiaGuard.zoneManager().add(ctx.level(), child);
+
+            int rc = exec(ctx, "ag zone parent " + cName + " " + pName);
+            var z = (com.arcadia.arcadiaguard.zone.ProtectedZone)
+                ArcadiaGuard.zoneManager().get(ctx.level(), cName).orElseThrow();
+            boolean parentSet = pName.equals(z.parent());
+            ArcadiaGuard.zoneManager().remove(ctx.level(), cName);
+            ArcadiaGuard.zoneManager().remove(ctx.level(), pName);
+
+            long elapsed = ms(s);
+            if (rc < 0) return ScenarioResult.fail(id(), "parent command exit " + rc, elapsed);
+            if (!parentSet) return ScenarioResult.fail(id(), "parent non assigne sur la zone enfant", elapsed);
+            return ScenarioResult.pass(id(), elapsed);
+        }
+    };
+
+    public static final Scenario CMD_MIGRATE_YAWP = new Scenario() {
+        @Override public String id() { return "cmd-migrate-yawp"; }
+        @Override public String category() { return "commands"; }
+        @Override public ScenarioResult run(TestContext ctx) {
+            long s = System.nanoTime();
+            // Sans YAWP installe, la commande doit s'executer sans crash (retour 0 ou 1).
+            int rc = exec(ctx, "ag migrate yawp");
+            long elapsed = ms(s);
+            // -1 = CommandSyntaxException. 0 = "aucune zone importee" (normal sans YAWP). >=1 = zones importees.
+            if (rc < 0) return ScenarioResult.fail(id(), "migrate yawp a leve une exception (exit " + rc + ")", elapsed);
+            return ScenarioResult.pass(id(), "migrate yawp sans YAWP = ok (exit " + rc + ")", elapsed);
+        }
+    };
 }
