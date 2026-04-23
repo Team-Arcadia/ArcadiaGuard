@@ -87,7 +87,11 @@ public final class GuardService implements IGuardService {
     private boolean computeBypass(ServerPlayer player) {
         var lp = lpChecker();
         if (lp != null && lp.hasBypass(player)) return true;
-        return player.hasPermissions(ArcadiaGuardConfig.BYPASS_OP_LEVEL.get());
+        // Lire le niveau OP directement depuis ops.json via le serveur vanilla,
+        // sans passer par NeoForge PermissionAPI (qui peut être intercepté par
+        // d'autres mods et accorder un bypass involontaire).
+        int opLevel = player.getServer().getProfilePermissions(player.getGameProfile());
+        return opLevel >= ArcadiaGuardConfig.BYPASS_OP_LEVEL.get();
     }
 
     /**
