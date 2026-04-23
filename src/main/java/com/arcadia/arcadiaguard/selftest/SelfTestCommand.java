@@ -2,7 +2,10 @@ package com.arcadia.arcadiaguard.selftest;
 
 import com.arcadia.arcadiaguard.selftest.scenarios.BlockFlagScenarios;
 import com.arcadia.arcadiaguard.selftest.scenarios.CombatScenarios;
+import com.arcadia.arcadiaguard.selftest.scenarios.ExceptionZoneScenarios;
 import com.arcadia.arcadiaguard.selftest.scenarios.ModIntegrationScenarios;
+import com.arcadia.arcadiaguard.selftest.scenarios.RoleScenarios;
+import com.arcadia.arcadiaguard.selftest.scenarios.WandSelectionScenarios;
 import com.arcadia.arcadiaguard.selftest.scenarios.ZoneCrudScenarios;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -108,7 +111,24 @@ public final class SelfTestCommand {
             com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.CREEPER_EXPLOSION_DENY,
             com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.TNT_EXPLOSION_DENY,
             com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.BLOCK_EXPLOSION_DENY,
-            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.FARMLAND_TRAMPLE_DENY
+            com.arcadia.arcadiaguard.selftest.scenarios.E2EEventPostScenarios.FARMLAND_TRAMPLE_DENY,
+            // FR09 : Wand pos1/pos2 selection
+            WandSelectionScenarios.WAND_POS1_SET,
+            WandSelectionScenarios.WAND_POS2_SET,
+            WandSelectionScenarios.WAND_BOTH_INDEPENDENT,
+            WandSelectionScenarios.WAND_CLEAR_SELECTION,
+            // FR18 : Roles (MEMBER / OWNER) et whitelist
+            RoleScenarios.ROLE_MEMBER_ASSIGN,
+            RoleScenarios.ROLE_OWNER_ASSIGN,
+            RoleScenarios.ROLE_REMOVE,
+            RoleScenarios.WHITELIST_BYPASS_API,
+            // FR05/FR24 : Zones enfant et heritage de flags
+            ExceptionZoneScenarios.CHILD_OVERRIDES_PARENT_FLAG,
+            ExceptionZoneScenarios.PARENT_FLAG_INHERITED_WHEN_CHILD_UNSET,
+            // FR17 : Copie de zone + FR05 : parent via commande + FR26 : migration YAWP
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_COPY,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_ZONE_PARENT,
+            com.arcadia.arcadiaguard.selftest.scenarios.CommandScenarios.CMD_MIGRATE_YAWP
         );
     }
 
