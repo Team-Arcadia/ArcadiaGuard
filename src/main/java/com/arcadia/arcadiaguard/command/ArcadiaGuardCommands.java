@@ -41,7 +41,8 @@ public final class ArcadiaGuardCommands {
             .then(MigrateCommands.build())
             .then(DebugCommands.build())
             .then(DimFlagCommands.build())
-            .then(com.arcadia.arcadiaguard.selftest.SelfTestCommand.build());
+            .then(com.arcadia.arcadiaguard.selftest.SelfTestCommand.build())
+            .then(com.arcadia.arcadiaguard.selftest.TestSetupCommand.build());
 
         dispatcher.register(root);
         dispatcher.register(literal("ag")
