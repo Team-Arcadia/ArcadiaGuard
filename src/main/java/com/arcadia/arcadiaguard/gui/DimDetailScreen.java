@@ -200,7 +200,7 @@ public final class DimDetailScreen extends Screen {
             } else {
                 String preview = f.type() == FlagInfo.TYPE_INT ? f.stringValue()
                     : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
-                g.drawString(font, preview, bx - 2, iy + 8, Colors.TEXT_MUTE, false);
+                g.drawString(font, preview, bx + 17 - font.width(preview), iy + 8, Colors.TEXT_MUTE, false);
                 boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
                 g.fill(bx + 20, iy + 4, bx + 34, iy + FLAG_H - 4,
                     hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
