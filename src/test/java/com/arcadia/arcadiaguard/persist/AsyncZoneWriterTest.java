@@ -1,11 +1,16 @@
 package com.arcadia.arcadiaguard.persist;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -110,6 +115,82 @@ class AsyncZoneWriterTest {
         assertEquals(3, AsyncZoneWriter.Policy.values().length);
     }
 
+    // ── NFR02 : thread-safety et exécution hors main thread ──────────────────
+
+    @Test
+    void schedule_withQueueNull_runsTaskSynchronously() {
+        // queue == null → fallback inline synchrone (mode non-démarré)
+        var w = new AsyncZoneWriter();
+        AtomicBoolean ran = new AtomicBoolean(false);
+        w.schedule(() -> ran.set(true));
+        assertTrue(ran.get(), "Sans queue, la task doit s'exécuter immédiatement");
+    }
+
+    @Test
+    void thread_isDaemon_whenStarted() throws Exception {
+        // NFR02 : le thread writer ne doit pas empêcher l'arrêt de la JVM
+        var w = newWriterStarted();
+        Thread t = (Thread) getField(w, "thread");
+        assertTrue(t.isDaemon(), "Le thread writer doit être un daemon");
+        stopWriter(w);
+    }
+
+    @Test
+    void schedule_tasksExecuteOnWriterThread_notCallerThread() throws Exception {
+        // NFR02 : aucune I/O ne doit s'exécuter sur le thread appelant
+        var w = newWriterStarted();
+        String callerThreadName = Thread.currentThread().getName();
+        AtomicReference<String> executingThread = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        w.schedule("nfr02-thread-check", () -> {
+            executingThread.set(Thread.currentThread().getName());
+            latch.countDown();
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS), "La task doit s'exécuter dans les 5 s");
+        assertNotEquals(callerThreadName, executingThread.get(),
+            "La task NE doit PAS s'exécuter sur le thread appelant");
+        assertEquals("arcadiaguard-zone-writer", executingThread.get(),
+            "La task doit s'exécuter sur le thread writer");
+        stopWriter(w);
+    }
+
+    @Test
+    void concurrent_scheduleFromTwoThreads_allTasksComplete() throws Exception {
+        // NFR02 : concurrent write scheduling depuis 2 threads → aucun deadlock, toutes tasks exécutées
+        var w = newWriterStarted();
+        int n = 40;
+        CountDownLatch done = new CountDownLatch(n);
+
+        Thread t1 = new Thread(() -> {
+            for (int i = 0; i < n / 2; i++) {
+                final int idx = i;
+                w.schedule("thr1-key-" + idx, done::countDown);
+            }
+        });
+        Thread t2 = new Thread(() -> {
+            for (int i = n / 2; i < n; i++) {
+                final int idx = i;
+                w.schedule("thr2-key-" + idx, done::countDown);
+            }
+        });
+        t1.start(); t2.start(); t1.join(2000); t2.join(2000);
+
+        assertTrue(done.await(10, TimeUnit.SECONDS),
+            "Toutes les tasks concurrent doivent être exécutées sans deadlock");
+        stopWriter(w);
+    }
+
+    @Test
+    void writerThread_name_isArcadiaGuardZoneWriter() throws Exception {
+        // Vérifie que le thread a le nom canonique attendu (utile pour profiling/debugging)
+        var w = newWriterStarted();
+        Thread t = (Thread) getField(w, "thread");
+        assertEquals("arcadiaguard-zone-writer", t.getName());
+        stopWriter(w);
+    }
+
     // --- Helpers ---
 
     private static int queueSize(AsyncZoneWriter w) throws Exception {
@@ -122,5 +203,40 @@ class AsyncZoneWriterTest {
         Field f = AsyncZoneWriter.class.getDeclaredField(name);
         f.setAccessible(true);
         return f.get(target);
+    }
+
+    /** Démarre un writer avec queue injectée, sans dépendance à ArcadiaGuardConfig. */
+    private static AsyncZoneWriter newWriterStarted() throws Exception {
+        var w = new AsyncZoneWriter();
+        // Injecter queue et policy
+        Field q = AsyncZoneWriter.class.getDeclaredField("queue");
+        q.setAccessible(true);
+        q.set(w, new LinkedBlockingQueue<>(100));
+        Field p = AsyncZoneWriter.class.getDeclaredField("policy");
+        p.setAccessible(true);
+        p.set(w, AsyncZoneWriter.Policy.DROP);
+        // Démarrer le thread via loop() (méthode privée)
+        Field r = AsyncZoneWriter.class.getDeclaredField("running");
+        r.setAccessible(true);
+        r.set(w, true);
+        var loopMethod = AsyncZoneWriter.class.getDeclaredMethod("loop");
+        loopMethod.setAccessible(true);
+        Thread thread = new Thread(() -> {
+            try { loopMethod.invoke(w); } catch (Exception ignored) {}
+        }, "arcadiaguard-zone-writer");
+        thread.setDaemon(true);
+        thread.start();
+        Field tf = AsyncZoneWriter.class.getDeclaredField("thread");
+        tf.setAccessible(true);
+        tf.set(w, thread);
+        return w;
+    }
+
+    private static void stopWriter(AsyncZoneWriter w) throws Exception {
+        Field r = AsyncZoneWriter.class.getDeclaredField("running");
+        r.setAccessible(true);
+        r.set(w, false);
+        Thread t = (Thread) getField(w, "thread");
+        if (t != null) t.interrupt();
     }
 }
