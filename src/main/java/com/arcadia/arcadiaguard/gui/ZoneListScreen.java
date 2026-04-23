@@ -103,6 +103,8 @@ public final class ZoneListScreen extends Screen {
         scrollOffset  = 0;
         selectedIndex = -1;
         applyFilter();
+        if (prevBtn != null) prevBtn.active = currentPage > 1;
+        if (nextBtn != null) nextBtn.active = currentPage < totalPages;
     }
 
     @Override
@@ -289,6 +291,10 @@ public final class ZoneListScreen extends Screen {
         String zoneCountText = Component.translatable(zoneCountKey, zoneCount).getString();
         int zoneCountW = font.width(zoneCountText);
         g.drawString(font, zoneCountText, rightEdge - zoneCountW, hy + 6, Colors.TEXT_MUTE, false);
+        if (!searchText.isEmpty() && totalPages > 1) {
+            String warn = "(p." + currentPage + "/" + totalPages + ")";
+            g.drawString(font, warn, rightEdge - font.width(warn), hy + 16, Colors.DANGER, false);
+        }
         GuiTextures.dividerH(g, gx + 8, gy + HEADER_H, GUI_W - 16);
     }
 
@@ -645,7 +651,9 @@ public final class ZoneListScreen extends Screen {
      */
     private int[] deleteOverlayDims() {
         String zoneName = filteredZones.get(selectedIndex).name();
-        int pw = Math.min(360, GUI_W - 20);
+        // Élargir si le nom est long et ne peut pas se couper (pas d'espace)
+        int nameW = font.width(zoneName) + 48;
+        int pw = Math.min(Math.max(260, nameW), GUI_W - 20);
         int textWidth = pw - 24;
         int lineCount = font.split(
             Component.translatable("arcadiaguard.gui.zonelist.confirm_delete.message", zoneName),
