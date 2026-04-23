@@ -55,7 +55,6 @@ public final class ArcadiaGuard {
 
         ModItems.register(modBus);
         PacketHandler.register(modBus);
-        com.arcadia.arcadiaguard.test.ArcadiaGuardTestRegistry.register(modBus);
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             // Indirect call via FQN string + reflection ensures the client class
