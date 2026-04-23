@@ -43,10 +43,14 @@ public final class GuardService implements IGuardService {
     private volatile boolean lpCheckerResolved = false;
 
     /**
-     * H7: UUID → bypass verdict cache. Invalidated on player logout via {@link #invalidateBypass(UUID)}.
-     * TRUE = has bypass, FALSE = no bypass.
+     * H7: UUID → bypass verdict cache avec TTL court.
+     * Un TTL (et non une invalidation purement à la déconnexion) est nécessaire
+     * pour que les changements de permissions à chaud via LuckPerms (ou /op, /deop)
+     * soient pris en compte sans reconnexion du joueur. Invalidé aussi au logout.
      */
-    private final ConcurrentHashMap<UUID, Boolean> bypassCache = new ConcurrentHashMap<>();
+    private static final long BYPASS_TTL_MS = 5_000L;
+    private record BypassEntry(boolean value, long expiresAt) {}
+    private final ConcurrentHashMap<UUID, BypassEntry> bypassCache = new ConcurrentHashMap<>();
 
     public GuardService(ZoneManager zoneManager, ArcadiaGuardAuditLogger auditLogger, DimensionFlagStore dimFlagStore) {
         this.zoneManager = zoneManager;
@@ -71,12 +75,13 @@ public final class GuardService implements IGuardService {
     public boolean shouldBypass(ServerPlayer player) {
         UUID id = player.getUUID();
         if (debugPlayers.contains(id)) return false;
-        // H7: use bypass cache
-        Boolean cached = bypassCache.get(id);
-        if (cached != null) return cached;
+        // H7: use bypass cache (TTL court pour refléter les changements de perms à chaud)
+        long now = System.currentTimeMillis();
+        BypassEntry cached = bypassCache.get(id);
+        if (cached != null && cached.expiresAt > now) return cached.value;
         try {
             boolean bypass = computeBypass(player);
-            bypassCache.put(id, bypass);
+            bypassCache.put(id, new BypassEntry(bypass, now + BYPASS_TTL_MS));
             return bypass;
         } catch (Exception e) {
             ArcadiaGuard.LOGGER.warn("ArcadiaGuard: failed to check permissions for player {}, defaulting to no bypass", player.getGameProfile().getName(), e);
