@@ -90,10 +90,17 @@ public final class ZoneDetailScreen extends Screen {
 
     // ── Constructor ──────────────────────────────────────────────────────────────
 
+    private boolean viewOnly = false;
+
     public ZoneDetailScreen(Screen parent, Detail detail) {
+        this(parent, detail, false);
+    }
+
+    public ZoneDetailScreen(Screen parent, Detail detail, boolean viewOnly) {
         super(Component.translatable("arcadiaguard.gui.zone_detail.title", detail.name()));
-        this.parent = parent;
-        this.detail = detail;
+        this.parent   = parent;
+        this.detail   = detail;
+        this.viewOnly = viewOnly;
     }
 
     public void updateDetail(Detail d) {
@@ -255,6 +262,11 @@ public final class ZoneDetailScreen extends Screen {
             });
         addRenderableWidget(footerItemBlocksBtn);
 
+        if (viewOnly) {
+            footerParentBtn.active = false;
+            footerItemBlocksBtn.active = false;
+        }
+
         // Bouton Supprimer retire du sous-menu (tester feedback): utiliser celui du main menu a la place.
         footerDeleteBtn = null;
     }
@@ -263,6 +275,11 @@ public final class ZoneDetailScreen extends Screen {
 
     private void hit(int x, int y, int w, int h, Runnable action) {
         hitboxes.add(new Hitbox(x, y, w, h, action));
+    }
+
+    /** Hitbox de modification — ignorée si viewOnly. */
+    private void editHit(int x, int y, int w, int h, Runnable action) {
+        if (!viewOnly) hitboxes.add(new Hitbox(x, y, w, h, action));
     }
 
     // ── Render ───────────────────────────────────────────────────────────────────
@@ -463,7 +480,7 @@ public final class ZoneDetailScreen extends Screen {
 
         // Register hitboxes
         final int ebx = enabledBtnX, ebw = enabledBtnW;
-        hit(ebx, gy + 6, ebw, 20, () ->
+        editHit(ebx, gy + 6, ebw, 20, () ->
             PacketDistributor.sendToServer(GuiActionPayload.toggleZoneEnabled(detail.name(), !detail.enabled())));
         final int evx = eyeBtnX, evw = eyeBtnW;
         hit(evx, gy + 6, evw, 20, () -> { viewZone = !viewZone; updateViewCache(); });
@@ -530,7 +547,7 @@ public final class ZoneDetailScreen extends Screen {
         if (font.width(editLabel) > ecbw - 6) editLabel = font.plainSubstrByWidth(editLabel, ecbw - 12) + "\u2026";
         g.drawCenteredString(font, editLabel, ecbx + ecbw / 2, ecby + 4,
             hov2 ? Colors.ACCENT_HI : Colors.ACCENT);
-        hit(ecbx, ecby, ecbw, btnH, this::openCoordsEditor);
+        editHit(ecbx, ecby, ecbw, btnH, this::openCoordsEditor);
         cy += btnH + 6;
 
         GuiTextures.dividerH(g, cx - 2, cy, COL1_W - 8); cy += 6;
@@ -567,7 +584,7 @@ public final class ZoneDetailScreen extends Screen {
         g.drawString(font, Component.translatable("arcadiaguard.gui.zonedetail.dim_flags_label").getString(), cx, cy, Colors.TEXT_MUTE, false);
         String inhBadge = inh ? Component.translatable("arcadiaguard.gui.zonedetail.inherited").getString() : Component.translatable("arcadiaguard.gui.zonedetail.own").getString();
         g.drawString(font, inhBadge, cx + col1TextW - font.width(inhBadge), cy, inhColor, false);
-        hit(cx, inheritToggleY - 1, col1TextW, 12, () ->
+        editHit(cx, inheritToggleY - 1, col1TextW, 12, () ->
             PacketDistributor.sendToServer(
                 GuiActionPayload.toggleInheritDimFlags(detail.name(), !detail.inheritDimFlags())));
 
@@ -606,7 +623,7 @@ public final class ZoneDetailScreen extends Screen {
         g.fill(addBtnX + 17, cy,      addBtnX + 18, cy + 14, Colors.ACCENT_LO);
         g.drawCenteredString(font, "+", addBtnX + 9, cy + 4,
             addHov ? Colors.ACCENT_HI : Colors.VERDIGRIS);
-        hit(addBtnX, cy, 18, 14, this::openPicker);
+        editHit(addBtnX, cy, 18, 14, this::openPicker);
 
         String parentInfo = detail.parentName() != null
             ? Component.translatable("arcadiaguard.gui.zonedetail.inherits_from", detail.parentName()).getString()
@@ -681,7 +698,7 @@ public final class ZoneDetailScreen extends Screen {
                 // Pour les flags herites (DIM/PARENT), il n'y a pas d'override zone a retirer.
                 boolean isOwn = (f.source() == FlagEntry.SOURCE_ZONE_OWN);
                 if (isOwn) {
-                    hit(rx, iy + 4, 14, FLAG_H - 8, () ->
+                    editHit(rx, iy + 4, 14, FLAG_H - 8, () ->
                         PacketDistributor.sendToServer(GuiActionPayload.resetFlag(detail.name(), ff.id())));
                 }
 
@@ -702,7 +719,7 @@ public final class ZoneDetailScreen extends Screen {
                     g.fill(bx, iy + 4, bx + 30, iy + 5, badgeColor);
                     g.drawCenteredString(font, badgeText, bx + 15, iy + 7, badgeColor);
                     // Clic sur badge = override local avec valeur opposee (cree un own flag).
-                    hit(bx, iy + 4, 30, FLAG_H - 8, () ->
+                    editHit(bx, iy + 4, 30, FLAG_H - 8, () ->
                         PacketDistributor.sendToServer(GuiActionPayload.setFlag(detail.name(), ff.id(), !ff.value())));
                 } else {
                     String preview = f.type() == FlagEntry.TYPE_INT ? f.stringValue()
@@ -714,7 +731,7 @@ public final class ZoneDetailScreen extends Screen {
                         hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
                     g.drawCenteredString(font, ">", bx + 27, iy + 7,
                         hovArrow ? Colors.ACCENT_HI : Colors.ACCENT);
-                    hit(bx + 20, iy + 4, 14, FLAG_H - 8, () -> {
+                    editHit(bx + 20, iy + 4, 14, FLAG_H - 8, () -> {
                         FlagConfigScreen.FlagType t = ff.type() == FlagEntry.TYPE_INT
                             ? FlagConfigScreen.FlagType.INT : FlagConfigScreen.FlagType.LIST;
                         minecraft.setScreen(new FlagConfigScreen(
@@ -1099,7 +1116,7 @@ public final class ZoneDetailScreen extends Screen {
         boolean addHov = mx >= addX && mx < addX + 14 && my >= cy && my < cy + 14;
         g.fill(addX, cy, addX + 14, cy + 14, addHov ? Colors.accentTint(0x30) : Colors.BG_2);
         g.drawCenteredString(font, "+", addX + 7, cy + 4, addHov ? Colors.ACCENT_HI : Colors.ACCENT);
-        hit(addX, cy, 14, 14, () -> {
+        editHit(addX, cy, 14, 14, () -> {
             popup = new PopupState.WhitelistInput();
             if (whitelistBox != null) setFocused(whitelistBox);
         });
@@ -1161,7 +1178,7 @@ public final class ZoneDetailScreen extends Screen {
 
             final MemberEntry mm = m;
             int rx = cx + cw - 30;
-            hit(rx, iy + 4, 26, MBR_H - 8, () ->
+            editHit(rx, iy + 4, 26, MBR_H - 8, () ->
                 // Envoie l'UUID (pas le name) : evite un lookup ProfileCache serveur qui
                 // peut echouer si le joueur n'a jamais ete vu depuis dernier boot.
                 PacketDistributor.sendToServer(GuiActionPayload.whitelistRemove(detail.name(), mm.uuid())));

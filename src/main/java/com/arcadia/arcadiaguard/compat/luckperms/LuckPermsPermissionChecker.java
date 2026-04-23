@@ -51,6 +51,11 @@ public final class LuckPermsPermissionChecker {
         return checkNode(player, "arcadiaguard.*") || checkNode(player, "arcadiaguard.zone.bypass");
     }
 
+    /** Returns true if the player has {@code arcadiaguard.view} (lecture seule du panel). */
+    public boolean hasViewAccess(ServerPlayer player) {
+        return checkNode(player, "arcadiaguard.view");
+    }
+
     /**
      * Returns the highest role the player holds in the given zone via LuckPerms nodes.
      * Returns {@code null} if LuckPerms is unavailable or no node matches.

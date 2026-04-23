@@ -75,8 +75,22 @@ public final class ZonePermission {
         if (source.hasPermission(ArcadiaGuardConfig.BYPASS_OP_LEVEL.get())) return true;
         if (!(source.getEntity() instanceof ServerPlayer player)) return false;
         LuckPermsPermissionChecker lp = LuckPermsCompat.isAvailable() ? LuckPermsCompat.checker() : null;
-        if (lp != null && lp.hasBypass(player)) return true;
+        if (lp != null) {
+            if (lp.hasBypass(player)) return true;
+            if (lp.hasViewAccess(player)) return true;
+        }
         return ArcadiaGuard.zoneManager().zones(source.getLevel())
             .stream().anyMatch(z -> ((ProtectedZone) z).roleOf(player.getUUID()).isPresent());
+    }
+
+    /**
+     * Returns {@code true} si le joueur a {@code arcadiaguard.view} mais pas de bypass/édition.
+     * Ces joueurs peuvent voir toutes les zones et les logs, mais pas modifier.
+     */
+    public static boolean isViewOnly(CommandSourceStack source) {
+        if (!(source.getEntity() instanceof ServerPlayer player)) return false;
+        LuckPermsPermissionChecker lp = LuckPermsCompat.isAvailable() ? LuckPermsCompat.checker() : null;
+        if (lp == null) return false;
+        return lp.hasViewAccess(player) && !lp.hasBypass(player);
     }
 }

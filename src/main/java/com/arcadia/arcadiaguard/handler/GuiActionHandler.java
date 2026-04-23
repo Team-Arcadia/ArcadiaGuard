@@ -94,7 +94,7 @@ public final class GuiActionHandler {
 
             switch (payload.action()) {
                 case REQUEST_DETAIL -> {
-                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER) && !isViewOnly(player)) return;
                     ArcadiaGuard.zoneManager().sendDetailToPlayer(player, payload.zoneName());
                 }
                 case CREATE_ZONE -> {
@@ -118,7 +118,7 @@ public final class GuiActionHandler {
                     whitelistAction(player, payload, false);
                 }
                 case TELEPORT -> {
-                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER) && !isViewOnly(player)) return;
                     teleport(player, payload.zoneName());
                 }
                 case TOGGLE_DEBUG -> {
@@ -148,7 +148,7 @@ public final class GuiActionHandler {
                     resetDimFlag(player, payload);
                 }
                 case REQUEST_DIM_DETAIL -> {
-                    if (!isOp(player)) return;
+                    if (!isOp(player) && !isViewOnly(player)) return;
                     sendDimDetail(player, payload.zoneName());
                 }
                 case RESET_FLAG -> {
@@ -168,11 +168,11 @@ public final class GuiActionHandler {
                     setZoneBounds(player, payload);
                 }
                 case REQUEST_ZONE_LOGS -> {
-                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER)) return;
+                    if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER) && !isViewOnly(player)) return;
                     sendZoneLogs(player, payload);
                 }
                 case REQUEST_PAGE -> {
-                    if (!isOp(player)) return;
+                    if (!isOp(player) && !isViewOnly(player)) return;
                     ArcadiaGuard.zoneManager().sendRefreshedList(player, payload.x1());
                 }
                 case ITEM_BLOCK_ADD -> {
@@ -211,7 +211,12 @@ public final class GuiActionHandler {
     }
 
     private static boolean isOp(ServerPlayer player) {
-        return player.hasPermissions(ArcadiaGuardConfig.BYPASS_OP_LEVEL.get());
+        int opLevel = player.getServer().getProfilePermissions(player.getGameProfile());
+        return opLevel >= ArcadiaGuardConfig.BYPASS_OP_LEVEL.get();
+    }
+
+    private static boolean isViewOnly(ServerPlayer player) {
+        return ZonePermission.isViewOnly(player.createCommandSourceStack());
     }
 
     private static boolean canAccessZone(ServerPlayer player, String zoneName, ZoneRole minRole) {
@@ -564,7 +569,8 @@ public final class GuiActionHandler {
             flags.add(new FlagInfo(flag.id(), FlagUtils.formatFlagLabel(flag.id()),
                 boolVal, configured, desc, type, strVal));
         }
-        PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags));
+        boolean viewOnly = ZonePermission.isViewOnly(player.createCommandSourceStack());
+        PacketDistributor.sendToPlayer(player, new DimFlagsPayload(dimKey, flags, viewOnly));
     }
 
     private static void saveDimFlags() {

@@ -45,7 +45,7 @@ public final class ArcadiaGuardClient {
                         mc.setScreen(new ZoneListScreen(
                             payload.zones(),
                             payload.pos1(), payload.pos2(), payload.debugMode(),
-                            payload.page(), payload.pageSize(), payload.totalPages()));
+                            payload.page(), payload.pageSize(), payload.totalPages(), payload.viewOnly()));
                     }
                 } catch (Exception e) {
                     ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to open zone list GUI", e);
@@ -59,7 +59,7 @@ public final class ArcadiaGuardClient {
                         zds.updateDetail(payload.detail());
                     } else {
                         Screen parent = mc.screen;
-                        mc.setScreen(new ZoneDetailScreen(parent, payload.detail()));
+                        mc.setScreen(new ZoneDetailScreen(parent, payload.detail(), payload.viewOnly()));
                     }
                 } catch (Exception e) {
                     ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to open zone detail GUI", e);
