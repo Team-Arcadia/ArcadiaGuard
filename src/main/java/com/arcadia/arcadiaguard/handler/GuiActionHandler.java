@@ -535,6 +535,8 @@ public final class GuiActionHandler {
         java.util.Map<String, Object> dimFlagValues = ArcadiaGuard.dimFlagStore().flags(dimKey);
         List<FlagInfo> flags = new ArrayList<>();
         for (Flag<?> flag : ArcadiaGuard.flagRegistry().all()) {
+            // chunkload n'a de sens qu'au niveau zone (tickets par zone), pas par dimension
+            if ("chunkload".equals(flag.id())) continue;
             String mod = flag.requiredMod();
             if (!mod.isEmpty() && !ModList.get().isLoaded(mod)) continue;
             Object raw = dimFlagValues.get(flag.id());
