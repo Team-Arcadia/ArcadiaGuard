@@ -172,8 +172,6 @@
   "arcadiaguard.gui.zonelist.confirm_delete.yes": "Delete",
   "arcadiaguard.gui.zonelist.confirm_delete.no": "Cancel",
   "arcadiaguard.gui.zonelist.need_wand": "Pos1 + Pos2 required",
-  "arcadiaguard.gui.zonelist.btn_prev": "← Prev",
-  "arcadiaguard.gui.zonelist.btn_next": "Next →",
   "arcadiaguard.gui.zonelist.btn_dim_flags": "⚙ Dim Flags",
   "arcadiaguard.gui.zonelist.debug_on": "Debug: ON",
   "arcadiaguard.gui.zonelist.debug_off": "Debug: OFF",

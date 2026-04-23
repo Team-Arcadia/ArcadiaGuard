@@ -45,7 +45,7 @@ public final class ArcadiaGuardClient {
                         mc.setScreen(new ZoneListScreen(
                             payload.zones(),
                             payload.pos1(), payload.pos2(), payload.debugMode(),
-                            payload.page(), payload.pageSize(), payload.totalPages(), payload.viewOnly()));
+                            payload.viewOnly()));
                     }
                 } catch (Exception e) {
                     ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to open zone list GUI", e);

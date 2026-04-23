@@ -12,14 +12,21 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * S→C : ouvre ZoneListScreen avec une page de zones protégées
+ * S→C : ouvre ZoneListScreen avec la liste complete des zones protegees
  * et les positions courantes de la baguette.
+ * <p>La pagination a ete retiree au profit d'un scrollbar cote client.
+ * La taille maximale est cappee pour eviter une saturation reseau en cas
+ * de corruption de packet ; elle reste largement suffisante en pratique.
  */
 public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2, boolean debugMode,
-    int page, int pageSize, int totalPages, boolean viewOnly) implements CustomPacketPayload {
+    boolean viewOnly) implements CustomPacketPayload {
 
     /** Valeur sentinelle = position non définie. */
     public static final long NO_POS = Long.MIN_VALUE;
+
+    /** Cap de securite cote decodage. Un serveur avec plus de zones verrait
+     *  le GUI refuser le packet — a ajuster si un jour ce plafond gene. */
+    public static final int MAX_ZONES = 10_000;
 
     public record ZoneEntry(
         String name, String dim,
@@ -61,26 +68,18 @@ public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2
             buf.writeLong(p.wandPos1());
             buf.writeLong(p.wandPos2());
             buf.writeBoolean(p.debugMode());
-            buf.writeInt(p.page());
-            buf.writeInt(p.pageSize());
-            buf.writeInt(p.totalPages());
             buf.writeBoolean(p.viewOnly());
         },
         buf -> {
             int size = buf.readInt();
-            if (size < 0 || size > 200) throw new io.netty.handler.codec.DecoderException("Invalid size " + size + " in OpenGuiPayload");
+            if (size < 0 || size > MAX_ZONES) throw new io.netty.handler.codec.DecoderException("Invalid size " + size + " in OpenGuiPayload");
             List<ZoneEntry> zones = new ArrayList<>(size);
             for (int i = 0; i < size; i++) zones.add(ZoneEntry.CODEC.decode(buf));
             long wandPos1 = buf.readLong();
             long wandPos2 = buf.readLong();
             boolean debugMode = buf.readBoolean();
-            int page = buf.readInt();
-            int pageSize = buf.readInt();
-            if (pageSize < 1 || pageSize > 200) throw new io.netty.handler.codec.DecoderException("Invalid pageSize " + pageSize + " in OpenGuiPayload");
-            int totalPages = buf.readInt();
-            if (totalPages < 1 || totalPages > 100_000) throw new io.netty.handler.codec.DecoderException("Invalid totalPages " + totalPages + " in OpenGuiPayload");
             boolean viewOnly = buf.readBoolean();
-            return new OpenGuiPayload(zones, wandPos1, wandPos2, debugMode, page, pageSize, totalPages, viewOnly);
+            return new OpenGuiPayload(zones, wandPos1, wandPos2, debugMode, viewOnly);
         }
     );
 
