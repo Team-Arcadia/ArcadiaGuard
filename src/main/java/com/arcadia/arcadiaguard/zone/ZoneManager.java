@@ -36,8 +36,6 @@ import org.jetbrains.annotations.Nullable;
 
 public final class ZoneManager implements IZoneManager {
 
-    private static final int PAGE_SIZE = 50;
-
     private final InternalZoneProvider internal;
     private final FlagRegistryImpl flagRegistry;
 
@@ -163,10 +161,6 @@ public final class ZoneManager implements IZoneManager {
     }
 
     public void sendRefreshedList(ServerPlayer player) {
-        sendRefreshedList(player, 1);
-    }
-
-    public void sendRefreshedList(ServerPlayer player, int page) {
         // S-H18 : collecter les zones de TOUTES les dimensions pour que la sidebar
         // affiche les counts corrects et les dimensions modées même si le joueur n'y est pas.
         @SuppressWarnings("unchecked")
@@ -183,10 +177,11 @@ public final class ZoneManager implements IZoneManager {
             .sorted(java.util.Comparator.comparing(OpenGuiPayload.ZoneEntry::name))
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
 
-        int total = all.size();
-        int pages = Math.max(1, (int) Math.ceil((double) total / PAGE_SIZE));
-        int p = Math.min(Math.max(page, 1), pages);
-        List<OpenGuiPayload.ZoneEntry> pageEntries = all.subList((p - 1) * PAGE_SIZE, Math.min(p * PAGE_SIZE, total));
+        // Cap defensif : si un serveur depasse la limite, on tronque pour ne pas
+        // faire rejeter le packet cote client. Peu probable en pratique.
+        if (all.size() > OpenGuiPayload.MAX_ZONES) {
+            all = new ArrayList<>(all.subList(0, OpenGuiPayload.MAX_ZONES));
+        }
 
         BlockPos p1 = WandItem.getPos1(player.getUUID());
         BlockPos p2 = WandItem.getPos2(player.getUUID());
@@ -196,7 +191,7 @@ public final class ZoneManager implements IZoneManager {
 
         boolean viewOnly = com.arcadia.arcadiaguard.command.ZonePermission.isViewOnly(player.createCommandSourceStack());
         PacketDistributor.sendToPlayer(player,
-            new OpenGuiPayload(pageEntries, lp1, lp2, debugMode, p, PAGE_SIZE, pages, viewOnly));
+            new OpenGuiPayload(all, lp1, lp2, debugMode, viewOnly));
     }
 
     public void reload(MinecraftServer server) {

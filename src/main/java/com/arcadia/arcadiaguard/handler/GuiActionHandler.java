@@ -171,10 +171,6 @@ public final class GuiActionHandler {
                     if (!canAccessZone(player, payload.zoneName(), ZoneRole.MEMBER) && !isViewOnly(player)) return;
                     sendZoneLogs(player, payload);
                 }
-                case REQUEST_PAGE -> {
-                    if (!isOp(player) && !isViewOnly(player)) return;
-                    ArcadiaGuard.zoneManager().sendRefreshedList(player, payload.x1());
-                }
                 case ITEM_BLOCK_ADD -> {
                     if (!canAccessZone(player, payload.zoneName(), ZoneRole.OWNER)) return;
                     itemBlockChange(player, payload, true);

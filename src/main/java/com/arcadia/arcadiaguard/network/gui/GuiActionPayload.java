@@ -41,7 +41,6 @@ public record GuiActionPayload(
         SET_DIM_FLAG_STR,          // zoneName=dimKey, arg1=flagId, arg2=stringValue
         SET_ZONE_BOUNDS,           // zoneName, x1/y1/z1=nouveau pos1, x2/y2/z2=nouveau pos2
         REQUEST_ZONE_LOGS,         // zoneName, arg1=playerFilter, arg2=actionFilter
-        REQUEST_PAGE,              // x1=pageNumber
         ITEM_BLOCK_ADD,            // zoneName, arg1=itemResourceLocation — S-H20
         ITEM_BLOCK_REMOVE          // zoneName, arg1=itemResourceLocation — S-H20
     }
@@ -143,9 +142,6 @@ public record GuiActionPayload(
     }
     public static GuiActionPayload requestDimDetail(String dimKey) {
         return new GuiActionPayload(Action.REQUEST_DIM_DETAIL, dimKey, "", "", false, 0,0,0,0,0,0);
-    }
-    public static GuiActionPayload requestPage(int page) {
-        return new GuiActionPayload(Action.REQUEST_PAGE, "", "", "", false, page,0,0,0,0,0);
     }
     public static GuiActionPayload itemBlockAdd(String zone, String itemId) {
         return new GuiActionPayload(Action.ITEM_BLOCK_ADD, zone, itemId, "", false, 0,0,0,0,0,0);

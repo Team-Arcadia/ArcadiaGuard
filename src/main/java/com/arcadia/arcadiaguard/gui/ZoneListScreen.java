@@ -5,10 +5,8 @@ import com.arcadia.arcadiaguard.network.gui.GuiActionPayload;
 import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
 import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload.ZoneEntry;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.SequencedSet;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
@@ -36,11 +34,6 @@ public final class ZoneListScreen extends Screen {
     private List<ZoneEntry> filteredZones;
     private BlockPos wandPos1, wandPos2;
 
-    private int currentPage = 1;
-    private int totalPages  = 1;
-    private int pageSize    = 50;
-    private final Map<Integer, List<ZoneEntry>> pageCache = new HashMap<>();
-
     private String dimFilter  = "";
     private String searchText = "";
     private ParentFilter parentFilter = ParentFilter.ALL;
@@ -62,8 +55,6 @@ public final class ZoneListScreen extends Screen {
     private CartographiaButton detailsBtn;
     private CartographiaButton deleteBtn;
     private CartographiaButton createBtn;
-    private CartographiaButton prevBtn;
-    private CartographiaButton nextBtn;
     private CartographiaButton dimFlagsBtn;
     private CartographiaButton debugBtn;
     private CartographiaButton closeBtn;
@@ -79,25 +70,17 @@ public final class ZoneListScreen extends Screen {
     private boolean viewOnly = false;
 
     public ZoneListScreen(List<ZoneEntry> zones, BlockPos pos1, BlockPos pos2, boolean debug,
-            int page, int pageSize, int totalPages, boolean viewOnly) {
+            boolean viewOnly) {
         super(Component.translatable("arcadiaguard.gui.zone_list.title"));
-        this.currentPage   = page;
-        this.pageSize      = pageSize;
-        this.totalPages    = totalPages;
         this.allZones      = new ArrayList<>(zones);
         this.filteredZones = new ArrayList<>(zones);
         this.wandPos1      = pos1;
         this.wandPos2      = pos2;
         debugMode          = debug;
         this.viewOnly      = viewOnly;
-        pageCache.put(page, new ArrayList<>(zones));
     }
 
     public void refresh(OpenGuiPayload payload) {
-        currentPage = payload.page();
-        pageSize    = payload.pageSize();
-        totalPages  = payload.totalPages();
-        pageCache.put(currentPage, new ArrayList<>(payload.zones()));
         allZones.clear();
         allZones.addAll(payload.zones());
         wandPos1  = payload.pos1();
@@ -107,8 +90,6 @@ public final class ZoneListScreen extends Screen {
         scrollOffset  = 0;
         selectedIndex = -1;
         applyFilter();
-        if (prevBtn != null) prevBtn.active = currentPage > 1;
-        if (nextBtn != null) nextBtn.active = currentPage < totalPages;
     }
 
     @Override
@@ -198,28 +179,6 @@ public final class ZoneListScreen extends Screen {
             createBtn = null;
         }
 
-        if (totalPages > 1) {
-            int navW  = 56;
-            int navCx = gx + GUI_W / 2;
-            int prevX = navCx - navW - 40;
-            int nextX = navCx + 40;
-
-            prevBtn = CartographiaButton.neutral(prevX, fy + 6, navW, 16,
-                Component.translatable("arcadiaguard.gui.zonelist.btn_prev"),
-                b -> { if (currentPage > 1) navigatePage(currentPage - 1); });
-            prevBtn.active = currentPage > 1;
-            addRenderableWidget(prevBtn);
-
-            nextBtn = CartographiaButton.neutral(nextX, fy + 6, navW, 16,
-                Component.translatable("arcadiaguard.gui.zonelist.btn_next"),
-                b -> { if (currentPage < totalPages) navigatePage(currentPage + 1); });
-            nextBtn.active = currentPage < totalPages;
-            addRenderableWidget(nextBtn);
-        } else {
-            prevBtn = null;
-            nextBtn = null;
-        }
-
         if (!dimFilter.isEmpty()) {
             int dimBtnX = gx + GUI_W - 260;
             int dimBtnW = narrow ? 22 : 84;
@@ -304,10 +263,6 @@ public final class ZoneListScreen extends Screen {
         String zoneCountText = Component.translatable(zoneCountKey, zoneCount).getString();
         int zoneCountW = font.width(zoneCountText);
         g.drawString(font, zoneCountText, rightEdge - zoneCountW, hy + 6, Colors.TEXT_MUTE, false);
-        if (!searchText.isEmpty() && totalPages > 1) {
-            String warn = "(p." + currentPage + "/" + totalPages + ")";
-            g.drawString(font, warn, rightEdge - font.width(warn), hy + 16, Colors.DANGER, false);
-        }
         GuiTextures.dividerH(g, gx + 8, gy + HEADER_H, GUI_W - 16);
     }
 
@@ -590,13 +545,6 @@ public final class ZoneListScreen extends Screen {
             g.drawString(font, font.plainSubstrByWidth(msg, maxTextW), cursor, fy + 10, Colors.TEXT_MUTE, false);
         }
 
-        // Centre: page label (boutons prev/next are widgets)
-        if (totalPages > 1) {
-            int navCx = gx + GUI_W / 2;
-            String pageLabel = currentPage + " / " + totalPages;
-            g.drawCenteredString(font, pageLabel, navCx, fy + 10, Colors.TEXT_MUTE);
-        }
-
         // Boutons footer (CartographiaButton) are rendered by super.render() — nothing more needed here.
     }
 
@@ -824,19 +772,6 @@ public final class ZoneListScreen extends Screen {
     public boolean isPauseScreen() { return false; }
 
     // ── Utilitaires ──────────────────────────────────────────────────────────────
-
-    private void navigatePage(int page) {
-        if (pageCache.containsKey(page)) {
-            currentPage = page;
-            allZones.clear();
-            allZones.addAll(pageCache.get(page));
-            scrollOffset  = 0;
-            selectedIndex = -1;
-            applyFilter();
-        } else {
-            PacketDistributor.sendToServer(GuiActionPayload.requestPage(page));
-        }
-    }
 
     private void applyFilter() {
         // Extra dims from mod zones
