@@ -242,6 +242,7 @@ public final class ZoneListScreen extends Screen {
         debugBtn = CartographiaButton.neutral(debugBtnX, fy + 6, debugBtnW, 16,
             Component.literal(debugLabel),
             b -> { debugMode = !debugMode; PacketDistributor.sendToServer(GuiActionPayload.toggleDebug()); rebuildWidgets(); });
+        if (viewOnly) debugBtn.active = false;
         addRenderableWidget(debugBtn);
 
         closeBtn = CartographiaButton.neutral(gx + GUI_W - 68, fy + 6, 60, 16,
