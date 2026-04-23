@@ -11,7 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** S→C : flags configurés sur une dimension spécifique. */
-public record DimFlagsPayload(String dimKey, List<FlagInfo> flags) implements CustomPacketPayload {
+public record DimFlagsPayload(String dimKey, List<FlagInfo> flags, boolean viewOnly) implements CustomPacketPayload {
 
     /** type: 0=BOOL, 1=INT, 2=LIST. stringValue contient la valeur brute. */
     public record FlagInfo(String id, String label, boolean value, boolean configured,
@@ -54,6 +54,7 @@ public record DimFlagsPayload(String dimKey, List<FlagInfo> flags) implements Cu
             DIM_C.encode(buf, p.dimKey());
             buf.writeInt(p.flags().size());
             for (FlagInfo f : p.flags()) FlagInfo.CODEC.encode(buf, f);
+            buf.writeBoolean(p.viewOnly());
         },
         buf -> {
             String dimKey = DIM_C.decode(buf);
@@ -61,7 +62,8 @@ public record DimFlagsPayload(String dimKey, List<FlagInfo> flags) implements Cu
             if (size < 0 || size > 256) throw new io.netty.handler.codec.DecoderException("Invalid size " + size + " in DimFlagsPayload");
             List<FlagInfo> flags = new ArrayList<>(size);
             for (int i = 0; i < size; i++) flags.add(FlagInfo.CODEC.decode(buf));
-            return new DimFlagsPayload(dimKey, flags);
+            boolean viewOnly = buf.readBoolean();
+            return new DimFlagsPayload(dimKey, flags, viewOnly);
         }
     );
 

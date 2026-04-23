@@ -140,7 +140,8 @@ public final class ZoneManager implements IZoneManager {
             zone.maxX(), zone.maxY(), zone.maxZ(),
             zone.parent(), flags, members, zone.enabled(), zone.inheritDimFlags(),
             blockedItems);
-        PacketDistributor.sendToPlayer(player, new ZoneDetailPayload(detail));
+        boolean viewOnly = com.arcadia.arcadiaguard.command.ZonePermission.isViewOnly(player.createCommandSourceStack());
+        PacketDistributor.sendToPlayer(player, new ZoneDetailPayload(detail, viewOnly));
     }
 
     /**
@@ -193,8 +194,9 @@ public final class ZoneManager implements IZoneManager {
         long lp2 = p2 != null ? p2.asLong() : OpenGuiPayload.NO_POS;
         boolean debugMode = ArcadiaGuard.guardService().isDebugMode(player.getUUID());
 
+        boolean viewOnly = com.arcadia.arcadiaguard.command.ZonePermission.isViewOnly(player.createCommandSourceStack());
         PacketDistributor.sendToPlayer(player,
-            new OpenGuiPayload(pageEntries, lp1, lp2, debugMode, p, PAGE_SIZE, pages));
+            new OpenGuiPayload(pageEntries, lp1, lp2, debugMode, p, PAGE_SIZE, pages, viewOnly));
     }
 
     public void reload(MinecraftServer server) {

@@ -11,7 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** S→C : détail complet d'une zone (flags + membres). */
-public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
+public record ZoneDetailPayload(Detail detail, boolean viewOnly) implements CustomPacketPayload {
 
     /**
      * type: 0=BOOL, 1=INT, 2=LIST. stringValue contient la valeur brute (ex: "42" ou "a,b,c").
@@ -129,8 +129,8 @@ public record ZoneDetailPayload(Detail detail) implements CustomPacketPayload {
         new Type<>(ResourceLocation.fromNamespaceAndPath(ArcadiaGuard.MOD_ID, "zone_detail"));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, ZoneDetailPayload> STREAM_CODEC = StreamCodec.of(
-        (buf, p) -> Detail.CODEC.encode(buf, p.detail()),
-        buf -> new ZoneDetailPayload(Detail.CODEC.decode(buf))
+        (buf, p) -> { Detail.CODEC.encode(buf, p.detail()); buf.writeBoolean(p.viewOnly()); },
+        buf -> new ZoneDetailPayload(Detail.CODEC.decode(buf), buf.readBoolean())
     );
 
     @Override

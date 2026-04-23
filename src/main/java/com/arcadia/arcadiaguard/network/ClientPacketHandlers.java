@@ -30,7 +30,7 @@ public final class ClientPacketHandlers {
                 mc.setScreen(new ZoneListScreen(
                     payload.zones(),
                     payload.pos1(), payload.pos2(), payload.debugMode(),
-                    payload.page(), payload.pageSize(), payload.totalPages()));
+                    payload.page(), payload.pageSize(), payload.totalPages(), payload.viewOnly()));
             }
         });
     }
@@ -42,7 +42,7 @@ public final class ClientPacketHandlers {
                 zds.updateDetail(payload.detail());
             } else {
                 Screen parent = mc.screen;
-                mc.setScreen(new ZoneDetailScreen(parent, payload.detail()));
+                mc.setScreen(new ZoneDetailScreen(parent, payload.detail(), payload.viewOnly()));
             }
         });
     }

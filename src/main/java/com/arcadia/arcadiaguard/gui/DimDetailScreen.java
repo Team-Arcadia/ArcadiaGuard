@@ -26,6 +26,7 @@ public final class DimDetailScreen extends Screen {
 
     private final Screen parent;
     private DimFlagsPayload data;
+    private boolean viewOnly = false;
 
     private int gx, gy;
     private int scroll = 0;
@@ -40,12 +41,14 @@ public final class DimDetailScreen extends Screen {
 
     public DimDetailScreen(Screen parent, DimFlagsPayload data) {
         super(Component.translatable("arcadiaguard.gui.dim_detail.title", data.dimKey()));
-        this.parent = parent;
-        this.data   = data;
+        this.parent   = parent;
+        this.data     = data;
+        this.viewOnly = data.viewOnly();
     }
 
     public void refresh(DimFlagsPayload payload) {
-        this.data = payload;
+        this.data     = payload;
+        this.viewOnly = payload.viewOnly();
     }
 
     @Override
@@ -115,19 +118,21 @@ public final class DimDetailScreen extends Screen {
         String dimKey = font.plainSubstrByWidth(data.dimKey(), GUI_W - 60);
         g.drawString(font, dimKey, gx + 28, gy + 18, Colors.TEXT_MUTE, false);
 
-        // Bouton "+" en haut à droite
-        int addBtnX = gx + GUI_W - 28;
-        int addBtnY = gy + 8;
-        boolean addHov = !showPicker && mx >= addBtnX && mx < addBtnX + 18
-                      && my >= addBtnY && my < addBtnY + 14;
-        g.fill(addBtnX, addBtnY, addBtnX + 18, addBtnY + 14,
-            addHov ? Colors.accentTint(0x40) : Colors.BG_2);
-        g.fill(addBtnX,      addBtnY,      addBtnX + 18, addBtnY + 1,  Colors.ACCENT_LO);
-        g.fill(addBtnX,      addBtnY + 13, addBtnX + 18, addBtnY + 14, Colors.ACCENT_LO);
-        g.fill(addBtnX,      addBtnY,      addBtnX + 1,  addBtnY + 14, Colors.ACCENT_LO);
-        g.fill(addBtnX + 17, addBtnY,      addBtnX + 18, addBtnY + 14, Colors.ACCENT_LO);
-        g.drawCenteredString(font, "+", addBtnX + 9, addBtnY + 3,
-            addHov ? Colors.ACCENT_HI : Colors.VERDIGRIS);
+        // Bouton "+" en haut à droite (masqué en vue lecture seule)
+        if (!viewOnly) {
+            int addBtnX = gx + GUI_W - 28;
+            int addBtnY = gy + 8;
+            boolean addHov = !showPicker && mx >= addBtnX && mx < addBtnX + 18
+                          && my >= addBtnY && my < addBtnY + 14;
+            g.fill(addBtnX, addBtnY, addBtnX + 18, addBtnY + 14,
+                addHov ? Colors.accentTint(0x40) : Colors.BG_2);
+            g.fill(addBtnX,      addBtnY,      addBtnX + 18, addBtnY + 1,  Colors.ACCENT_LO);
+            g.fill(addBtnX,      addBtnY + 13, addBtnX + 18, addBtnY + 14, Colors.ACCENT_LO);
+            g.fill(addBtnX,      addBtnY,      addBtnX + 1,  addBtnY + 14, Colors.ACCENT_LO);
+            g.fill(addBtnX + 17, addBtnY,      addBtnX + 18, addBtnY + 14, Colors.ACCENT_LO);
+            g.drawCenteredString(font, "+", addBtnX + 9, addBtnY + 3,
+                addHov ? Colors.ACCENT_HI : Colors.VERDIGRIS);
+        }
 
         GuiTextures.dividerH(g, gx + 8, gy + HDR_H, GUI_W - 16);
     }
@@ -189,7 +194,7 @@ public final class DimDetailScreen extends Screen {
             g.fill(cx + 2, iy + FLAG_H / 2 - 2, cx + 5, iy + FLAG_H / 2 + 2, Colors.VERDIGRIS);
             g.drawString(font, f.label(), cx + 8, iy + 7, Colors.TEXT, false);
 
-            int bx = cx + cw - 36;
+            int bx = cx + cw - (viewOnly ? 6 : 36);
             if (f.type() == FlagInfo.TYPE_BOOL) {
                 boolean protOn = !f.value();
                 int badgeColor = protOn ? Colors.GOOD : Colors.DANGER;
@@ -201,19 +206,23 @@ public final class DimDetailScreen extends Screen {
                 String preview = f.type() == FlagInfo.TYPE_INT ? f.stringValue()
                     : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
                 g.drawString(font, preview, bx + 17 - font.width(preview), iy + 8, Colors.TEXT_MUTE, false);
-                boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
-                g.fill(bx + 20, iy + 4, bx + 34, iy + FLAG_H - 4,
-                    hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
-                g.drawCenteredString(font, ">", bx + 27, iy + 8,
-                    hovArrow ? Colors.ACCENT_HI : Colors.ACCENT);
+                if (!viewOnly) {
+                    boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
+                    g.fill(bx + 20, iy + 4, bx + 34, iy + FLAG_H - 4,
+                        hovArrow ? Colors.accentTint(0x40) : Colors.BG_2);
+                    g.drawCenteredString(font, ">", bx + 27, iy + 8,
+                        hovArrow ? Colors.ACCENT_HI : Colors.ACCENT);
+                }
             }
 
-            int rx = bx - 18;
-            boolean rhov = mx >= rx && mx < rx + 14 && my >= iy + 4 && my < iy + FLAG_H - 4;
-            g.fill(rx, iy + 4, rx + 14, iy + FLAG_H - 4, rhov
-                ? Colors.DANGER & 0xFFFFFF | 0x50000000 : Colors.BG_2);
-            g.drawCenteredString(font, "✕", rx + 7, iy + 7,
-                rhov ? Colors.DANGER : Colors.TEXT_MUTE);
+            if (!viewOnly) {
+                int rx = bx - 18;
+                boolean rhov = mx >= rx && mx < rx + 14 && my >= iy + 4 && my < iy + FLAG_H - 4;
+                g.fill(rx, iy + 4, rx + 14, iy + FLAG_H - 4, rhov
+                    ? Colors.DANGER & 0xFFFFFF | 0x50000000 : Colors.BG_2);
+                g.drawCenteredString(font, "✕", rx + 7, iy + 7,
+                    rhov ? Colors.DANGER : Colors.TEXT_MUTE);
+            }
 
             GuiTextures.dividerH(g, cx, iy + FLAG_H - 1, cw);
         }
@@ -424,10 +433,12 @@ public final class DimDetailScreen extends Screen {
         }
 
         // Bouton "+" header
-        int addBtnX = gx + GUI_W - 28;
-        int addBtnY = gy + 8;
-        if (imx >= addBtnX && imx < addBtnX + 18 && imy >= addBtnY && imy < addBtnY + 14) {
-            openPicker(); return true;
+        if (!viewOnly) {
+            int addBtnX = gx + GUI_W - 28;
+            int addBtnY = gy + 8;
+            if (imx >= addBtnX && imx < addBtnX + 18 && imy >= addBtnY && imy < addBtnY + 14) {
+                openPicker(); return true;
+            }
         }
 
         // Clics sur les flags configurés
@@ -438,7 +449,7 @@ public final class DimDetailScreen extends Screen {
         int listH  = GUI_H - HDR_H - FTR_H - DESC_H - 60;
         List<FlagInfo> flags = data.flags().stream().filter(FlagInfo::configured).toList();
 
-        if (imx >= cx && imx < cx + cw && imy >= cy && imy < cy + listH) {
+        if (!viewOnly && imx >= cx && imx < cx + cw && imy >= cy && imy < cy + listH) {
             int idx = (imy - cy) / FLAG_H + scroll;
             if (idx >= 0 && idx < flags.size()) {
                 FlagInfo f = flags.get(idx);

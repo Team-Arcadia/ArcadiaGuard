@@ -76,8 +76,10 @@ public final class ZoneListScreen extends Screen {
     private record DimHit(String dim, Rect row, Rect gear) {}
     private Rect filterAllRect, filterRootRect, filterChildRect;
 
+    private boolean viewOnly = false;
+
     public ZoneListScreen(List<ZoneEntry> zones, BlockPos pos1, BlockPos pos2, boolean debug,
-            int page, int pageSize, int totalPages) {
+            int page, int pageSize, int totalPages, boolean viewOnly) {
         super(Component.translatable("arcadiaguard.gui.zone_list.title"));
         this.currentPage   = page;
         this.pageSize      = pageSize;
@@ -87,6 +89,7 @@ public final class ZoneListScreen extends Screen {
         this.wandPos1      = pos1;
         this.wandPos2      = pos2;
         debugMode          = debug;
+        this.viewOnly      = viewOnly;
         pageCache.put(page, new ArrayList<>(zones));
     }
 
@@ -100,6 +103,7 @@ public final class ZoneListScreen extends Screen {
         wandPos1  = payload.pos1();
         wandPos2  = payload.pos2();
         debugMode = payload.debugMode();
+        viewOnly  = payload.viewOnly();
         scrollOffset  = 0;
         selectedIndex = -1;
         applyFilter();
@@ -167,24 +171,32 @@ public final class ZoneListScreen extends Screen {
             addRenderableWidget(detailsBtn);
             cursor += BTN_W_ACTION + 8;
 
-            // Bouton Supprimer la zone selectionnee (avec confirmation)
-            deleteBtn = CartographiaButton.danger(cursor, fy + 6, BTN_W_ACTION, 16,
-                Component.translatable("arcadiaguard.gui.zonelist.btn_delete"),
-                b -> { if (selectedIndex >= 0 && selectedIndex < filteredZones.size()) openDeleteConfirm(); });
-            addRenderableWidget(deleteBtn);
-            cursor += BTN_W_ACTION + 8;
+            if (!viewOnly) {
+                // Bouton Supprimer la zone selectionnee (avec confirmation)
+                deleteBtn = CartographiaButton.danger(cursor, fy + 6, BTN_W_ACTION, 16,
+                    Component.translatable("arcadiaguard.gui.zonelist.btn_delete"),
+                    b -> { if (selectedIndex >= 0 && selectedIndex < filteredZones.size()) openDeleteConfirm(); });
+                addRenderableWidget(deleteBtn);
+                cursor += BTN_W_ACTION + 8;
+            } else {
+                deleteBtn = null;
+            }
         } else {
             teleportBtn = null;
             detailsBtn  = null;
             deleteBtn   = null;
         }
 
-        createBtn = CartographiaButton.accent(cursor, fy + 6, BTN_W_CREATE, 16,
-            Component.translatable("arcadiaguard.gui.zonelist.btn_create"),
-            b -> { if (wandPos1 != null && wandPos2 != null)
-                minecraft.setScreen(new ZoneCreateScreen(this, wandPos1, wandPos2)); });
-        createBtn.active = canCreate;
-        addRenderableWidget(createBtn);
+        if (!viewOnly) {
+            createBtn = CartographiaButton.accent(cursor, fy + 6, BTN_W_CREATE, 16,
+                Component.translatable("arcadiaguard.gui.zonelist.btn_create"),
+                b -> { if (wandPos1 != null && wandPos2 != null)
+                    minecraft.setScreen(new ZoneCreateScreen(this, wandPos1, wandPos2)); });
+            createBtn.active = canCreate;
+            addRenderableWidget(createBtn);
+        } else {
+            createBtn = null;
+        }
 
         if (totalPages > 1) {
             int navW  = 56;

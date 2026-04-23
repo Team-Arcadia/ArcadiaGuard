@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
  * et les positions courantes de la baguette.
  */
 public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2, boolean debugMode,
-    int page, int pageSize, int totalPages) implements CustomPacketPayload {
+    int page, int pageSize, int totalPages, boolean viewOnly) implements CustomPacketPayload {
 
     /** Valeur sentinelle = position non définie. */
     public static final long NO_POS = Long.MIN_VALUE;
@@ -64,6 +64,7 @@ public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2
             buf.writeInt(p.page());
             buf.writeInt(p.pageSize());
             buf.writeInt(p.totalPages());
+            buf.writeBoolean(p.viewOnly());
         },
         buf -> {
             int size = buf.readInt();
@@ -78,7 +79,8 @@ public record OpenGuiPayload(List<ZoneEntry> zones, long wandPos1, long wandPos2
             if (pageSize < 1 || pageSize > 200) throw new io.netty.handler.codec.DecoderException("Invalid pageSize " + pageSize + " in OpenGuiPayload");
             int totalPages = buf.readInt();
             if (totalPages < 1 || totalPages > 100_000) throw new io.netty.handler.codec.DecoderException("Invalid totalPages " + totalPages + " in OpenGuiPayload");
-            return new OpenGuiPayload(zones, wandPos1, wandPos2, debugMode, page, pageSize, totalPages);
+            boolean viewOnly = buf.readBoolean();
+            return new OpenGuiPayload(zones, wandPos1, wandPos2, debugMode, page, pageSize, totalPages, viewOnly);
         }
     );
 
