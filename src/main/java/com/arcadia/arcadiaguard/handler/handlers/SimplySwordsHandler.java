@@ -36,13 +36,11 @@ public final class SimplySwordsHandler implements RightClickItemHandler {
         if (key == null || !"simplyswords".equals(key.getNamespace())) return;
 
         if (guardService.shouldBypass(player)) return;
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager()
-            .checkZone(player, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-
-        ProtectedZone zone = zoneOpt.get();
-        boolean abilityAllowed = guardService.isFlagAllowedOrUnset(zone, BuiltinFlags.SIMPLYSWORDS_ABILITY, player.serverLevel());
-        if (!abilityAllowed) {
+        var pos = player.blockPosition();
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), pos)
+            .map(z -> (ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+        if (guardService.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.SIMPLYSWORDS_ABILITY)) {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);
@@ -66,11 +64,11 @@ public final class SimplySwordsHandler implements RightClickItemHandler {
         if (key == null || !"simplyswords".equals(key.getNamespace())) return;
 
         if (guardService.shouldBypass(player)) return;
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager()
-            .checkZone(player, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-
-        if (!guardService.isFlagAllowedOrUnset(zoneOpt.get(), BuiltinFlags.SIMPLYSWORDS_ABILITY, player.serverLevel())) {
+        var pos = player.blockPosition();
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(level, pos)
+            .map(z -> (ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+        if (guardService.isZoneDenying(level, pos, BuiltinFlags.SIMPLYSWORDS_ABILITY)) {
             player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 "arcadiaguard.message.simplyswords").withStyle(net.minecraft.ChatFormatting.RED), true);
             event.setCanceled(true);

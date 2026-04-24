@@ -21,6 +21,7 @@ public final class FlagMixinHelper {
 
     private static final ConcurrentHashMap<String, Boolean> HAS_ZONE_CACHE = new ConcurrentHashMap<>();
 
+    /** Fast-path : retourne true si au moins une zone existe dans la dimension. */
     public static boolean hasAnyZoneInDim(Level level) {
         if (level == null || level.isClientSide()) return false;
         GuardService guard = ArcadiaGuard.guardService();
@@ -31,6 +32,27 @@ public final class FlagMixinHelper {
 
     public static boolean hasAnyZoneInDim(LevelAccessor accessor) {
         if (accessor instanceof Level level) return hasAnyZoneInDim(level);
+        return false;
+    }
+
+    /**
+     * Fast-path guard : retourne true s'il existe au moins une zone OU au moins un dim flag
+     * configure sur cette dimension. Utilise pour les handlers tick (animaux, crop-growth,
+     * mixins block-tick) afin de preserver la semantique des dim flags sans perf cost
+     * quand rien n'est configure.
+     */
+    public static boolean hasAnyRuleInDim(Level level) {
+        if (level == null || level.isClientSide()) return false;
+        if (hasAnyZoneInDim(level)) return true;
+        GuardService guard = ArcadiaGuard.guardService();
+        if (guard == null) return false;
+        String dim = level.dimension().location().toString();
+        var dimFlags = ArcadiaGuard.dimFlagStore().flags(dim);
+        return dimFlags != null && !dimFlags.isEmpty();
+    }
+
+    public static boolean hasAnyRuleInDim(LevelAccessor accessor) {
+        if (accessor instanceof Level level) return hasAnyRuleInDim(level);
         return false;
     }
 

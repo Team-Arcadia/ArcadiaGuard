@@ -53,8 +53,15 @@ public final class MigrateCommands {
             }
         }
         // Refresh GUI pour tous les admins connectes (pour voir les nouvelles zones).
-        for (var p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
-            if (p.hasPermissions(2)) ArcadiaGuard.zoneManager().sendRefreshedList(p);
+        // Utilise getProfilePermissions() pour eviter qu'un mod tiers n'intercepte
+        // hasPermissions() et provoque un broadcast involontaire (meme convention
+        // que GuardService.computeBypass).
+        var server = ctx.getSource().getServer();
+        int threshold = com.arcadia.arcadiaguard.config.ArcadiaGuardConfig.BYPASS_OP_LEVEL.get();
+        for (var p : server.getPlayerList().getPlayers()) {
+            if (server.getProfilePermissions(p.getGameProfile()) >= threshold) {
+                ArcadiaGuard.zoneManager().sendRefreshedList(p);
+            }
         }
         final int count = imported;
         final int total = zones.size();

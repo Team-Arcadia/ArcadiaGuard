@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.handler.HandlerRegistry.RightClickItemHandler;
+import com.arcadia.arcadiaguard.zone.ProtectedZone;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
@@ -56,14 +57,18 @@ public final class ApotheosisCharmHandler implements RightClickItemHandler {
         ItemStack stack = event.getItemStack();
         if (!isCharmItem(stack)) return;
 
-        var zoneOpt = guardService.zoneManager().checkZone(sp, sp.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        if (!guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.CHARM_USE, sp.serverLevel())) return;
+        var pos = sp.blockPosition();
+        var zone = guardService.zoneManager().findZoneContaining(sp.serverLevel(), pos)
+            .map(z -> (ProtectedZone) z).orElse(null);
+        // Bypass membre : whitelist + LP role dans cette zone.
+        if (zone != null && guardService.isZoneMember(sp, zone)) return;
+        if (!guardService.isZoneDenying(sp.serverLevel(), pos, BuiltinFlags.CHARM_USE)) return;
 
         event.setCanceled(true);
         sp.displayClientMessage(
             Component.translatable("arcadiaguard.message.charm_use").withStyle(ChatFormatting.RED), true);
-        guardService.auditDenied(sp, zoneOpt.get().name(), sp.blockPosition(), BuiltinFlags.CHARM_USE, "charm_use");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        guardService.auditDenied(sp, zoneName, pos, BuiltinFlags.CHARM_USE, "charm_use");
     }
 
     /** Call when a player enters a zone with CHARM_USE=deny. Deactivates all active charms. */

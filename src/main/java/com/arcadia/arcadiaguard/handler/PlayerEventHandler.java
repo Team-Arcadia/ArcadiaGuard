@@ -194,11 +194,10 @@ public final class PlayerEventHandler
         }
 
         // S-H21 : sync du flag PARCOOL_ACTIONS au client (necessaire car l'action
-        // parcool s'execute cote client local, pas sur le serveur).
-        boolean parcoolBlocked = false;
-        if (zoneOpt.isPresent() && !guard.shouldBypass(player) && !guard.isZoneMember(player, zoneOpt.get())) {
-            parcoolBlocked = guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.PARCOOL_ACTIONS, player.serverLevel());
-        }
+        // parcool s'execute cote client local, pas sur le serveur). Fallback dim.
+        boolean parcoolBlocked = !guard.shouldBypass(player)
+            && !(zoneOpt.isPresent() && guard.isZoneMember(player, zoneOpt.get()))
+            && guard.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.PARCOOL_ACTIONS);
         Boolean wasBlocked = playerParcoolBlocked.get(id);
         if (wasBlocked == null || wasBlocked != parcoolBlocked) {
             playerParcoolBlocked.put(id, parcoolBlocked);
@@ -220,11 +219,14 @@ public final class PlayerEventHandler
             }
         }
 
-        // Meme pattern pour Emotecraft (verifier client-side).
-        boolean emoteBlocked = false;
-        if (zoneOpt.isPresent() && !guard.shouldBypass(player) && !guard.isZoneMember(player, zoneOpt.get())) {
-            emoteBlocked = guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.EMOTE_USE, player.serverLevel());
-        }
+        // Bypass membre zone (whitelist + LP role) : si dans une zone et membre, on ne restreint pas.
+        // Ce pre-calcul est reutilise pour emote et fly ci-dessous ; evite de recalculer 2 fois.
+        boolean zoneMemberBypass = zoneOpt.isPresent() && guard.isZoneMember(player, zoneOpt.get());
+        String flagSourceZoneName = zoneOpt.map(ProtectedZone::name).orElse("(dimension)");
+
+        // Meme pattern pour Emotecraft (verifier client-side). Fallback dim si hors zone.
+        boolean emoteBlocked = !guard.shouldBypass(player) && !zoneMemberBypass
+            && guard.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.EMOTE_USE);
         Boolean wasEmoteBlocked = playerEmoteBlocked.get(id);
         if (wasEmoteBlocked == null || wasEmoteBlocked != emoteBlocked) {
             playerEmoteBlocked.put(id, emoteBlocked);
@@ -239,22 +241,21 @@ public final class PlayerEventHandler
                     player.sendSystemMessage(
                         Component.translatable("arcadiaguard.message.emote_use")
                             .withStyle(net.minecraft.ChatFormatting.RED));
-                    guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.EMOTE_USE, "emote_use");
+                    guard.auditDenied(player, flagSourceZoneName, pos, BuiltinFlags.EMOTE_USE, "emote_use");
                 }
             }
         }
 
-        // FLY : bloque mayfly + attribut neoforge:creative_flight dans la zone.
+        // FLY : bloque mayfly + attribut neoforge:creative_flight dans la zone ou la dimension.
         // Applique un AttributeModifier negatif (-1000) sur creative_flight en plus de couper mayfly.
         // Necessaire car NeoForge re-set mayfly=true a chaque tick depuis l'attribut (Apotheosis,
         // Curios Flight Trinket, Mahou Tsukai, etc. utilisent TOUS cet attribut). Sans modifier,
         // le cut mayfly clignote.
-        boolean denyFly = zoneOpt.isPresent()
-            && !guard.shouldBypass(player)
-            && !guard.isZoneMember(player, zoneOpt.get())
+        boolean denyFly = !guard.shouldBypass(player)
+            && !zoneMemberBypass
             && !player.isCreative()
             && !player.isSpectator()
-            && guard.isZoneDenying(zoneOpt.get(), BuiltinFlags.FLY, player.serverLevel());
+            && guard.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.FLY);
 
         applyCreativeFlightModifier(player, denyFly);
 
@@ -268,7 +269,7 @@ public final class PlayerEventHandler
             if (prev == null || !prev) {
                 player.displayClientMessage(
                     Component.translatable("arcadiaguard.message.fly").withStyle(net.minecraft.ChatFormatting.RED), true);
-                guard.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.FLY, "fly");
+                guard.auditDenied(player, flagSourceZoneName, pos, BuiltinFlags.FLY, "fly");
             }
         } else {
             playerFlyBlocked.remove(id);

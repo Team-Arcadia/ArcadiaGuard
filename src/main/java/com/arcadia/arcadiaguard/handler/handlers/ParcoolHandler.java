@@ -39,9 +39,11 @@ public final class ParcoolHandler implements DynamicEventHandler {
         if (player == null) return;
         if (guardService.shouldBypass(player)) return;
 
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        if (!guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.PARCOOL_ACTIONS, player.serverLevel())) return;
+        var pos = player.blockPosition();
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), pos)
+            .map(z -> (ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+        if (!guardService.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.PARCOOL_ACTIONS)) return;
 
         if (event instanceof ICancellableEvent c) c.setCanceled(true);
         // Message gere une fois par PlayerEventHandler (throttle MSG_THROTTLE_MS, via chat).

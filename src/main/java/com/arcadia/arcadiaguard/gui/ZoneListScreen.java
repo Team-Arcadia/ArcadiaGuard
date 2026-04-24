@@ -337,7 +337,11 @@ public final class ZoneListScreen extends Screen {
         if (active) g.fill(sx - 2, sy, sx - 1, sy + 16, Colors.ACCENT);
         if (!active && hov) g.fill(sx - 2, sy, sx + SIDEBAR_W - 10, sy + 16, Colors.accentTint(0x10));
         g.drawString(font, label, sx + 4, sy + 4, active ? Colors.TEXT : Colors.TEXT_DIM, false);
-        g.drawString(font, String.valueOf(count), sx + SIDEBAR_W - 22, sy + 4, Colors.TEXT_MUTE, false);
+        // Right-align le count pour qu'il ne deborde pas sur le divider quel que soit le
+        // nombre de chiffres (300, 4000, etc.).
+        String countStr = String.valueOf(count);
+        int countX = sx + SIDEBAR_W - 14 - font.width(countStr);
+        g.drawString(font, countStr, countX, sy + 4, Colors.TEXT_MUTE, false);
         return new Rect(sx - 2, sy, sx + SIDEBAR_W - 10, sy + 16);
     }
 
@@ -348,10 +352,18 @@ public final class ZoneListScreen extends Screen {
         if (active) g.fill(sx - 2, sy, sx + SIDEBAR_W - 10, sy + 16, Colors.accentTint(0x20));
         if (active) g.fill(sx - 2, sy, sx - 1, sy + 16, Colors.ACCENT);
         g.fill(sx + 2, sy + 5, sx + 8, sy + 11, dotColor);
+        // Le label doit s'arreter avant le count OU avant l'engrenage (si present).
+        // Si gear : label libre jusqu'a gear (SIDEBAR_W - 38 px depuis sx).
+        // Sans gear : label libre jusqu'au count right-aligned (SIDEBAR_W - 26 px).
         int labelMaxW = hasSettings ? SIDEBAR_W - 38 : SIDEBAR_W - 26;
         String labelTrunc = font.plainSubstrByWidth(label, labelMaxW);
         g.drawString(font, labelTrunc, sx + 12, sy + 4, active ? Colors.TEXT : Colors.TEXT_DIM, false);
-        g.drawString(font, String.valueOf(count), sx + SIDEBAR_W - 22, sy + 4, Colors.TEXT_MUTE, false);
+        // Right-align le count pour eviter qu'il ne deborde sur le divider pour les valeurs
+        // a 3+ chiffres (bug visuel quand count >= 100).
+        String countStr = String.valueOf(count);
+        int countRightPad = hasSettings ? 40 : 14;  // laisser de la place pour le gear
+        int countX = sx + SIDEBAR_W - countRightPad - font.width(countStr);
+        g.drawString(font, countStr, countX, sy + 4, Colors.TEXT_MUTE, false);
 
         Rect rowRect = new Rect(sx - 2, sy, sx + SIDEBAR_W - 10, sy + 16);
         Rect gearRect = null;

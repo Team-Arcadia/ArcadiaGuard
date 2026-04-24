@@ -392,6 +392,7 @@
   "arcadiaguard.flag.ender-pearl.description": "Allow/deny use of ender pearls.",
   "arcadiaguard.flag.chorus-fruit.description": "Allow/deny chorus fruit teleportation.",
   "arcadiaguard.flag.mob-spawn.description": "Allow/deny spawning of any mob type in the zone.",
+  "arcadiaguard.flag.mob-spawn-list.description": "List of mob IDs forbidden from spawning (e.g. minecraft:zombie, mutantmonsters:mutant_creeper). Namespace wildcards supported (e.g. mutantmonsters:*).",
   "arcadiaguard.flag.animal-spawn.description": "Allow/deny spawning of passive animals.",
   "arcadiaguard.flag.monster-spawn.description": "Allow/deny spawning of hostile monsters.",
   "arcadiaguard.flag.villager-spawn.description": "Allow/deny spawning of villagers.",

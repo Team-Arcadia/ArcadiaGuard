@@ -46,10 +46,13 @@ public final class SophisticatedStorageHandler {
         String ns = blockId.getNamespace();
         if (!"sophisticatedstorage".equals(ns) && !"sophisticatedbackpacks".equals(ns)) return;
 
-        var zoneOpt = guardService.zoneManager().findZoneContaining(level, pos);
-        if (zoneOpt.isPresent() && guardService.isZoneDenying((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get(), BuiltinFlags.CONTAINER_ACCESS, level)) {
+        var zoneOpt = guardService.zoneManager().findZoneContaining(level, pos)
+            .map(z -> (com.arcadia.arcadiaguard.zone.ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+        if (guardService.isZoneDenying(level, pos, BuiltinFlags.CONTAINER_ACCESS)) {
             event.setCanceled(true);
-            guardService.auditDenied(player, ((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get()).name(), pos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
+            String zoneName = zoneOpt.map(com.arcadia.arcadiaguard.zone.ProtectedZone::name).orElse("(dimension)");
+            guardService.auditDenied(player, zoneName, pos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
         }
     }
 
@@ -70,10 +73,13 @@ public final class SophisticatedStorageHandler {
         Level level = player.level();
         if (level.isClientSide()) return;
         BlockPos tpos = target.blockPosition();
-        var zoneOpt = guardService.zoneManager().findZoneContaining(level, tpos);
-        if (zoneOpt.isPresent() && guardService.isZoneDenying((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get(), BuiltinFlags.CONTAINER_ACCESS, level)) {
+        var zoneOpt = guardService.zoneManager().findZoneContaining(level, tpos)
+            .map(z -> (com.arcadia.arcadiaguard.zone.ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+        if (guardService.isZoneDenying(level, tpos, BuiltinFlags.CONTAINER_ACCESS)) {
             event.setCanceled(true);
-            guardService.auditDenied(player, ((com.arcadia.arcadiaguard.zone.ProtectedZone) zoneOpt.get()).name(), tpos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
+            String zoneName = zoneOpt.map(com.arcadia.arcadiaguard.zone.ProtectedZone::name).orElse("(dimension)");
+            guardService.auditDenied(player, zoneName, tpos, BuiltinFlags.CONTAINER_ACCESS, "container_access");
         }
     }
 }

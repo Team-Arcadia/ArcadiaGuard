@@ -76,7 +76,7 @@ public final class FlagEventHandler {
         BlockPos pos = event.getPos();
         Level level = player.level();
         // P1 : fast-path O(1) — skip la dim si aucune zone configuree.
-        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         BlockState state = level.getBlockState(pos);
         Block block = state.getBlock();
         BlockEntity be = level.getBlockEntity(pos);
@@ -373,7 +373,7 @@ public final class FlagEventHandler {
         Entity entity = event.getEntity();
         if (!(entity instanceof Boat) && !(entity instanceof AbstractMinecart)) return;
         Level level = (Level) event.getLevel();
-        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (guard.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.VEHICLE_PLACE)) {
             event.setCanceled(true);
         }
@@ -414,15 +414,26 @@ public final class FlagEventHandler {
 
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
-    /** Retourne true si le joueur est dans une zone où {@code flag} est explicitement false. */
+    /**
+     * Retourne true si {@code flag} est explicitement false a {@code pos} — que ce soit via
+     * une zone ou un dim flag (fallback automatique hors zone). Preserve le bypass zone
+     * pour les joueurs whitelistes et les membres LuckPerms : un joueur whiteliste dans la
+     * zone A ne voit pas la restriction s'appliquer sur la zone A, mais peut toujours
+     * etre soumis a un dim flag ailleurs.
+     */
     private boolean deny(ServerPlayer player, BlockPos pos, BooleanFlag flag, String actionName) {
-        Optional<ProtectedZone> zoneOpt = guard.zoneManager().checkZone(player, pos);
-        if (zoneOpt.isEmpty()) return false;
-        ProtectedZone zone = zoneOpt.get();
-        if (!guard.isZoneDenying(zone, flag, player.serverLevel())) return false;
+        net.minecraft.world.level.Level level = player.serverLevel();
+        Optional<ProtectedZone> zoneOpt = guard.zoneManager().findZoneContaining(level, pos)
+            .map(z -> (ProtectedZone) z);
+        // Si dans une zone ou le joueur est membre (whitelist ou LP role), on ne restreint pas.
+        // NB : le bypass membre est zone-scoped par design — un membre de la zone A reste
+        // soumis aux dim flags quand il en sort.
+        if (zoneOpt.isPresent() && guard.isZoneMember(player, zoneOpt.get())) return false;
+        if (!guard.isZoneDenying(level, pos, flag)) return false;
+        String zoneName = zoneOpt.map(ProtectedZone::name).orElse("(dimension)");
         player.displayClientMessage(Component.translatable("arcadiaguard.message." + actionName)
             .withStyle(ChatFormatting.RED), true);
-        guard.auditDenied(player, zone.name(), pos, flag, actionName);
+        guard.auditDenied(player, zoneName, pos, flag, actionName);
         return true;
     }
 }

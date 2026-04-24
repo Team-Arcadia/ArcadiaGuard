@@ -66,6 +66,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.ANIMAL_SPAWN);
         register(BuiltinFlags.MONSTER_SPAWN);
         register(BuiltinFlags.VILLAGER_SPAWN);
+        register(BuiltinFlags.MOB_SPAWN_LIST);
         register(BuiltinFlags.VEHICLE_PLACE);
         register(BuiltinFlags.VEHICLE_DESTROY);
         register(BuiltinFlags.LEASH);

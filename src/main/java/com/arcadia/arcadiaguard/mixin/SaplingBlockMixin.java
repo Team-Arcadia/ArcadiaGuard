@@ -20,7 +20,7 @@ public abstract class SaplingBlockMixin {
         at = @At("HEAD"), cancellable = true
     )
     private void arcadiaguard$blockTreeGrowth(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.TREE_GROWTH)) ci.cancel();
     }
 }

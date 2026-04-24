@@ -41,6 +41,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag ANIMAL_SPAWN       = new BooleanFlag("animal-spawn",       false, "Autorise/refuse l'apparition des animaux passifs.");
     public static final BooleanFlag MONSTER_SPAWN      = new BooleanFlag("monster-spawn",      false, "Autorise/refuse l'apparition des monstres hostiles.");
     public static final BooleanFlag VILLAGER_SPAWN     = new BooleanFlag("villager-spawn",     false, "Autorise/refuse l'apparition des villageois.");
+    public static final ListFlag    MOB_SPAWN_LIST     = new ListFlag("mob-spawn-list", "Liste de mobs interdits a l'apparition. Chaque entree est un id de mob (ex: minecraft:zombie, mutantmonsters:mutant_creeper). Supporte les wildcards namespace (ex: mutantmonsters:*).");
     public static final BooleanFlag VEHICLE_PLACE      = new BooleanFlag("vehicle-place",      false, "Autorise/refuse la pose de bateaux et de minecarts.");
     public static final BooleanFlag VEHICLE_DESTROY    = new BooleanFlag("vehicle-destroy",    false, "Autorise/refuse la destruction de bateaux et de minecarts.");
     public static final BooleanFlag LEASH              = new BooleanFlag("leash",              false, "Autorise/refuse l'utilisation des laisses sur les entités.");

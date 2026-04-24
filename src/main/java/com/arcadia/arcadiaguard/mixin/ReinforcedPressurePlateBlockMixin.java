@@ -31,7 +31,7 @@ public abstract class ReinforcedPressurePlateBlockMixin {
     private void arcadiaguard$blockPressurePlate(BlockState state, Level level, BlockPos pos,
             Entity entity, CallbackInfo ci) {
         if (level.isClientSide()) return;
-        if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.PRESSURE_PLATE)) {
             ci.cancel();
         }

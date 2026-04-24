@@ -392,6 +392,7 @@
   "arcadiaguard.flag.ender-pearl.description": "Autorise/refuse l'utilisation des perles de l'End.",
   "arcadiaguard.flag.chorus-fruit.description": "Autorise/refuse la consommation du fruit de chorus (t\u00e9l\u00e9portation).",
   "arcadiaguard.flag.mob-spawn.description": "Autorise/refuse l'apparition de tout type de mob dans la zone.",
+  "arcadiaguard.flag.mob-spawn-list.description": "Liste de mobs interdits \u00e0 l'apparition. Chaque entr\u00e9e est un id de mob (ex: minecraft:zombie, mutantmonsters:mutant_creeper). Supporte les wildcards namespace (ex: mutantmonsters:*).",
   "arcadiaguard.flag.animal-spawn.description": "Autorise/refuse l'apparition des animaux passifs.",
   "arcadiaguard.flag.monster-spawn.description": "Autorise/refuse l'apparition des monstres hostiles.",
   "arcadiaguard.flag.villager-spawn.description": "Autorise/refuse l'apparition des villageois.",

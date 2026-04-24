@@ -20,7 +20,7 @@ public abstract class SnowLayerBlockMixin {
         at = @At("HEAD"), cancellable = true
     )
     private void arcadiaguard$blockSnowMelt(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.SNOW_MELT)) ci.cancel();
     }
 }
