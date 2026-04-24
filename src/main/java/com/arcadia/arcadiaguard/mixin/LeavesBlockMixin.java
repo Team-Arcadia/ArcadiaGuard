@@ -23,7 +23,7 @@ public abstract class LeavesBlockMixin {
         // H2: leaves that are persistent or not fully decayed won't decay anyway — skip zone check
         if (state.getValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT)
                 || state.getValue(net.minecraft.world.level.block.LeavesBlock.DISTANCE) < 7) return;
-        if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.LEAF_DECAY)) ci.cancel();
     }
 }

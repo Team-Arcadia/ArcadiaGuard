@@ -76,28 +76,28 @@ public final class BetterArcheologyHandler implements BlockBreakHandler {
             ReflectionHelper.intMethod(pos, "getZ")
         );
 
-        // Si le bloc primaire est lui-même en zone protégée, on annule silencieusement :
-        // YAWP ou InternalZoneProvider envoie déjà le message pour pos.
-        // Sans ce check, BetterArcheology casse quand même below malgré la protection.
-        if (isProtected(player, pos)) {
+        // Si le bloc primaire est lui-meme en zone/dim protegee, on annule silencieusement :
+        // BlockEventHandler envoie deja le message pour pos.
+        if (isBlockBreakDenied(player, pos)) {
             event.setCanceled(true);
             return;
         }
 
-        // Si le bloc du dessous est protégé, on annule avec message.
-        if (this.guardService.blockIfProtected(
+        // Si le bloc du dessous est protege (zone OU dim flag), on annule avec message.
+        if (this.guardService.blockIfFlagDenied(
             player,
             below,
+            com.arcadia.arcadiaguard.flag.BuiltinFlags.BLOCK_BREAK,
             "betterarcheology:tunneling",
-            "betterarcheology",
             ArcadiaGuardConfig.MESSAGE_BETTERARCHEOLOGY.get()
         ).blocked()) {
             event.setCanceled(true);
         }
     }
 
-    private boolean isProtected(ServerPlayer player, BlockPos pos) {
+    private boolean isBlockBreakDenied(ServerPlayer player, BlockPos pos) {
         if (this.guardService.shouldBypass(player)) return false;
-        return this.guardService.zoneManager().check(player, pos).blocked();
+        return this.guardService.isZoneDenying(player.serverLevel(), pos,
+            com.arcadia.arcadiaguard.flag.BuiltinFlags.BLOCK_BREAK);
     }
 }

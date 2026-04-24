@@ -84,15 +84,15 @@ public final class CarryOnHandler {
         Level level = player.level();
         if (level.isClientSide()) return;
         BlockPos pos = event.getPos();
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, pos);
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.CARRYON, level)) return;
+        ProtectedZone zone = guard.zoneManager().findZoneContaining(level, pos)
+            .map(z -> (ProtectedZone) z).orElse(null);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(level, pos, BuiltinFlags.CARRYON)) return;
         event.setCanceled(true);
         event.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
         sendDeny(player);
-        guard.auditDenied(player, zone.name(), pos, BuiltinFlags.CARRYON, "carryon");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        guard.auditDenied(player, zoneName, pos, BuiltinFlags.CARRYON, "carryon");
     }
 
     /** Handler du custom EntityPickupEvent de Carry On : cancel si deny zone. */
@@ -102,14 +102,14 @@ public final class CarryOnHandler {
         if (player == null) return;
         if (guard.shouldBypass(player)) return;
         BlockPos pos = player.blockPosition();
-        var zoneOpt = guard.zoneManager().findZoneContaining(player.level(), pos);
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.CARRYON, player.level())) return;
+        ProtectedZone zone = guard.zoneManager().findZoneContaining(player.level(), pos)
+            .map(z -> (ProtectedZone) z).orElse(null);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(player.level(), pos, BuiltinFlags.CARRYON)) return;
         cancellable.setCanceled(true);
         sendDeny(player);
-        guard.auditDenied(player, zone.name(), pos, BuiltinFlags.CARRYON, "carryon_entity");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        guard.auditDenied(player, zoneName, pos, BuiltinFlags.CARRYON, "carryon_entity");
     }
 
     /** Force-drop si le joueur porte deja qqch en entrant dans une zone deny. Check toutes les 20 ticks. */
@@ -118,14 +118,15 @@ public final class CarryOnHandler {
         if (player.tickCount % 20 != 0) return;
         if (player.level().isClientSide()) return;
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(player.level(), player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.CARRYON, player.level())) return;
+        BlockPos pos = player.blockPosition();
+        ProtectedZone zone = guard.zoneManager().findZoneContaining(player.level(), pos)
+            .map(z -> (ProtectedZone) z).orElse(null);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(player.level(), pos, BuiltinFlags.CARRYON)) return;
         if (isCarrying(player) && forceDrop(player)) {
             sendDeny(player);
-            guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.CARRYON, "carryon_forced_drop");
+            String zoneName = zone != null ? zone.name() : "(dimension)";
+            guard.auditDenied(player, zoneName, pos, BuiltinFlags.CARRYON, "carryon_forced_drop");
         }
     }
 

@@ -267,6 +267,36 @@ public final class GuardService implements IGuardService {
     public static void invalidateFrequencyCache() { DISABLED_FREQS_CACHE = null; }
 
     /**
+     * Resout une ListFlag a {@code pos} en suivant la chaine zone -> parent -> dim.
+     * Retourne la liste effective (jamais null). Utilise pour les flags de type liste
+     * qui doivent beneficier du meme fallback dim que les flags booleens.
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> resolveListAt(Level level, BlockPos pos, com.arcadia.arcadiaguard.api.flag.ListFlag flag) {
+        Optional<IZone> zoneOpt = this.zoneManager.findZoneContaining(level, pos);
+        if (zoneOpt.isPresent()) {
+            ProtectedZone zone = (ProtectedZone) zoneOpt.get();
+            if (!zone.enabled()) return java.util.List.of();
+            Function<String, Optional<ProtectedZone>> lookup = name ->
+                (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(level, name);
+            Function<String, java.util.Map<String, Object>> dimLookup = dim -> this.dimFlagStore.flags(dim);
+            Optional<java.util.List<String>> resolved =
+                FlagResolver.resolveOptional(zone, flag, lookup, dimLookup);
+            return resolved.orElse(java.util.List.of());
+        }
+        // Hors zone -> uniquement dim flag.
+        String dimKey = com.arcadia.arcadiaguard.util.DimensionUtils.keyOf(level);
+        var dimFlags = this.dimFlagStore.flags(dimKey);
+        Object raw = dimFlags == null ? null : dimFlags.get(flag.id());
+        if (raw instanceof java.util.List<?> list) {
+            java.util.List<String> out = new java.util.ArrayList<>();
+            for (Object o : list) if (o instanceof String s) out.add(s);
+            return out;
+        }
+        return java.util.List.of();
+    }
+
+    /**
      * Returns true if the given {@code flag} is denied at {@code pos} in {@code level}.
      * Used by entity event handlers where no player is directly involved.
      */

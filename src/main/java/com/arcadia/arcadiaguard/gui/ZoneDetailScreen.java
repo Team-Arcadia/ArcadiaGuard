@@ -161,6 +161,9 @@ public final class ZoneDetailScreen extends Screen {
         activeFlagSearchBox.setTextColor(Colors.TEXT);
         activeFlagSearchBox.setHint(Component.translatable("arcadiaguard.gui.zonedetail.flag_search_box.hint")
             .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+        // Reset le scroll quand la recherche change — sinon taper un filtre
+        // sur une liste deja scrollee laisse l'affichage vide (flagScroll > filteredSize - maxVis).
+        activeFlagSearchBox.setResponder(t -> flagScroll = 0);
         addRenderableWidget(activeFlagSearchBox);
 
         // S-H20 : search box pour l'ItemBlocksPicker
@@ -643,21 +646,12 @@ public final class ZoneDetailScreen extends Screen {
         cy += 22;
         GuiTextures.dividerH(g, cx - 2, cy, cw); cy += 2;
 
-        String activeSearch = activeFlagSearchBox == null ? "" : activeFlagSearchBox.getValue().toLowerCase().trim();
-        // Afficher les flags dont la source est ZONE_OWN, PARENT, ou DIM (si inheritDimFlags=true).
-        // SOURCE_NONE = flag non configure -> cache.
-        // SOURCE_DIM + inheritDimFlags=false -> cache (le client respecte le toggle).
-        List<FlagEntry> flags = detail.flags().stream()
-            .filter(f -> {
-                byte src = f.source();
-                if (src == FlagEntry.SOURCE_NONE) return false;
-                if (src == FlagEntry.SOURCE_DIM && !detail.inheritDimFlags()) return false;
-                return true;
-            })
-            .filter(f -> activeSearch.isEmpty()
-                || f.label().toLowerCase().contains(activeSearch)
-                || f.id().toLowerCase().contains(activeSearch))
-            .toList();
+        List<FlagEntry> flags = visibleFlagsForList();
+        // Clamp defensif : si le filtre de recherche a raccourci la liste au-dela
+        // du scroll courant, on remonte automatiquement pour ne pas laisser un ecran vide.
+        int listHForClamp  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4 - 22;
+        int maxVisForClamp = listHForClamp / FLAG_H;
+        flagScroll = Mth.clamp(flagScroll, 0, Math.max(0, flags.size() - maxVisForClamp));
 
         if (flags.isEmpty()) {
             g.drawCenteredString(font, Component.translatable("arcadiaguard.gui.zonedetail.no_flags").getString(), cx + cw / 2,
@@ -668,6 +662,9 @@ public final class ZoneDetailScreen extends Screen {
             // listH reduit de 22 pour compenser la searchbox persistante au-dessus.
             int listH  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4 - 22;
             int maxVis = listH / FLAG_H;
+            // Scissor pour eviter que la derniere ligne (toggle ON/OFF) ne deborde
+            // visuellement dans la zone DESC sous la liste.
+            g.enableScissor(cx, cy, cx + cw, cy + listH);
             int end    = Math.min(flagScroll + maxVis + 1, flags.size());
 
             hoveredFlagDesc = "";
@@ -752,6 +749,7 @@ public final class ZoneDetailScreen extends Screen {
 
                 GuiTextures.dividerH(g, cx, iy + FLAG_H - 1, cw);
             }
+            g.disableScissor();
 
             if (flags.size() > maxVis) {
                 int trackX = cx + cw - 3;
@@ -763,6 +761,27 @@ public final class ZoneDetailScreen extends Screen {
         }
 
         GuiTextures.dividerV(g, gx + COL1_W + COL2_W + 1, gy + HEADER_H, GUI_H - HEADER_H - FOOTER_H);
+    }
+
+    /**
+     * Retourne la liste EXACTE des flags affiches dans la colonne centrale, apres application
+     * des memes filtres que le rendu : SOURCE_NONE masque, SOURCE_DIM conditionnel au toggle
+     * inheritDimFlags, et filtre de recherche live. A utiliser pour toute logique de scroll
+     * ou de clamp afin que les bornes correspondent exactement a ce qui est affiche.
+     */
+    private List<FlagEntry> visibleFlagsForList() {
+        String search = activeFlagSearchBox == null ? "" : activeFlagSearchBox.getValue().toLowerCase().trim();
+        return detail.flags().stream()
+            .filter(f -> {
+                byte src = f.source();
+                if (src == FlagEntry.SOURCE_NONE) return false;
+                if (src == FlagEntry.SOURCE_DIM && !detail.inheritDimFlags()) return false;
+                return true;
+            })
+            .filter(f -> search.isEmpty()
+                || f.label().toLowerCase().contains(search)
+                || f.id().toLowerCase().contains(search))
+            .toList();
     }
 
     // ── Flag Picker (modal overlay) ───────────────────────────────────────────────
@@ -1429,11 +1448,12 @@ public final class ZoneDetailScreen extends Screen {
             memberScroll = Mth.clamp((int)(memberScroll - dy),
                 0, Math.max(0, detail.members().size() - mMaxVis));
         } else if (imx >= col2X) {
-            List<FlagEntry> explicit = detail.flags().stream().filter(f -> !f.inherited()).toList();
-            int listH  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4;
+            // Utilise EXACTEMENT la meme liste + les memes dimensions que le rendu.
+            // -22 pour la searchbox persistante (sinon maxVis surestime -> dernier flag masque).
+            int listH  = GUI_H - HEADER_H - FOOTER_H - 32 - DESC_H - 4 - 22;
             int maxVis = listH / FLAG_H;
             flagScroll = Mth.clamp((int)(flagScroll - dy),
-                0, Math.max(0, explicit.size() - maxVis));
+                0, Math.max(0, visibleFlagsForList().size() - maxVis));
         }
         return true;
     }

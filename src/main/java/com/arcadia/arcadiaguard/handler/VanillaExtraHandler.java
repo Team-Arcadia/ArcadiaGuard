@@ -42,31 +42,31 @@ public final class VanillaExtraHandler {
         Level level = player.level();
         if (level.isClientSide()) return;
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.USE_ELYTRA, level)) return;
+        BlockPos pos = player.blockPosition();
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(level, pos, BuiltinFlags.USE_ELYTRA)) return;
         player.stopFallFlying();
-        sendDeny(player, "use_elytra", zone.name());
-        guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.USE_ELYTRA, "use_elytra");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        sendDeny(player, "use_elytra", zoneName);
+        guard.auditDenied(player, zoneName, pos, BuiltinFlags.USE_ELYTRA, "use_elytra");
     }
 
-    /** Empeche le changement de dimension via portail si USE_PORTAL=deny dans la zone actuelle. */
+    /** Empeche le changement de dimension via portail si USE_PORTAL=deny. */
     public void onTravelDim(EntityTravelToDimensionEvent event) {
         Entity entity = event.getEntity();
         if (!(entity instanceof ServerPlayer player)) return;
         Level level = player.level();
         if (level.isClientSide()) return;
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.USE_PORTAL, level)) return;
+        BlockPos pos = player.blockPosition();
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(level, pos, BuiltinFlags.USE_PORTAL)) return;
         event.setCanceled(true);
-        sendDeny(player, "use_portal", zone.name());
-        guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.USE_PORTAL, "use_portal");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        sendDeny(player, "use_portal", zoneName);
+        guard.auditDenied(player, zoneName, pos, BuiltinFlags.USE_PORTAL, "use_portal");
     }
 
     /** Couvre till-farmland (houe), strip-wood (hache), shovel-path (pelle). */
@@ -76,10 +76,8 @@ public final class VanillaExtraHandler {
         if (level.isClientSide()) return;
         if (guard.shouldBypass(player)) return;
         BlockPos pos = event.getPos();
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, pos);
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
 
         BooleanFlag flag = switch (event.getItemAbility().name()) {
             case "till" -> BuiltinFlags.TILL_FARMLAND;
@@ -88,11 +86,18 @@ public final class VanillaExtraHandler {
             default -> null;
         };
         if (flag == null) return;
-        if (!guard.isZoneDenying(zone, flag, level)) return;
+        if (!guard.isZoneDenying(level, pos, flag)) return;
         event.setCanceled(true);
         String action = flag.id().replace('-', '_');
         sendDeny(player, action);
-        guard.auditDenied(player, zone.name(), pos, flag, action);
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        guard.auditDenied(player, zoneName, pos, flag, action);
+    }
+
+    /** Helper : resout la zone a une position (null si hors zone). */
+    private ProtectedZone zoneAt(Level level, BlockPos pos) {
+        return guard.zoneManager().findZoneContaining(level, pos)
+            .map(z -> (ProtectedZone) z).orElse(null);
     }
 
     /** SCOOP_FLUIDS (seau vide -> rempli) + PLACE_FLUIDS (seau rempli -> pose).
@@ -113,14 +118,12 @@ public final class VanillaExtraHandler {
         if (level.isClientSide()) return;
         if (!(stack.getItem() instanceof BucketItem)) return;
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, pos);
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
 
         boolean empty = stack.is(Items.BUCKET);
         BooleanFlag flag = empty ? BuiltinFlags.SCOOP_FLUIDS : BuiltinFlags.PLACE_FLUIDS;
-        if (!guard.isZoneDenying(zone, flag, level)) return;
+        if (!guard.isZoneDenying(level, pos, flag)) return;
         // Cancel + FAIL result pour empecher BucketItem.use() de s'executer dans tous les cas.
         if (event instanceof PlayerInteractEvent.RightClickBlock rcb) {
             rcb.setCanceled(true);
@@ -131,23 +134,24 @@ public final class VanillaExtraHandler {
         }
         String action = empty ? "scoop_fluids" : "place_fluids";
         sendDeny(player, action);
-        guard.auditDenied(player, zone.name(), pos, flag, action);
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        guard.auditDenied(player, zoneName, pos, flag, action);
     }
 
-    /** Bloque l'envoi de messages chat si le joueur est dans une zone SEND_CHAT=deny. */
+    /** Bloque l'envoi de messages chat si SEND_CHAT=deny (zone ou dimension). */
     public void onChat(ServerChatEvent event) {
         ServerPlayer player = event.getPlayer();
         if (player == null) return;
         Level level = player.level();
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(zone, BuiltinFlags.SEND_CHAT, level)) return;
+        BlockPos pos = player.blockPosition();
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
+        if (!guard.isZoneDenying(level, pos, BuiltinFlags.SEND_CHAT)) return;
         event.setCanceled(true);
-        sendDeny(player, "send_chat", zone.name());
-        guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.SEND_CHAT, "send_chat");
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        sendDeny(player, "send_chat", zoneName);
+        guard.auditDenied(player, zoneName, pos, BuiltinFlags.SEND_CHAT, "send_chat");
     }
 
     /**
@@ -155,33 +159,35 @@ public final class VanillaExtraHandler {
      *  - EXEC_COMMAND=deny -> bloque TOUTES les commandes (sauf /ag)
      *  - Sinon, si EXEC_COMMAND_BLACKLIST non vide -> bloque les commandes listees
      * Les deux modes coexistent : deny bloque tout, la blacklist affine.
+     * Notes : la blacklist par liste ne fonctionne que sur une zone (pas de semantique dim).
+     * EXEC_COMMAND peut etre defini au niveau dimension -> applique partout hors zone.
      */
     public void onCommand(CommandEvent event) {
         Entity sender = event.getParseResults().getContext().getSource().getEntity();
         if (!(sender instanceof ServerPlayer player)) return;
         Level level = player.level();
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneMember(player, zone)) return;
+        BlockPos pos = player.blockPosition();
+        ProtectedZone zone = zoneAt(level, pos);
+        if (zone != null && guard.isZoneMember(player, zone)) return;
 
         String rawCmd = event.getParseResults().getReader().getString();
         String firstToken = extractCommandToken(rawCmd);
         // Exception : toujours autoriser les commandes ArcadiaGuard (anti lock-out admin).
-        // Le rawCmd peut ou non avoir le "/" prefix selon le contexte NeoForge -> utiliser le token.
         if (firstToken.equals("ag") || firstToken.equals("arcadiaguard")) return;
 
-        boolean denyAll = guard.isZoneDenying(zone, BuiltinFlags.EXEC_COMMAND, level);
+        String zoneName = zone != null ? zone.name() : "(dimension)";
+        boolean denyAll = guard.isZoneDenying(level, pos, BuiltinFlags.EXEC_COMMAND);
 
         if (denyAll) {
             event.setCanceled(true);
-            sendDeny(player, "exec_command", zone.name());
-            guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.EXEC_COMMAND, "exec_command");
+            sendDeny(player, "exec_command", zoneName);
+            guard.auditDenied(player, zoneName, pos, BuiltinFlags.EXEC_COMMAND, "exec_command");
             return;
         }
 
-        // Mode blacklist : lit la liste et check le 1er token.
+        // Mode blacklist : uniquement si une zone concrete fournit la liste (pas de lookup dim pour la liste).
+        if (zone == null) return;
         java.util.List<String> blacklist = readBlacklist(zone);
         if (blacklist.isEmpty()) return;
         for (String entry : blacklist) {
@@ -190,7 +196,7 @@ public final class VanillaExtraHandler {
             if (firstToken.equalsIgnoreCase(normalized)) {
                 event.setCanceled(true);
                 sendDeny(player, "exec_command_blacklist", firstToken);
-                guard.auditDenied(player, zone.name(), player.blockPosition(),
+                guard.auditDenied(player, zoneName, pos,
                     BuiltinFlags.EXEC_COMMAND, "exec_command:" + firstToken);
                 return;
             }

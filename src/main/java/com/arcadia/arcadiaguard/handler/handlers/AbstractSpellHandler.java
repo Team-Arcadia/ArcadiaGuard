@@ -89,14 +89,24 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
         if (guardService.shouldBypass(player)) return;
         // Check the player's position first; if not in a zone, also check the targeted block
         // (prevents casting spells from outside a zone that affect blocks inside it)
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, player.blockPosition());
+        net.minecraft.core.BlockPos pos = player.blockPosition();
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, pos);
         if (zoneOpt.isEmpty()) {
             net.minecraft.world.phys.HitResult hit = player.pick(32, 0, false);
             if (hit instanceof net.minecraft.world.phys.BlockHitResult bhr) {
                 zoneOpt = guardService.zoneManager().checkZone(player, bhr.getBlockPos());
             }
         }
-        if (zoneOpt.isEmpty()) return;
+        if (zoneOpt.isEmpty()) {
+            // Fallback dim flag : pas dans une zone (ni sur la cible). Si la dim-cast-flag
+            // est denied, on bloque. Les whitelist/blacklist de spells restent zone-scoped.
+            if (guardService.isZoneDenying(player.level(), pos, castFlag)) {
+                player.displayClientMessage(Component.translatable(castMessage.get()).withStyle(ChatFormatting.RED), true);
+                guardService.auditDenied(player, "(dimension)", pos, castFlag, spellId);
+                cancel(event);
+            }
+            return;
+        }
         ProtectedZone zone = zoneOpt.get();
 
         // Movement check: any glyph/spell-id matches the movement set

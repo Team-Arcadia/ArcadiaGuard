@@ -242,9 +242,12 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
     private boolean checkFlagDenied(ServerPlayer player, BlockPos pos,
             com.arcadia.arcadiaguard.api.flag.BooleanFlag flag) {
         if (guardService.shouldBypass(player)) return false;
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, pos);
-        if (zoneOpt.isEmpty()) return false;
-        return !guardService.isFlagAllowedOrUnset(zoneOpt.get(), flag, player.serverLevel());
+        // Preserve le bypass membre (whitelist + LP role) quand dans une zone.
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), pos)
+            .map(z -> (ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return false;
+        // isZoneDenying fait le fallback dim automatiquement quand hors zone.
+        return guardService.isZoneDenying(player.serverLevel(), pos, flag);
     }
 
     private static boolean isSpawnEgg(ItemStack stack) {

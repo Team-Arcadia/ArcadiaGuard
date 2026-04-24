@@ -18,8 +18,10 @@ public final class SpellRegistryHelper {
 
     private static volatile List<String> ARS_CACHE;
     private static volatile List<String> IRONS_CACHE;
+    private static volatile List<String> MOB_CACHE;
     private static volatile boolean ARS_WARNED = false;
     private static volatile boolean IRONS_WARNED = false;
+    private static volatile boolean MOB_WARNED = false;
 
     private SpellRegistryHelper() {}
 
@@ -77,11 +79,38 @@ public final class SpellRegistryHelper {
         return cache;
     }
 
+    /**
+     * Retourne la liste triee de tous les types d'entite enregistres
+     * (ex. "minecraft:zombie", "mutantmonsters:mutant_creeper"). Utilise pour
+     * l'autocompletion du flag {@code mob-spawn-list}.
+     */
+    public static List<String> entityTypes() {
+        List<String> cache = MOB_CACHE;
+        if (cache != null) return cache;
+        Set<String> ids = new TreeSet<>();
+        try {
+            var registry = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE;
+            for (var type : registry) {
+                var key = registry.getKey(type);
+                if (key != null) ids.add(key.toString());
+            }
+        } catch (Throwable t) {
+            if (!MOB_WARNED) {
+                MOB_WARNED = true;
+                ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Entity type registry unavailable (logged once): {}", t.toString());
+            }
+        }
+        cache = List.copyOf(ids);
+        MOB_CACHE = cache;
+        return cache;
+    }
+
     /** Retourne les suggestions pour un flag donne, ou liste vide si non pertinent. */
     public static List<String> suggestionsFor(String flagId) {
         if (flagId == null) return Collections.emptyList();
         if (flagId.startsWith("ars-spell-")) return arsNouveauGlyphs();
         if (flagId.startsWith("irons-spell-")) return ironsSpells();
+        if ("mob-spawn-list".equals(flagId)) return entityTypes();
         return Collections.emptyList();
     }
 
@@ -89,5 +118,6 @@ public final class SpellRegistryHelper {
     public static void invalidate() {
         ARS_CACHE = null;
         IRONS_CACHE = null;
+        MOB_CACHE = null;
     }
 }

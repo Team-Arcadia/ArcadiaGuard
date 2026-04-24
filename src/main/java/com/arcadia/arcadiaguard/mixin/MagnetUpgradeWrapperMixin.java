@@ -34,7 +34,7 @@ public abstract class MagnetUpgradeWrapperMixin {
         if (itemEntity == null) return;
         Level level = itemEntity.level();
         if (level == null || level.isClientSide()) return;
-        if (!FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (FlagMixinHelper.isDenied(level, itemEntity.blockPosition(), BuiltinFlags.ITEM_PICKUP)) {
             cir.setReturnValue(false);
         }

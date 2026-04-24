@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.guard.GuardService;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -38,57 +39,71 @@ public final class EntityEventHandler {
         Level level = victim.level();
         if (level.isClientSide()) return;
 
-        // H-P2: single zone lookup; subsequent flag checks use the already-resolved zone
-        var zoneIZoneOpt = guard.zoneManager().findZoneContaining(level, victim.blockPosition());
-        if (zoneIZoneOpt.isEmpty()) return; // no zone → no restriction
-        ProtectedZone zone = (ProtectedZone) zoneIZoneOpt.get();
+        // H-P2: single zone lookup; subsequent flag checks use the already-resolved zone.
+        // Si hors zone, on peut quand meme declencher sur un dim flag -> fallback sur la
+        // variante level-aware isZoneDenying(level, pos, flag) qui gere ce cas.
+        BlockPos vpos = victim.blockPosition();
+        var zoneIZoneOpt = guard.zoneManager().findZoneContaining(level, vpos);
+        ProtectedZone zone = zoneIZoneOpt.map(z -> (ProtectedZone) z).orElse(null);
+        String zoneName = zone != null ? zone.name() : "(dimension)";
 
         Entity attacker = event.getSource().getEntity();
         if (victim instanceof Player) {
-            if (guard.isZoneDenying(zone, BuiltinFlags.INVINCIBLE, level)) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.INVINCIBLE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
-                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.INVINCIBLE, "invincible");
+                    guard.auditDenied(sp, zoneName, vpos, BuiltinFlags.INVINCIBLE, "invincible");
                 }
                 return;
             }
             if (attacker instanceof ServerPlayer attackerSp) {
-                if (guard.isZoneDenying(zone, BuiltinFlags.PVP, level)) {
+                if (isDenyingHere(zone, level, vpos, BuiltinFlags.PVP)) {
                     event.setCanceled(true);
-                    guard.auditDenied(attackerSp, zone.name(), victim.blockPosition(), BuiltinFlags.PVP, "pvp");
+                    guard.auditDenied(attackerSp, zoneName, vpos, BuiltinFlags.PVP, "pvp");
                     return;
                 }
             }
-            if (guard.isZoneDenying(zone, BuiltinFlags.PLAYER_DAMAGE, level)) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.PLAYER_DAMAGE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
-                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.PLAYER_DAMAGE, "player_damage");
+                    guard.auditDenied(sp, zoneName, vpos, BuiltinFlags.PLAYER_DAMAGE, "player_damage");
                 }
             }
         } else if (victim instanceof Animal) {
             // Convention GUI : "ON" (vert) = value=false = protection active
             // → on utilise isZoneDenying comme tous les autres flags (cohérence sémantique).
-            if (guard.isZoneDenying(zone, BuiltinFlags.ANIMAL_INVINCIBLE, level)) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.ANIMAL_INVINCIBLE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
-                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.ANIMAL_INVINCIBLE, "animal_invincible");
+                    guard.auditDenied(sp, zoneName, vpos, BuiltinFlags.ANIMAL_INVINCIBLE, "animal_invincible");
                 }
                 return;
             }
-            if (guard.isZoneDenying(zone, BuiltinFlags.MOB_DAMAGE, level)) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.MOB_DAMAGE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
-                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.MOB_DAMAGE, "mob_damage");
+                    guard.auditDenied(sp, zoneName, vpos, BuiltinFlags.MOB_DAMAGE, "mob_damage");
                 }
             }
         } else if (victim instanceof Monster) {
-            if (guard.isZoneDenying(zone, BuiltinFlags.MOB_DAMAGE, level)) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.MOB_DAMAGE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
-                    guard.auditDenied(sp, zone.name(), victim.blockPosition(), BuiltinFlags.MOB_DAMAGE, "mob_damage");
+                    guard.auditDenied(sp, zoneName, vpos, BuiltinFlags.MOB_DAMAGE, "mob_damage");
                 }
             }
         }
+    }
+
+    /**
+     * Helper : teste un flag a la position donnee en utilisant la zone deja resolue si dispo,
+     * sinon fait un fallback dim via la variante level-aware. Evite un 2e findZone quand on a
+     * deja la zone en main.
+     */
+    private boolean isDenyingHere(ProtectedZone zone, Level level, BlockPos pos, BooleanFlag flag) {
+        return zone != null
+            ? guard.isZoneDenying(zone, flag, level)
+            : guard.isZoneDenying(level, pos, flag);
     }
 
     public void onLivingFall(LivingFallEvent event) {
@@ -98,12 +113,13 @@ public final class EntityEventHandler {
         // R3 : bypass OP/membre pour cohrence avec les autres flags — sinon un OP en
         // mode survie ne peut pas tester fall_damage sans desactiver le flag.
         if (guard.shouldBypass(player)) return;
-        var zoneOpt = guard.zoneManager().findZoneContaining(level, player.blockPosition());
-        if (zoneOpt.isEmpty()) return;
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (guard.isZoneDenying(zone, BuiltinFlags.FALL_DAMAGE, level)) {
+        BlockPos pos = player.blockPosition();
+        // Fallback dim : isZoneDenying(level, pos, flag) gere le cas hors zone.
+        if (guard.isZoneDenying(level, pos, BuiltinFlags.FALL_DAMAGE)) {
             event.setCanceled(true);
-            guard.auditDenied(player, zone.name(), player.blockPosition(), BuiltinFlags.FALL_DAMAGE, "fall_damage");
+            String zoneName = guard.zoneManager().findZoneContaining(level, pos)
+                .map(z -> ((ProtectedZone) z).name()).orElse("(dimension)");
+            guard.auditDenied(player, zoneName, pos, BuiltinFlags.FALL_DAMAGE, "fall_damage");
         }
     }
 
@@ -111,12 +127,25 @@ public final class EntityEventHandler {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;
         Mob entity = event.getEntity();
+        net.minecraft.core.BlockPos pos = entity.blockPosition();
 
-        if (guard.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.MOB_SPAWN)) {
+        // 1) Blocage global : mob-spawn=deny stoppe toute apparition.
+        if (guard.isZoneDenying(level, pos, BuiltinFlags.MOB_SPAWN)) {
             event.setSpawnCancelled(true);
             return;
         }
 
+        // 2) Blacklist par id : mob-spawn-list contient l'id du mob (ou un wildcard namespace).
+        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        if (entityKey != null) {
+            java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
+            if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
+                event.setSpawnCancelled(true);
+                return;
+            }
+        }
+
+        // 3) Flag par categorie (monster/animal/villager).
         BooleanFlag typeFlag;
         if (entity instanceof Monster) {
             typeFlag = BuiltinFlags.MONSTER_SPAWN;
@@ -128,9 +157,37 @@ public final class EntityEventHandler {
             return;
         }
 
-        if (guard.isZoneDenying(level, entity.blockPosition(), typeFlag)) {
+        if (guard.isZoneDenying(level, pos, typeFlag)) {
             event.setSpawnCancelled(true);
         }
+    }
+
+    /**
+     * Match un id de mob contre une liste d'entrees. Supporte :
+     *   - match exact : "minecraft:zombie"
+     *   - wildcard namespace : "mutantmonsters:*" -> tous les mobs du namespace
+     *   - wildcard path : "*:zombie" -> zombie de n'importe quel mod
+     *   - path seul : "zombie" -> traite comme "minecraft:zombie"
+     */
+    private static boolean matchesMobList(java.util.List<String> list, net.minecraft.resources.ResourceLocation key) {
+        String ns = key.getNamespace();
+        String path = key.getPath();
+        String full = ns + ":" + path;
+        for (String entry : list) {
+            if (entry == null || entry.isEmpty()) continue;
+            String e = entry.trim().toLowerCase(java.util.Locale.ROOT);
+            if (e.isEmpty()) continue;
+            // Pas de ':' -> interprete comme minecraft:<path>
+            if (!e.contains(":")) e = "minecraft:" + e;
+            int sep = e.indexOf(':');
+            String en = e.substring(0, sep);
+            String ep = e.substring(sep + 1);
+            if ("*".equals(en) && "*".equals(ep)) return true;
+            if ("*".equals(en) && ep.equalsIgnoreCase(path)) return true;
+            if (en.equalsIgnoreCase(ns) && "*".equals(ep)) return true;
+            if (e.equalsIgnoreCase(full)) return true;
+        }
+        return false;
     }
 
     public void onExplosion(ExplosionEvent.Detonate event) {
@@ -141,7 +198,7 @@ public final class EntityEventHandler {
         if (affected.isEmpty() && affectedEntities.isEmpty()) return;
         // P3 : fast-path — explosions dans des dimensions sans zone passent vanilla
         // (gros gain sur mega-TNT avec 10k+ blocs affectes).
-        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
 
         var explosion = event.getExplosion();
         Entity exploder = explosion.getDirectSourceEntity();
@@ -214,7 +271,7 @@ public final class EntityEventHandler {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;
         if (!(event.getEntity() instanceof Animal animal)) return;
-        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));
         animal.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 40, 255, false, false));
@@ -232,7 +289,7 @@ public final class EntityEventHandler {
         if (level.isClientSide()) return;
         if (animal.tickCount % 20 != 0) return;
         // P2 : fast-path O(1) — skip l'animal si aucune zone dans la dim.
-        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyZoneInDim(level)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (!isAnimalInvincibleAt(level, animal.blockPosition())) return;
 
         animal.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 40, 255, false, false));

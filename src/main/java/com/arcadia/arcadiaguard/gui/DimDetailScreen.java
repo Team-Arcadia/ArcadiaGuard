@@ -80,6 +80,9 @@ public final class DimDetailScreen extends Screen {
         activeFlagSearch.setTextColor(Colors.TEXT);
         activeFlagSearch.setHint(Component.translatable("arcadiaguard.gui.dimdetail.picker_search.hint")
             .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+        // Reset le scroll quand la recherche change — sinon taper un filtre sur une liste
+        // deja scrollee laisse des pages vides (meme bug que sur ZoneDetailScreen en 1.5).
+        activeFlagSearch.setResponder(t -> scroll = 0);
         addRenderableWidget(activeFlagSearch);
 
         int fy = gy + GUI_H - FTR_H;
@@ -497,10 +500,19 @@ public final class DimDetailScreen extends Screen {
                 0, Math.max(0, pickerFiltered().size() - maxVis));
             return true;
         }
-        int listH  = GUI_H - HDR_H - FTR_H - DESC_H - 60;
+        // Utilise EXACTEMENT la meme liste + la meme taille listH que le rendu (l.170).
+        // Sinon le clamp ecarte de la taille reelle -> dernieres entrees inaccessibles
+        // ou scroll permet de depasser la liste filtree.
+        int listH  = GUI_H - HDR_H - FTR_H - 34 - DESC_H - 4 - 22;
         int maxVis = listH / FLAG_H;
-        int configuredCount = (int) data.flags().stream().filter(FlagInfo::configured).count();
-        scroll = Mth.clamp((int)(scroll - dy), 0, Math.max(0, configuredCount - maxVis));
+        String searchText = activeFlagSearch == null ? "" : activeFlagSearch.getValue().toLowerCase().trim();
+        int visibleCount = (int) data.flags().stream()
+            .filter(FlagInfo::configured)
+            .filter(f -> searchText.isEmpty()
+                || f.label().toLowerCase().contains(searchText)
+                || f.id().toLowerCase().contains(searchText))
+            .count();
+        scroll = Mth.clamp((int)(scroll - dy), 0, Math.max(0, visibleCount - maxVis));
         return true;
     }
 

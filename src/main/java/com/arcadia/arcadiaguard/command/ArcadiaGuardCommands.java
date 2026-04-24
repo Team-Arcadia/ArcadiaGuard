@@ -131,6 +131,17 @@ public final class ArcadiaGuardCommands {
     private static int reload(CommandContext<CommandSourceStack> ctx) {
         ArcadiaGuard.zoneManager().reload(ctx.getSource().getServer());
         ArcadiaGuard.dynamicItemBlockList().load();
+        // Relit aussi les dim flags du disque (permet d'editer dimension-flags.json
+        // a chaud sans redemarrer le serveur).
+        try {
+            com.arcadia.arcadiaguard.persist.DimFlagSerializer.read(
+                ArcadiaGuard.dimFlagStore(),
+                com.arcadia.arcadiaguard.ArcadiaGuardPaths.dimFlagsFile());
+        } catch (java.io.IOException e) {
+            ArcadiaGuard.LOGGER.error("[ArcadiaGuard] /ag reload — failed to reload dimension flags", e);
+        }
+        // Invalide les caches statiques qui survivent a la reload des zones.
+        com.arcadia.arcadiaguard.guard.GuardService.invalidateFrequencyCache();
         ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.command.reloaded"), true);
         return 1;
     }

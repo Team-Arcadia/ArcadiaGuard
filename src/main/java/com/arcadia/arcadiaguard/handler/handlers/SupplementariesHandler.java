@@ -46,12 +46,15 @@ public final class SupplementariesHandler implements RightClickItemHandler {
         Object pos = ReflectionHelper.invoke(player, "blockPosition", new Class<?>[0]).orElse(null);
         if (pos instanceof net.minecraft.core.BlockPos blockPos) {
             if (guardService.shouldBypass(player)) return;
-            Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, blockPos);
-            if (zoneOpt.isPresent() && guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.SUPPLEMENTARIES_THROW, player.serverLevel())) {
+            Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), blockPos)
+                .map(z -> (ProtectedZone) z);
+            if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return;
+            if (guardService.isZoneDenying(player.serverLevel(), blockPos, BuiltinFlags.SUPPLEMENTARIES_THROW)) {
                 player.displayClientMessage(
                     net.minecraft.network.chat.Component.translatable(ArcadiaGuardConfig.MESSAGE_SUPPLEMENTARIES.get())
                         .withStyle(net.minecraft.ChatFormatting.RED), true);
-                guardService.auditDenied(player, zoneOpt.get().name(), blockPos, BuiltinFlags.SUPPLEMENTARIES_THROW, "supplementaries_throw");
+                String zoneName = zoneOpt.map(ProtectedZone::name).orElse("(dimension)");
+                guardService.auditDenied(player, zoneName, blockPos, BuiltinFlags.SUPPLEMENTARIES_THROW, "supplementaries_throw");
                 event.setCanceled(true);
             }
         }

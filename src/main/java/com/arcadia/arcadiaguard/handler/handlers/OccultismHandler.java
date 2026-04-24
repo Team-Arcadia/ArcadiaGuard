@@ -79,13 +79,15 @@ public final class OccultismHandler implements RightClickItemHandler, RightClick
 
     private boolean denyOccultism(ServerPlayer player, net.minecraft.core.BlockPos pos) {
         if (guardService.shouldBypass(player)) return false;
-        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().checkZone(player, pos);
-        if (zoneOpt.isEmpty()) return false;
-        if (!guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.OCCULTISM_USE, player.serverLevel())) return false;
+        Optional<ProtectedZone> zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), pos)
+            .map(z -> (ProtectedZone) z);
+        if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return false;
+        if (!guardService.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.OCCULTISM_USE)) return false;
         player.displayClientMessage(
             net.minecraft.network.chat.Component.translatable(ArcadiaGuardConfig.MESSAGE_OCCULTISM.get())
                 .withStyle(net.minecraft.ChatFormatting.RED), true);
-        guardService.auditDenied(player, zoneOpt.get().name(), pos, BuiltinFlags.OCCULTISM_USE, "occultism_use");
+        String zoneName = zoneOpt.map(ProtectedZone::name).orElse("(dimension)");
+        guardService.auditDenied(player, zoneName, pos, BuiltinFlags.OCCULTISM_USE, "occultism_use");
         return true;
     }
 

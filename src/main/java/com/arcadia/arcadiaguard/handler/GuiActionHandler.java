@@ -509,19 +509,38 @@ public final class GuiActionHandler {
 
     // ── Dimension flags ──────────────────────────────────────────────────────────
 
+    /**
+     * Verifie qu'un dim key correspond a une dimension chargee sur le serveur.
+     * Bloque les packets malveillants qui tenteraient de polluer dim-flags.json
+     * avec des cles fantomes.
+     */
+    private static boolean isKnownDim(ServerPlayer player, String dimKey) {
+        try {
+            var server = player.getServer();
+            if (server == null) return false;
+            for (var level : server.getAllLevels()) {
+                if (level.dimension().location().toString().equals(dimKey)) return true;
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     private static void setDimFlag(ServerPlayer player, GuiActionPayload p) {
+        if (!isKnownDim(player, p.zoneName())) return;
         ArcadiaGuard.dimFlagStore().setFlag(p.zoneName(), p.arg1(), p.boolVal());
         saveDimFlags();
         sendDimDetail(player, p.zoneName());
     }
 
     private static void resetDimFlag(ServerPlayer player, GuiActionPayload p) {
+        if (!isKnownDim(player, p.zoneName())) return;
         ArcadiaGuard.dimFlagStore().resetFlag(p.zoneName(), p.arg1());
         saveDimFlags();
         sendDimDetail(player, p.zoneName());
     }
 
     private static void setDimFlagStr(ServerPlayer player, GuiActionPayload p) {
+        if (!isKnownDim(player, p.zoneName())) return;
         Object value = parseFlagValue(p.arg1(), p.arg2());
         if (value == null) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.invalid_value", p.arg1()).withStyle(ChatFormatting.RED));

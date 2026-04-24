@@ -48,9 +48,11 @@ public final class EmotecraftHandler {
                     ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] Emote verify for {} bypass={}",
                         player.getGameProfile().getName(), guardService.shouldBypass(player));
                     if (guardService.shouldBypass(player)) return pass();
-                    var zoneOpt = guardService.zoneManager().checkZone(player, player.blockPosition());
-                    if (zoneOpt.isEmpty()) return pass();
-                    if (!guardService.isZoneDenying(zoneOpt.get(), BuiltinFlags.EMOTE_USE, player.serverLevel())) return pass();
+                    var pos = player.blockPosition();
+                    var zoneOpt = guardService.zoneManager().findZoneContaining(player.serverLevel(), pos)
+                        .map(z -> (com.arcadia.arcadiaguard.zone.ProtectedZone) z);
+                    if (zoneOpt.isPresent() && guardService.isZoneMember(player, zoneOpt.get())) return pass();
+                    if (!guardService.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.EMOTE_USE)) return pass();
                     player.displayClientMessage(
                         Component.translatable("arcadiaguard.message.emote_use").withStyle(ChatFormatting.RED), true);
                     return fail();
