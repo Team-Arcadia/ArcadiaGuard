@@ -51,7 +51,7 @@ public record GuiActionPayload(
     private static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, String> ZONE_NAME_CODEC =
         ByteBufCodecs.stringUtf8(64);
     private static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, String> ARG1_CODEC =
-        ByteBufCodecs.stringUtf8(64);
+        ByteBufCodecs.stringUtf8(256);
     private static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, String> ARG2_CODEC =
         ByteBufCodecs.stringUtf8(Short.MAX_VALUE);
 

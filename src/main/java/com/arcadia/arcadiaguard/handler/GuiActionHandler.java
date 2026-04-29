@@ -198,12 +198,18 @@ public final class GuiActionHandler {
     }
 
     private static void sendZoneLogs(ServerPlayer player, GuiActionPayload p) {
-        var entries = ArcadiaGuard.auditLogger().tail(p.zoneName(), p.arg1(), p.arg2(), 200);
-        List<ZoneLogsPayload.LogLine> lines = new ArrayList<>(entries.size());
-        for (var e : entries) {
-            lines.add(new ZoneLogsPayload.LogLine(e.timestamp(), e.player(), e.action(), e.pos()));
-        }
-        PacketDistributor.sendToPlayer(player, new ZoneLogsPayload(p.zoneName(), lines));
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ArcadiaGuard.auditLogger().tailAsync(p.zoneName(), p.arg1(), p.arg2(), 200, entries ->
+            server.execute(() -> {
+                if (player.hasDisconnected()) return;
+                List<ZoneLogsPayload.LogLine> lines = new ArrayList<>(entries.size());
+                for (var e : entries) {
+                    lines.add(new ZoneLogsPayload.LogLine(e.timestamp(), e.player(), e.action(), e.pos()));
+                }
+                PacketDistributor.sendToPlayer(player, new ZoneLogsPayload(p.zoneName(), lines));
+            })
+        );
     }
 
     private static boolean isOp(ServerPlayer player) {
