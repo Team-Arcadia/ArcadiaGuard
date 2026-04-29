@@ -18,9 +18,12 @@ public record ZoneRemovedPayload(String zoneName) implements CustomPacketPayload
     public static final Type<ZoneRemovedPayload> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(ArcadiaGuard.MOD_ID, "zone_removed"));
 
+    private static final net.minecraft.network.codec.StreamCodec<io.netty.buffer.ByteBuf, String> NAME_C =
+        ByteBufCodecs.stringUtf8(64);
+
     public static final StreamCodec<RegistryFriendlyByteBuf, ZoneRemovedPayload> STREAM_CODEC = StreamCodec.of(
-        (buf, p) -> ByteBufCodecs.stringUtf8(64).encode(buf, p.zoneName()),
-        buf -> new ZoneRemovedPayload(ByteBufCodecs.stringUtf8(64).decode(buf))
+        (buf, p) -> NAME_C.encode(buf, p.zoneName()),
+        buf -> new ZoneRemovedPayload(NAME_C.decode(buf))
     );
 
     @Override

@@ -14,18 +14,23 @@ import net.minecraft.resources.ResourceLocation;
 public record ZoneLogsPayload(String zoneName, List<LogLine> entries) implements CustomPacketPayload {
 
     public record LogLine(String timestamp, String player, String action, String pos) {
+        private static final StreamCodec<ByteBuf, String> TS_C     = ByteBufCodecs.stringUtf8(32);
+        private static final StreamCodec<ByteBuf, String> PLAYER_C = ByteBufCodecs.stringUtf8(16);
+        private static final StreamCodec<ByteBuf, String> ACTION_C = ByteBufCodecs.stringUtf8(128);
+        private static final StreamCodec<ByteBuf, String> POS_C    = ByteBufCodecs.stringUtf8(48);
+
         static final StreamCodec<ByteBuf, LogLine> CODEC = StreamCodec.of(
             (buf, l) -> {
-                ByteBufCodecs.STRING_UTF8.encode(buf, l.timestamp);
-                ByteBufCodecs.STRING_UTF8.encode(buf, l.player);
-                ByteBufCodecs.STRING_UTF8.encode(buf, l.action);
-                ByteBufCodecs.STRING_UTF8.encode(buf, l.pos);
+                TS_C.encode(buf, l.timestamp);
+                PLAYER_C.encode(buf, l.player);
+                ACTION_C.encode(buf, l.action);
+                POS_C.encode(buf, l.pos);
             },
             buf -> new LogLine(
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf),
-                ByteBufCodecs.STRING_UTF8.decode(buf)
+                TS_C.decode(buf),
+                PLAYER_C.decode(buf),
+                ACTION_C.decode(buf),
+                POS_C.decode(buf)
             )
         );
     }
