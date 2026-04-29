@@ -44,3 +44,6 @@ _bmad-output/
 # Dev tools & misc
 toolstexture_model/
 description.md
+
+# Test reports & procedures (HTML)
+*.html
