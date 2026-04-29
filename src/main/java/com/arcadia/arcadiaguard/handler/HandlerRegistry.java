@@ -173,6 +173,7 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.FarmlandTrampleEvent.class, flagEventHandler::onFarmlandTrample);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.FluidPlaceBlockEvent.class, flagEventHandler::onFluidPlaceBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockEvent.EntityPlaceEvent.class, flagEventHandler::onBlockEntityPlace);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, EntityJoinLevelEvent.class, entityEventHandler::onMobJoinLevel);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityJoinLevelEvent.class, entityEventHandler::onAnimalJoinLevel);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, EntityJoinLevelEvent.class, flagEventHandler::onVehicleJoin);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityJoinLevelEvent.class, mutantMonstersHandler::onEntityJoin);

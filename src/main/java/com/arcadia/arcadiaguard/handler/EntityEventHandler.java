@@ -266,6 +266,25 @@ public final class EntityEventHandler {
         return true;
     }
 
+    // Filet de sécurité pour les mods qui spawent des entités via addFreshEntity() en
+    // contournant FinalizeSpawnEvent (ex. remplacement de vanilla mobs au vol).
+    // FinalizeSpawnEvent annule le spawn avant addFreshEntity → pas de double-traitement
+    // pour les spawns naturels déjà bloqués.
+    public void onMobJoinLevel(EntityJoinLevelEvent event) {
+        if (event.isCanceled()) return;
+        if (!(event.getLevel() instanceof Level level)) return;
+        if (level.isClientSide()) return;
+        if (!(event.getEntity() instanceof Mob mob)) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
+        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        if (entityKey == null) return;
+        BlockPos pos = mob.blockPosition();
+        java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
+        if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
+            event.setCanceled(true);
+        }
+    }
+
     public void onAnimalJoinLevel(EntityJoinLevelEvent event) {
         if (event.isCanceled()) return;
         if (!(event.getLevel() instanceof Level level)) return;
