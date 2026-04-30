@@ -76,4 +76,29 @@ class MobSpawnListMatchTest {
     void nullAndBlankEntriesIgnored() throws Exception {
         assertFalse(match(List.of("", "  "), "minecraft:zombie"));
     }
+
+    // ── 1.6.0 : la même logique sert pour mob-spawn-list (blacklist) et
+    //    mob-spawn-allowlist (whitelist) — sémantique sym­étrique côté handler.
+
+    @Test
+    void allowlist_useCase_arena() throws Exception {
+        // Arène où seuls zombies et squelettes sont autorisés.
+        var allowlist = List.of("minecraft:zombie", "minecraft:skeleton");
+        assertTrue(match(allowlist, "minecraft:zombie"), "zombie autorisé");
+        assertTrue(match(allowlist, "minecraft:skeleton"), "skeleton autorisé");
+        assertFalse(match(allowlist, "minecraft:creeper"), "creeper pas dans la liste");
+        assertFalse(match(allowlist, "minecraft:cow"), "cow pas dans la liste");
+        assertFalse(match(allowlist, "hominid:juggernaut"), "modded mob pas dans la liste");
+    }
+
+    @Test
+    void allowlist_useCase_namespaceWildcard() throws Exception {
+        // Park dédié : tout Hominid + minecraft cows.
+        var allowlist = List.of("hominid:*", "minecraft:cow");
+        assertTrue(match(allowlist, "hominid:juggernaut"));
+        assertTrue(match(allowlist, "hominid:bellman"));
+        assertTrue(match(allowlist, "minecraft:cow"));
+        assertFalse(match(allowlist, "minecraft:zombie"));
+        assertFalse(match(allowlist, "mutantmonsters:mutant_creeper"));
+    }
 }
