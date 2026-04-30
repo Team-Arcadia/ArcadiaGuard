@@ -47,3 +47,6 @@ description.md
 
 # Test reports & procedures (HTML)
 *.html
+
+# Patchnotes (locaux uniquement, publies via GitHub Releases)
+PATCHNOTES-*.md
