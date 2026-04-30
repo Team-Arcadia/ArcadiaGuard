@@ -30,6 +30,7 @@ public final class MutantMonstersHandler {
         Level level = (Level) event.getLevel();
         if (guardService.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.MUTANT_MOB_SPAWN)) {
             event.setCanceled(true);
+            entity.discard();
         }
     }
 }

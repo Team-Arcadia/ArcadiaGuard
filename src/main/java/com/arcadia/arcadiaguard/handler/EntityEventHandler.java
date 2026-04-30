@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
@@ -106,7 +107,39 @@ public final class EntityEventHandler {
             : guard.isZoneDenying(level, pos, flag);
     }
 
+    /**
+     * Filet de sécurité contre les bypasses {@code entity.kill()} et {@code setHealth(0)} qui
+     * sautent {@link LivingIncomingDamageEvent}. Restaure la vie à 1 PV pour les flags
+     * d'invincibilité (joueur / animal). Les autres flags (PVP, MOB_DAMAGE) ne sont pas
+     * traités ici car leur sémantique ne couvre pas explicitement le kill direct.
+     */
+    public void onLivingDeath(LivingDeathEvent event) {
+        if (event.isCanceled()) return;
+        LivingEntity victim = event.getEntity();
+        Level level = victim.level();
+        if (level.isClientSide()) return;
+        BlockPos vpos = victim.blockPosition();
+        var zoneOpt = guard.zoneManager().findZoneContaining(level, vpos);
+        ProtectedZone zone = zoneOpt.map(z -> (ProtectedZone) z).orElse(null);
+
+        if (victim instanceof Player) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.INVINCIBLE)) {
+                event.setCanceled(true);
+                if (victim.getHealth() <= 0f) victim.setHealth(1f);
+            }
+        } else if (victim instanceof Animal) {
+            if (isDenyingHere(zone, level, vpos, BuiltinFlags.ANIMAL_INVINCIBLE)) {
+                event.setCanceled(true);
+                if (victim.getHealth() <= 0f) victim.setHealth(1f);
+            }
+        }
+    }
+
     public void onLivingFall(LivingFallEvent event) {
+        // Listener enregistre avec receiveCancelled=true pour audit ; skip si déjà annulé
+        // par un autre mod (Apotheosis featherweight, Curios feather falling…) sinon spam
+        // de faux audit log "fall_damage denied" pour des sauts qui n'ont pas pris dégât.
+        if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         Level level = player.level();
         if (level.isClientSide()) return;
@@ -276,11 +309,38 @@ public final class EntityEventHandler {
         if (level.isClientSide()) return;
         if (!(event.getEntity() instanceof Mob mob)) return;
         if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
-        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
-        if (entityKey == null) return;
         BlockPos pos = mob.blockPosition();
-        java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
-        if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
+
+        // Mêmes vérifications que onMobSpawn (FinalizeSpawnEvent), pour rattraper les
+        // entités spawnées via addFreshEntity() (ex. mod qui remplace un Zombie par un
+        // Juggernaut pendant un orage) qui contournent FinalizeSpawnEvent.
+        if (guard.isZoneDenying(level, pos, BuiltinFlags.MOB_SPAWN)) {
+            event.setCanceled(true);
+            mob.discard();
+            return;
+        }
+
+        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        if (entityKey != null) {
+            java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
+            if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
+                event.setCanceled(true);
+                mob.discard();
+                return;
+            }
+        }
+
+        BooleanFlag typeFlag;
+        if (mob instanceof Monster) {
+            typeFlag = BuiltinFlags.MONSTER_SPAWN;
+        } else if (mob instanceof AbstractVillager) {
+            typeFlag = BuiltinFlags.VILLAGER_SPAWN;
+        } else if (mob instanceof Animal) {
+            typeFlag = BuiltinFlags.ANIMAL_SPAWN;
+        } else {
+            return;
+        }
+        if (guard.isZoneDenying(level, pos, typeFlag)) {
             event.setCanceled(true);
             mob.discard();
         }

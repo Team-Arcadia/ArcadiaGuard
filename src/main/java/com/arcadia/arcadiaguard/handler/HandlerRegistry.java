@@ -138,6 +138,7 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.ServerChatEvent.class, vanillaExtraHandler::onChat);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, true, net.neoforged.neoforge.event.CommandEvent.class, vanillaExtraHandler::onCommand);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingIncomingDamageEvent.class, entityEventHandler::onLivingIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, net.neoforged.neoforge.event.entity.living.LivingDeathEvent.class, entityEventHandler::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingFallEvent.class, entityEventHandler::onLivingFall);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawnEvent.class, entityEventHandler::onMobSpawn);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ExplosionEvent.Detonate.class, entityEventHandler::onExplosion);

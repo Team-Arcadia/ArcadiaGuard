@@ -376,6 +376,7 @@ public final class FlagEventHandler {
         if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (guard.isZoneDenying(level, entity.blockPosition(), BuiltinFlags.VEHICLE_PLACE)) {
             event.setCanceled(true);
+            entity.discard();
         }
     }
 
