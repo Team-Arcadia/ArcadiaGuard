@@ -106,4 +106,42 @@ class DimensionFlagStoreTest {
         assertEquals(42, flags.get("intFlag"));
         assertEquals(java.util.List.of("a", "b"), flags.get("listFlag"));
     }
+
+    // ── Regression 1.5.5 fix #7 : snapshot() pour écriture async ──
+
+    @Test
+    void snapshot_isDeepCopy_mutationsToLiveStoreDoNotLeak() {
+        var store = new DimensionFlagStore();
+        store.setFlag("overworld", "pvp", false);
+        var snap = store.snapshot();
+
+        // Mutation après snapshot ne doit pas être visible dans le snapshot.
+        store.setFlag("overworld", "pvp", true);
+        store.setFlag("overworld", "newFlag", 1);
+        store.setFlag("nether", "pvp", false);
+
+        assertEquals(false, snap.get("overworld").get("pvp"),
+            "snapshot doit être indépendant du store post-mutation");
+        assertFalse(snap.get("overworld").containsKey("newFlag"));
+        assertFalse(snap.containsKey("nether"));
+    }
+
+    @Test
+    void snapshot_isMutable_safeForWriterThread() {
+        var store = new DimensionFlagStore();
+        store.setFlag("overworld", "pvp", false);
+        var snap = store.snapshot();
+        // Le snapshot peut être muté librement (ne doit pas être un unmodifiable).
+        snap.put("nether", new HashMap<>());
+        snap.get("overworld").put("test", true);
+        // Le store live ne doit pas être affecté.
+        assertFalse(store.all().containsKey("nether"));
+        assertFalse(store.flags("overworld").containsKey("test"));
+    }
+
+    @Test
+    void snapshot_emptyStore_returnsEmpty() {
+        var store = new DimensionFlagStore();
+        assertTrue(store.snapshot().isEmpty());
+    }
 }

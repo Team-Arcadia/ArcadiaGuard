@@ -224,4 +224,56 @@ class ProtectedZoneTest {
             0, 0, 0, 10, 10, 10, new HashSet<>(), null, 0, null, roles);
         assertTrue(zone.whitelistedPlayers().contains(uuid));
     }
+
+    // ── Regression 1.5.5 : snapshot AsyncZoneWriter doit preserver blockedItems ─────
+    // Le bug etait que le constructeur 13-args (sans blockedItems) etait utilise par
+    // scheduleWrite, et le full constructor remplit blockedItems avec un HashSet vide
+    // si null, donc toute mutation d'autre champ ecrasait blocked_items sur disque.
+
+    @Test
+    void fullConstructor_withBlockedItems_preservesThem() {
+        var item1 = net.minecraft.resources.ResourceLocation.parse("minecraft:tnt");
+        var item2 = net.minecraft.resources.ResourceLocation.parse("minecraft:diamond");
+        var blocked = new HashSet<net.minecraft.resources.ResourceLocation>();
+        blocked.add(item1);
+        blocked.add(item2);
+
+        var zone = new ProtectedZone("x", "minecraft:overworld",
+            0, 0, 0, 10, 10, 10, new HashSet<>(), null, 0, null, null, blocked);
+
+        assertTrue(zone.isItemBlocked(item1));
+        assertTrue(zone.isItemBlocked(item2));
+        assertEquals(2, zone.blockedItems().size());
+    }
+
+    @Test
+    void scheduleWriteSnapshot_replicatesBlockedItems() {
+        // Reproduit le pattern exact d'InternalZoneProvider.scheduleWrite : copie
+        // toutes les collections via le full constructor.
+        var item = net.minecraft.resources.ResourceLocation.parse("minecraft:tnt");
+        var original = make();
+        original.blockItem(item);
+        original.setFlag("pvp", false);
+
+        var snapshot = new ProtectedZone(
+            original.name(), original.dimension(),
+            original.minX(), original.minY(), original.minZ(),
+            original.maxX(), original.maxY(), original.maxZ(),
+            new HashSet<>(original.whitelistedPlayers()),
+            original.parent(), original.priority(),
+            new java.util.LinkedHashMap<>(original.flagValues()),
+            new java.util.LinkedHashMap<>(original.memberRoles()),
+            new HashSet<>(original.blockedItems()));
+
+        assertTrue(snapshot.isItemBlocked(item),
+            "le snapshot scheduleWrite doit preserver blockedItems (regression S-H20/1.5.5)");
+        assertEquals(false, snapshot.flagValues().get("pvp"));
+    }
+
+    @Test
+    void blockedItemsConstructor_nullCreatesEmpty() {
+        var zone = new ProtectedZone("x", "minecraft:overworld",
+            0, 0, 0, 10, 10, 10, new HashSet<>(), null, 0, null, null, null);
+        assertTrue(zone.blockedItems().isEmpty());
+    }
 }
