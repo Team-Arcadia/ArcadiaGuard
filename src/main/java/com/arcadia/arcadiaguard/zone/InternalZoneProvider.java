@@ -482,7 +482,8 @@ public final class InternalZoneProvider implements ZoneProvider {
             new java.util.HashSet<>(zone.whitelistedPlayers()),
             zone.parent(), zone.priority(),
             new java.util.LinkedHashMap<>(zone.flagValues()),
-            new java.util.LinkedHashMap<>(zone.memberRoles()));
+            new java.util.LinkedHashMap<>(zone.memberRoles()),
+            new java.util.HashSet<>(zone.blockedItems()));
         snapshot.setEnabled(zone.enabled());
         snapshot.setInheritDimFlags(zone.inheritDimFlags());
         Path file = ArcadiaGuardPaths.zoneFile(zone.dimension(), zone.name());
