@@ -26,6 +26,16 @@ public final class DimensionFlagStore {
         return Collections.unmodifiableMap(store);
     }
 
+    /**
+     * Returns a deep, immutable snapshot of the store, safe to consume from a writer thread
+     * while the main thread continues to mutate the live store.
+     */
+    public Map<String, Map<String, Object>> snapshot() {
+        Map<String, Map<String, Object>> copy = new LinkedHashMap<>();
+        for (var e : store.entrySet()) copy.put(e.getKey(), new LinkedHashMap<>(e.getValue()));
+        return copy;
+    }
+
     public void clear() {
         store.clear();
     }

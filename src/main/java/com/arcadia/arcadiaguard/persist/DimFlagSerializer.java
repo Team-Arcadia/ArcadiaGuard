@@ -25,8 +25,16 @@ public final class DimFlagSerializer {
     private DimFlagSerializer() {}
 
     public static void write(DimensionFlagStore store, Path file) throws IOException {
+        writeSnapshot(store.snapshot(), file);
+    }
+
+    /**
+     * Écrit un snapshot pré-construit. Sûr à appeler depuis un thread async — l'appelant
+     * doit avoir copié les maps avant pour éviter ConcurrentModificationException.
+     */
+    public static void writeSnapshot(Map<String, Map<String, Object>> snapshot, Path file) throws IOException {
         JsonObject root = new JsonObject();
-        for (Map.Entry<String, Map<String, Object>> dimEntry : store.all().entrySet()) {
+        for (Map.Entry<String, Map<String, Object>> dimEntry : snapshot.entrySet()) {
             JsonObject dimObj = new JsonObject();
             for (Map.Entry<String, Object> flag : dimEntry.getValue().entrySet()) {
                 Object val = flag.getValue();

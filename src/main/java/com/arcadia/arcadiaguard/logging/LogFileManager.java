@@ -15,7 +15,14 @@ import java.util.stream.Stream;
 /**
  * Manages daily log file rotation and cleanup for the audit logger.
  * Creates a new file per day and deletes files older than the configured retention period.
+ *
+ * @deprecated Non utilisé en production — la rotation/lecture des logs passe par
+ * {@link ArcadiaGuardAuditLogger}. La méthode {@link #queryLog(int, String, String)}
+ * est <b>synchrone et bloquante</b> (charge le fichier entier en RAM via
+ * {@link Files#readAllLines}) — ne JAMAIS appeler depuis le thread tick. À supprimer
+ * dans une release future. Garde uniquement pour ses tests.
  */
+@Deprecated
 public final class LogFileManager {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE;
