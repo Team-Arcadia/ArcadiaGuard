@@ -76,7 +76,9 @@ public final class FlagResolver {
 
         if (zone.parent() != null) {
             Optional<ProtectedZone> parentZone = parentLookup.apply(zone.parent());
-            if (parentZone.isPresent()) {
+            // Un parent désactivé est traité comme inexistant (cohérent avec l'attente
+            // "désactiver une zone parent ne doit plus impacter ses enfants").
+            if (parentZone.isPresent() && parentZone.get().enabled()) {
                 Optional<T> fromParent = resolveOptional(parentZone.get(), flag, parentLookup, dimFlagLookup, depth + 1);
                 if (fromParent.isPresent()) return fromParent;
                 // Parent chain explicit about nothing: fall through to dim (if this zone inherits).
