@@ -77,6 +77,15 @@ public final class GuiActionHandler {
         }
     }
 
+    /** Longueur max d'arg2 acceptée pour les actions qui n'ont pas besoin de payload long. */
+    private static final int ARG2_SHORT_LIMIT = 256;
+
+    /** Actions qui peuvent légitimement recevoir un arg2 long (listes serializées en CSV). */
+    private static boolean actionAllowsLongArg2(GuiActionPayload.Action action) {
+        return action == GuiActionPayload.Action.SET_FLAG_STR
+            || action == GuiActionPayload.Action.SET_DIM_FLAG_STR;
+    }
+
     public static void handle(GuiActionPayload payload, IPayloadContext context) {
         // C1: Rate-limit packets C→S before enqueuing work on main thread.
         if (context.player() instanceof ServerPlayer sp) {
@@ -88,6 +97,14 @@ public final class GuiActionHandler {
                 ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] rate limited packet from {}", uuid);
                 return;
             }
+        }
+        // Defense-in-depth : rejeter les payloads dont arg2 dépasse 256 chars sauf pour
+        // SET_FLAG_STR/SET_DIM_FLAG_STR qui peuvent légitimement véhiculer une liste sérialisée.
+        if (payload.arg2() != null && payload.arg2().length() > ARG2_SHORT_LIMIT
+                && !actionAllowsLongArg2(payload.action())) {
+            ArcadiaGuard.LOGGER.debug("[ArcadiaGuard] rejet payload arg2 trop long ({}) pour action {}",
+                payload.arg2().length(), payload.action());
+            return;
         }
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
@@ -595,8 +612,14 @@ public final class GuiActionHandler {
     }
 
     private static void saveDimFlags() {
-        try { DimFlagSerializer.write(ArcadiaGuard.dimFlagStore(), ArcadiaGuardPaths.dimFlagsFile()); }
-        catch (IOException e) { ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to save dimension flags", e); }
+        // Snapshot du store sur le thread tick puis écriture déléguée à AsyncZoneWriter
+        // pour ne pas bloquer le serveur sur le fsync (S-H22).
+        var snapshot = ArcadiaGuard.dimFlagStore().snapshot();
+        var path = ArcadiaGuardPaths.dimFlagsFile();
+        ArcadiaGuard.asyncZoneWriter().schedule("dim-flags", () -> {
+            try { DimFlagSerializer.writeSnapshot(snapshot, path); }
+            catch (IOException e) { ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Failed to save dimension flags", e); }
+        });
     }
 
     private static Object parseFlagValue(String flagId, String raw) {
