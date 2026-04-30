@@ -141,14 +141,25 @@ public final class GuardService implements IGuardService {
     @SuppressWarnings("unchecked")
     public ZoneCheckResult checkFlag(ServerPlayer player, BlockPos pos, Flag<Boolean> flag) {
         if (shouldBypass(player)) return ZoneCheckResult.allowed();
-        Optional<IZone> zoneOpt = this.zoneManager.findZoneContaining(player.serverLevel(), pos);
-        if (zoneOpt.isEmpty()) return ZoneCheckResult.allowed();
-        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
-        if (zone.whitelistedPlayers().contains(player.getUUID())) return ZoneCheckResult.allowed();
+        Level level = player.serverLevel();
+        Optional<IZone> zoneOpt = this.zoneManager.findZoneContaining(level, pos);
         Function<String, Optional<ProtectedZone>> lookup = name ->
-            (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(player.serverLevel(), name);
-        boolean allowed = FlagResolver.resolve(zone, flag, lookup);
-        return allowed ? ZoneCheckResult.allowed() : ZoneCheckResult.blocked(zone.name());
+            (Optional<ProtectedZone>)(Optional<?>) this.zoneManager.get(level, name);
+        Function<String, java.util.Map<String, Object>> dimLookup = dim -> this.dimFlagStore.flags(dim);
+
+        if (zoneOpt.isEmpty()) {
+            // Hors zone : fallback sur les dim flags (cohérent avec isZoneDenying).
+            Optional<Boolean> dimResolved = resolveDimFlag(level, flag);
+            return dimResolved.map(v -> v ? ZoneCheckResult.allowed() : ZoneCheckResult.blocked("(dimension)"))
+                .orElse(ZoneCheckResult.allowed());
+        }
+
+        ProtectedZone zone = (ProtectedZone) zoneOpt.get();
+        if (!zone.enabled()) return ZoneCheckResult.allowed();
+        if (zone.whitelistedPlayers().contains(player.getUUID())) return ZoneCheckResult.allowed();
+        Optional<Boolean> resolved = FlagResolver.resolveOptional(zone, flag, lookup, dimLookup);
+        return resolved.map(v -> v ? ZoneCheckResult.allowed() : ZoneCheckResult.blocked(zone.name()))
+            .orElse(ZoneCheckResult.allowed());
     }
 
     /** Bascule le mode debug pour ce joueur. Retourne true si le debug est maintenant actif. */
