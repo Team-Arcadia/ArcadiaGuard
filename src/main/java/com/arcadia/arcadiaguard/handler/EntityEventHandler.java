@@ -64,6 +64,12 @@ public final class EntityEventHandler {
                     return;
                 }
             }
+            // mob-attack-player : ciblé sur attacker = Mob (laisse passer chute, lave, etc.)
+            // Distinct de player-damage qui bloque toutes les sources.
+            if (attacker instanceof Mob && isDenyingHere(zone, level, vpos, BuiltinFlags.MOB_ATTACK_PLAYER)) {
+                event.setCanceled(true);
+                return;
+            }
             if (isDenyingHere(zone, level, vpos, BuiltinFlags.PLAYER_DAMAGE)) {
                 event.setCanceled(true);
                 if (attacker instanceof ServerPlayer sp) {
@@ -161,6 +167,19 @@ public final class EntityEventHandler {
         if (level.isClientSide()) return;
         Mob entity = event.getEntity();
         net.minecraft.core.BlockPos pos = entity.blockPosition();
+        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+
+        // 0) Whitelist (mob-spawn-allowlist) : si non vide, override tous les autres flags.
+        //    Mob match l'allowlist → autorisé. Mob ne match pas → bloqué.
+        if (entityKey != null) {
+            java.util.List<String> allowlist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_ALLOWLIST);
+            if (!allowlist.isEmpty()) {
+                if (!matchesMobList(allowlist, entityKey)) {
+                    event.setSpawnCancelled(true);
+                }
+                return;
+            }
+        }
 
         // 1) Blocage global : mob-spawn=deny stoppe toute apparition.
         if (guard.isZoneDenying(level, pos, BuiltinFlags.MOB_SPAWN)) {
@@ -169,7 +188,6 @@ public final class EntityEventHandler {
         }
 
         // 2) Blacklist par id : mob-spawn-list contient l'id du mob (ou un wildcard namespace).
-        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
         if (entityKey != null) {
             java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
             if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
@@ -310,17 +328,30 @@ public final class EntityEventHandler {
         if (!(event.getEntity() instanceof Mob mob)) return;
         if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
         BlockPos pos = mob.blockPosition();
+        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
 
         // Mêmes vérifications que onMobSpawn (FinalizeSpawnEvent), pour rattraper les
         // entités spawnées via addFreshEntity() (ex. mod qui remplace un Zombie par un
         // Juggernaut pendant un orage) qui contournent FinalizeSpawnEvent.
+
+        // 0) Whitelist override : si mob-spawn-allowlist non vide, seuls les listés passent.
+        if (entityKey != null) {
+            java.util.List<String> allowlist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_ALLOWLIST);
+            if (!allowlist.isEmpty()) {
+                if (!matchesMobList(allowlist, entityKey)) {
+                    event.setCanceled(true);
+                    mob.discard();
+                }
+                return;
+            }
+        }
+
         if (guard.isZoneDenying(level, pos, BuiltinFlags.MOB_SPAWN)) {
             event.setCanceled(true);
             mob.discard();
             return;
         }
 
-        var entityKey = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
         if (entityKey != null) {
             java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
             if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {

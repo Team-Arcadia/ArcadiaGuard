@@ -27,8 +27,9 @@ public final class BuiltinFlags {
 
     // --- Combat ---
     public static final BooleanFlag PVP                = new BooleanFlag("pvp",                false, "Autorise/refuse les combats joueur contre joueur (PvP).");
-    public static final BooleanFlag PLAYER_DAMAGE      = new BooleanFlag("player-damage",      false, "Autorise/refuse que les joueurs subissent des dégâts dans la zone.");
-    public static final BooleanFlag MOB_DAMAGE         = new BooleanFlag("mob-damage",         false, "Autorise/refuse que les mobs subissent des dégâts dans la zone.");
+    public static final BooleanFlag PLAYER_DAMAGE      = new BooleanFlag("player-damage",      false, "Protège les joueurs de tous les dégâts entrants (mobs, environnement, projectiles, lave, chute…). Les joueurs peuvent toujours attaquer normalement.");
+    public static final BooleanFlag MOB_DAMAGE         = new BooleanFlag("mob-damage",         false, "Protège les mobs de tous les dégâts entrants (joueurs, environnement, autres mobs). Les mobs peuvent toujours attaquer normalement.");
+    public static final BooleanFlag MOB_ATTACK_PLAYER  = new BooleanFlag("mob-attack-player",  false, "Empêche uniquement les mobs d'infliger des dégâts aux joueurs. Les joueurs subissent toujours les dégâts d'environnement (chute, lave…) et peuvent attaquer librement les mobs.");
     public static final BooleanFlag FALL_DAMAGE        = new BooleanFlag("fall-damage",        false, "Autorise/refuse les dégâts de chute pour les joueurs.");
     public static final BooleanFlag INVINCIBLE         = new BooleanFlag("invincible",         false, "Rend les joueurs complètement invulnérables dans la zone.");
     public static final BooleanFlag ATTACK_ANIMALS     = new BooleanFlag("attack-animals",     false, "Autorise/refuse d'attaquer les animaux passifs.");
@@ -41,7 +42,8 @@ public final class BuiltinFlags {
     public static final BooleanFlag ANIMAL_SPAWN       = new BooleanFlag("animal-spawn",       false, "Autorise/refuse l'apparition des animaux passifs.");
     public static final BooleanFlag MONSTER_SPAWN      = new BooleanFlag("monster-spawn",      false, "Autorise/refuse l'apparition des monstres hostiles.");
     public static final BooleanFlag VILLAGER_SPAWN     = new BooleanFlag("villager-spawn",     false, "Autorise/refuse l'apparition des villageois.");
-    public static final ListFlag    MOB_SPAWN_LIST     = new ListFlag("mob-spawn-list", "Liste de mobs interdits a l'apparition. Chaque entree est un id de mob (ex: minecraft:zombie, mutantmonsters:mutant_creeper). Supporte les wildcards namespace (ex: mutantmonsters:*).");
+    public static final ListFlag    MOB_SPAWN_LIST     = new ListFlag("mob-spawn-list", "Liste noire : mobs interdits a l'apparition. Chaque entree est un id de mob (ex: minecraft:zombie, mutantmonsters:mutant_creeper). Supporte les wildcards namespace (ex: mutantmonsters:*).");
+    public static final ListFlag    MOB_SPAWN_ALLOWLIST = new ListFlag("mob-spawn-allowlist", "Liste blanche : si non vide, SEULS les mobs listes peuvent apparaitre dans la zone (override mob-spawn et mob-spawn-list). Utile pour des arenes ou parcs avec mobs precis. Meme syntaxe que mob-spawn-list (wildcards namespace OK).");
     public static final BooleanFlag VEHICLE_PLACE      = new BooleanFlag("vehicle-place",      false, "Autorise/refuse la pose de bateaux et de minecarts.");
     public static final BooleanFlag VEHICLE_DESTROY    = new BooleanFlag("vehicle-destroy",    false, "Autorise/refuse la destruction de bateaux et de minecarts.");
     public static final BooleanFlag LEASH              = new BooleanFlag("leash",              false, "Autorise/refuse l'utilisation des laisses sur les entités.");

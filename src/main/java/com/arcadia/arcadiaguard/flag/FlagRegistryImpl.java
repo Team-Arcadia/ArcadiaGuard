@@ -55,6 +55,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.PVP);
         register(BuiltinFlags.PLAYER_DAMAGE);
         register(BuiltinFlags.MOB_DAMAGE);
+        register(BuiltinFlags.MOB_ATTACK_PLAYER);
         register(BuiltinFlags.FALL_DAMAGE);
         register(BuiltinFlags.INVINCIBLE);
         register(BuiltinFlags.ATTACK_ANIMALS);
@@ -67,6 +68,7 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.MONSTER_SPAWN);
         register(BuiltinFlags.VILLAGER_SPAWN);
         register(BuiltinFlags.MOB_SPAWN_LIST);
+        register(BuiltinFlags.MOB_SPAWN_ALLOWLIST);
         register(BuiltinFlags.VEHICLE_PLACE);
         register(BuiltinFlags.VEHICLE_DESTROY);
         register(BuiltinFlags.LEASH);
