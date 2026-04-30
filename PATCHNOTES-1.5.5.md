@@ -1,6 +1,19 @@
-# 1.5.5 — Audit de fond + cause racine bug pluie
+# 1.5.5 — Audit de fond + cause racine bug pluie + 2 nouveaux flags
 
-Patch issu d'une review complète du code (4 hunters parallèles). Treize problèmes corrigés, dont une perte de données silencieuse sur les listes d'items bloqués par zone, plusieurs bypass de protection et des couvertures partielles introduites par les patches précédents. Cause racine du bug "mobs spawnent sous la pluie" identifiée et corrigée.
+Patch issu d'une review complète du code (4 hunters parallèles). Treize problèmes corrigés, dont une perte de données silencieuse sur les listes d'items bloqués par zone, plusieurs bypass de protection et des couvertures partielles introduites par les patches précédents. Cause racine du bug "mobs spawnent sous la pluie" identifiée et corrigée. Deux nouveaux flags ajoutés en réponse à des feature requests.
+
+---
+
+## 🆕 Nouveaux flags
+
+### `mob-attack-player`
+Empêche **uniquement** les mobs d'infliger des dégâts aux joueurs. Distinct de `player-damage` qui bloque toutes les sources (chute, lave, projectiles…). Les joueurs subissent toujours les dégâts d'environnement et peuvent attaquer librement les mobs.
+
+### `mob-spawn-allowlist` (liste blanche)
+Inverse de `mob-spawn-list`. Si non vide, **seuls** les mobs listés peuvent apparaître dans la zone. Override `mob-spawn` et `mob-spawn-list`. Utile pour des arènes ou parcs avec mobs précis. Même syntaxe que `mob-spawn-list` (wildcards namespace supportés, ex: `hominid:*`).
+
+### Descriptions clarifiées
+`player-damage`, `mob-damage` et `mob-spawn-list` ont des descriptions plus explicites pour éviter les confusions remontées dans les issues.
 
 ---
 
@@ -62,9 +75,22 @@ Classe non utilisée en production mais conservée pour ses tests, dont la méth
 ---
 ---
 
-# 1.5.5 — Deep audit + rain spawn root cause
+# 1.5.5 — Deep audit + rain spawn root cause + 2 new flags
 
-Patch from a complete code review (4 parallel hunters). Thirteen issues fixed, including a silent data loss on per-zone blocked-item lists, several protection bypasses, and partial coverage introduced by previous patches. Root cause of the "mobs spawn during rain" bug identified and fixed.
+Patch from a complete code review (4 parallel hunters). Thirteen issues fixed, including a silent data loss on per-zone blocked-item lists, several protection bypasses, and partial coverage introduced by previous patches. Root cause of the "mobs spawn during rain" bug identified and fixed. Two new flags added in response to feature requests.
+
+---
+
+## 🆕 New flags
+
+### `mob-attack-player`
+Prevents **only** mobs from damaging players. Distinct from `player-damage` which blocks all sources (falls, lava, projectiles…). Players still take environmental damage and can freely attack mobs.
+
+### `mob-spawn-allowlist` (whitelist)
+Inverse of `mob-spawn-list`. If non-empty, **only** listed mobs can spawn in the zone. Overrides `mob-spawn` and `mob-spawn-list`. Useful for arenas or parks with specific mobs. Same syntax as `mob-spawn-list` (namespace wildcards supported, e.g. `hominid:*`).
+
+### Clarified descriptions
+`player-damage`, `mob-damage` and `mob-spawn-list` got more explicit descriptions to prevent confusions raised in issues.
 
 ---
 
