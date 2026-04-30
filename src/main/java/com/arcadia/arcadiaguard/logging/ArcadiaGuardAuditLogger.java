@@ -57,6 +57,13 @@ public final class ArcadiaGuardAuditLogger {
     /** Kept open between writes; only replaced on rotation or after init. */
     private BufferedWriter openWriter;
 
+    /**
+     * Lock partagé entre tail (lectures depuis ForkJoinPool) et rotateIfNeeded (renommage
+     * sur worker thread à minuit UTC). Sans ce lock, sur Windows {@code Files.move}
+     * peut échouer si un stream {@code Files.lines} a le fichier ouvert ailleurs.
+     */
+    private final Object rotationLock = new Object();
+
     public void onServerStarted(MinecraftServer server) {
         this.logsDir = ArcadiaGuardPaths.logsRoot();
         this.activeDate = LocalDate.now(ZoneOffset.UTC);
@@ -207,6 +214,9 @@ public final class ArcadiaGuardAuditLogger {
         String af = (actionFilter != null) ? actionFilter.toLowerCase(Locale.ROOT) : null;
         for (Path file : candidates) {
             if (!Files.isRegularFile(file)) continue;
+            // Section critique : empêche rotateIfNeeded de renommer le fichier pendant
+            // qu'on a un stream ouvert dessus (Windows AccessDeniedException).
+            synchronized (rotationLock) {
             try (var stream = Files.lines(file, StandardCharsets.UTF_8)) {
                 stream.forEach(line -> {
                     if (out.size() >= limit * 2) return; // soft cap to avoid huge intermediate deque
@@ -224,6 +234,7 @@ public final class ArcadiaGuardAuditLogger {
             } catch (IOException e) {
                 ArcadiaGuard.LOGGER.warn("Failed to read ArcadiaGuard audit log for tail()", e);
             }
+            } // end synchronized rotationLock
             if (out.size() >= limit) break;
         }
         return new ArrayList<>(out);
@@ -255,12 +266,14 @@ public final class ArcadiaGuardAuditLogger {
         if (active.equals(now)) return;
         // Date changed: close the open writer and rotate the file
         closeWriter();
-        Path current = dir.resolve(LOG_FILE_NAME);
-        if (Files.exists(current)) {
-            Path archived = dir.resolve("arcadiaguard-audit-" + active + ".log");
-            Files.move(current, archived, StandardCopyOption.REPLACE_EXISTING);
+        synchronized (rotationLock) {
+            Path current = dir.resolve(LOG_FILE_NAME);
+            if (Files.exists(current)) {
+                Path archived = dir.resolve("arcadiaguard-audit-" + active + ".log");
+                Files.move(current, archived, StandardCopyOption.REPLACE_EXISTING);
+            }
+            this.activeDate = now;
         }
-        this.activeDate = now;
         // openWriter will be recreated by writeLine() after this
     }
 }
