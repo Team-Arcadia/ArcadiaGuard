@@ -38,14 +38,16 @@ public record ZoneLogsPayload(String zoneName, List<LogLine> entries) implements
     public static final Type<ZoneLogsPayload> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(ArcadiaGuard.MOD_ID, "zone_logs"));
 
+    private static final StreamCodec<ByteBuf, String> ZONE_NAME_C = ByteBufCodecs.stringUtf8(64);
+
     public static final StreamCodec<RegistryFriendlyByteBuf, ZoneLogsPayload> STREAM_CODEC = StreamCodec.of(
         (buf, p) -> {
-            ByteBufCodecs.STRING_UTF8.encode(buf, p.zoneName());
+            ZONE_NAME_C.encode(buf, p.zoneName());
             buf.writeInt(p.entries().size());
             for (LogLine l : p.entries()) LogLine.CODEC.encode(buf, l);
         },
         buf -> {
-            String zone = ByteBufCodecs.STRING_UTF8.decode(buf);
+            String zone = ZONE_NAME_C.decode(buf);
             int n = buf.readInt();
             if (n < 0 || n > 200) throw new io.netty.handler.codec.DecoderException("Invalid size " + n + " in ZoneLogsPayload");
             List<LogLine> entries = new ArrayList<>(n);
