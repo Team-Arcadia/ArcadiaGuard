@@ -162,6 +162,22 @@ public final class EntityEventHandler {
         }
     }
 
+    /**
+     * Listener defensif a priorite LOWEST : si un autre mod (ex. Hominid) a discard()
+     * l'entite pendant FinalizeSpawnEvent sans cancel l'event, vanilla continue a tenter
+     * d'ajouter l'entite et logue "Tried to add entity X but it was marked as removed
+     * already". On cancel l'event a leur place pour faire taire ce spam.
+     * <p>Run a part de onMobSpawn (priorite NORMAL) pour ne pas interferer avec notre
+     * propre logique de blocage.
+     */
+    public void onFinalizeSpawnDiscardCleanup(FinalizeSpawnEvent event) {
+        if (event.isSpawnCancelled()) return;
+        Mob entity = event.getEntity();
+        if (entity != null && entity.isRemoved()) {
+            event.setSpawnCancelled(true);
+        }
+    }
+
     public void onMobSpawn(FinalizeSpawnEvent event) {
         if (!(event.getLevel() instanceof Level level)) return;
         if (level.isClientSide()) return;

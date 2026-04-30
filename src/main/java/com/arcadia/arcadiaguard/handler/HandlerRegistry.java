@@ -141,6 +141,8 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, net.neoforged.neoforge.event.entity.living.LivingDeathEvent.class, entityEventHandler::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, LivingFallEvent.class, entityEventHandler::onLivingFall);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawnEvent.class, entityEventHandler::onMobSpawn);
+        // LOWEST : cancel le spawn si un autre mod a discard l'entite (anti-spam Hominid-like).
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, FinalizeSpawnEvent.class, entityEventHandler::onFinalizeSpawnDiscardCleanup);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ExplosionEvent.Detonate.class, entityEventHandler::onExplosion);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, PlayerTickEvent.Post.class, playerEventHandler::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTickEvent.Post.class, entityEventHandler::onEntityTick);
