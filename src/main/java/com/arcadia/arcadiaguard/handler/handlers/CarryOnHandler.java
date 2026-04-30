@@ -50,7 +50,7 @@ public final class CarryOnHandler {
     /** Enregistre les listeners d'events NeoForge + l'event custom EntityPickupEvent. */
     public void register() {
         if (!ModList.get().isLoaded(MOD_ID)) {
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Carry On non detecte, flag CARRYON inactif.");
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] Carry On non detecte, flag CARRYON inactif.");
             return;
         }
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true,
@@ -61,7 +61,7 @@ public final class CarryOnHandler {
         try {
             Class<?> pickupCls = Class.forName(PICKUP_EVENT_CLS);
             registerPickupListener(pickupCls);
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Carry On handler enregistre (EntityPickupEvent + RightClickBlock + PlayerTick).");
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] Carry On handler enregistre (EntityPickupEvent + RightClickBlock + PlayerTick).");
         } catch (ClassNotFoundException e) {
             ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Carry On EntityPickupEvent introuvable : pickup entite non bloque via event. RightClickBlock suffit pour la plupart des cas.");
         } catch (Throwable t) {

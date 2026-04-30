@@ -98,6 +98,23 @@ public final class ArcadiaGuard {
 
     public static ServiceRegistry services() { return services; }
 
+    /**
+     * Logue un message INFO seulement si la config {@code debug=true}.
+     * À utiliser pour les messages de boot/diagnostic non-critiques. Les WARN/ERROR
+     * passent toujours via {@link #LOGGER} directement. Null-safe avant le chargement
+     * de la config (logue par défaut pendant le bootstrap).
+     */
+    public static void debugInfo(String format, Object... args) {
+        try {
+            if (com.arcadia.arcadiaguard.config.ArcadiaGuardConfig.DEBUG.get()) {
+                LOGGER.info(format, args);
+            }
+        } catch (IllegalStateException e) {
+            // Config pas encore chargée (avant FMLCommonSetup) : on logue par défaut.
+            LOGGER.info(format, args);
+        }
+    }
+
     public static FlagRegistryImpl flagRegistry()             { return services.flagRegistry(); }
     public static ZoneManager zoneManager()                   { return services.zoneManager(); }
     public static GuardService guardService()                 { return services.guardService(); }

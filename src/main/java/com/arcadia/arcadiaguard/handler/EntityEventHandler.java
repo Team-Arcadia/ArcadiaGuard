@@ -171,6 +171,8 @@ public final class EntityEventHandler {
      * propre logique de blocage.
      */
     public void onFinalizeSpawnDiscardCleanup(FinalizeSpawnEvent event) {
+        // En mode debug, on laisse les warnings 'marked as removed' passer pour visibilite.
+        if (com.arcadia.arcadiaguard.config.ArcadiaGuardConfig.DEBUG.get()) return;
         if (event.isSpawnCancelled()) return;
         Mob entity = event.getEntity();
         if (entity != null && entity.isRemoved()) {

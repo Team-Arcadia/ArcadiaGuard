@@ -33,7 +33,7 @@ public final class ClientEmotecraftHook {
                 }
             );
             eventClass.getMethod("register", Object.class).invoke(verificationEvent, verifier);
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Emotecraft CLIENT verifier registered");
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] Emotecraft CLIENT verifier registered");
         } catch (Exception e) {
             ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Could not register Emotecraft CLIENT verifier: {}", e.toString(), e);
         }

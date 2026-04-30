@@ -147,7 +147,7 @@ public abstract class AbstractSpellHandler implements DynamicEventHandler {
                     // DEBUG : log sur premier match pour aider au diagnostic "tous les sorts bloques"
                     if (!DEBUG_LOGGED) {
                         DEBUG_LOGGED = true;
-                        com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+                        com.arcadia.arcadiaguard.ArcadiaGuard.debugInfo(
                             "[ArcadiaGuard] Spell blacklist first hit: spellId='{}', glyphs={}, blacklist={}, matched='{}'",
                             spellId, glyphs, blacklist, hit);
                     }

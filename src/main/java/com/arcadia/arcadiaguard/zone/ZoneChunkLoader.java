@@ -71,7 +71,7 @@ public final class ZoneChunkLoader {
             if (!desired.contains(pos)) level.setChunkForced(pos.x, pos.z, false);
         }
         byZone.put(zone.name(), new HashSet<>(desired));
-        ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Zone '{}' @ {}: {} chunks force-loaded.",
+        ArcadiaGuard.debugInfo("[ArcadiaGuard] Zone '{}' @ {}: {} chunks force-loaded.",
             zone.name(), dim, desired.size());
     }
 
@@ -85,7 +85,7 @@ public final class ZoneChunkLoader {
         for (ChunkPos pos : current) {
             level.setChunkForced(pos.x, pos.z, false);
         }
-        ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Zone '{}' @ {}: {} chunks released.",
+        ArcadiaGuard.debugInfo("[ArcadiaGuard] Zone '{}' @ {}: {} chunks released.",
             zone.name(), dim, current.size());
     }
 
