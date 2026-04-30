@@ -69,7 +69,7 @@ public final class LuckPermsCompat {
             bus.getClass()
                 .getMethod("subscribe", Class.class, java.util.function.Consumer.class)
                 .invoke(bus, eventCls, handler);
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] LuckPerms UserDataRecalculateEvent subscribed — command tree will refresh on perm changes");
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] LuckPerms UserDataRecalculateEvent subscribed — command tree will refresh on perm changes");
         } catch (Throwable t) {
             ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Could not subscribe to LuckPerms events (hot refresh disabled): {}", t.toString());
         }

@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class ActionProcessorMixin {
 
     static {
-        com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+        com.arcadia.arcadiaguard.ArcadiaGuard.debugInfo(
             "[ArcadiaGuard] ActionProcessorMixin class init — mixin will be applied to ParCool ActionProcessor.");
     }
 
@@ -34,7 +34,7 @@ public abstract class ActionProcessorMixin {
     private void arcadiaguard$maybeCancelParcoolTick(PlayerTickEvent.Post event, CallbackInfo ci) {
         if (!LOADED_LOGGED) {
             LOADED_LOGGED = true;
-            com.arcadia.arcadiaguard.ArcadiaGuard.LOGGER.info(
+            com.arcadia.arcadiaguard.ArcadiaGuard.debugInfo(
                 "[ArcadiaGuard] ParCool ActionProcessor mixin loaded (first tick).");
         }
         try {

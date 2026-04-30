@@ -49,7 +49,7 @@ public final class YawpMigrator {
                 ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] YAWP dimRegionStorage not a Map — unexpected YAWP version.");
                 return result;
             }
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP found: {} dimension(s) with region data.", dimMap.size());
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] YAWP found: {} dimension(s) with region data.", dimMap.size());
 
             int totalRegions = 0;
             for (var entry : dimMap.entrySet()) {
@@ -60,7 +60,7 @@ public final class YawpMigrator {
                 Object locals = ReflectionHelper.invoke(levelRegionData, "getLocalList", new Class<?>[0]).orElse(null);
                 if (!(locals instanceof Collection<?> regions)) continue;
                 totalRegions += regions.size();
-                ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP dim '{}': {} region(s).", dim, regions.size());
+                ArcadiaGuard.debugInfo("[ArcadiaGuard] YAWP dim '{}': {} region(s).", dim, regions.size());
 
                 for (Object region : regions) {
                     try {
@@ -72,7 +72,7 @@ public final class YawpMigrator {
                 }
             }
 
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] YAWP scan: {} zone(s) convertible sur {} region(s) totales.", result.size(), totalRegions);
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] YAWP scan: {} zone(s) convertible sur {} region(s) totales.", result.size(), totalRegions);
         } catch (Throwable t) {
             ArcadiaGuard.LOGGER.error("[ArcadiaGuard] YAWP migration failed", t);
         }

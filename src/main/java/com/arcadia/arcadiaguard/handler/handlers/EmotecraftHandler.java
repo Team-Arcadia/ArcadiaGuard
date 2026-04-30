@@ -60,7 +60,7 @@ public final class EmotecraftHandler {
             );
             // Call register(verifier)
             eventClass.getMethod("register", Object.class).invoke(verificationEvent, verifier);
-            ArcadiaGuard.LOGGER.info("[ArcadiaGuard] Emotecraft verifier registered on ServerEmoteEvents.EMOTE_VERIFICATION");
+            ArcadiaGuard.debugInfo("[ArcadiaGuard] Emotecraft verifier registered on ServerEmoteEvents.EMOTE_VERIFICATION");
         } catch (Exception e) {
             ArcadiaGuard.LOGGER.error("[ArcadiaGuard] Could not register Emotecraft integration: {}", e.toString(), e);
         }

@@ -7,6 +7,7 @@ public final class ArcadiaGuardConfig {
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue ENABLE_LOGGING;
     public static final ModConfigSpec.BooleanValue LOG_TO_FILE;
+    public static final ModConfigSpec.BooleanValue DEBUG;
     public static final ModConfigSpec.IntValue BYPASS_OP_LEVEL;
     public static final ModConfigSpec.BooleanValue ENABLE_BLOCK_BREAK;
     public static final ModConfigSpec.BooleanValue ENABLE_BLOCK_PLACE;
@@ -45,6 +46,12 @@ public final class ArcadiaGuardConfig {
         builder.push("general");
         ENABLE_LOGGING = builder.define("enable_logging", true);
         LOG_TO_FILE = builder.define("log_to_file", true);
+        builder.comment("Mode debug : si true, affiche tous les messages INFO d'ArcadiaGuard",
+            "(boot, registrations handlers, migrations YAWP, force-loaded chunks...) ET",
+            "laisse passer les warnings 'marked as removed' causes par d'autres mods (Hominid).",
+            "Si false (defaut), seuls les WARN et ERROR sont affiches et les warnings tiers",
+            "sont silencieusement supprimes.");
+        DEBUG = builder.define("debug", false);
         BYPASS_OP_LEVEL = builder.defineInRange("bypass_op_level", 2, 0, 4);
         builder.pop();
 
