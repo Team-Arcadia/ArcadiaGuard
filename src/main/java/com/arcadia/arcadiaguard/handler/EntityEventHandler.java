@@ -282,6 +282,7 @@ public final class EntityEventHandler {
         java.util.List<String> blacklist = guard.resolveListAt(level, pos, BuiltinFlags.MOB_SPAWN_LIST);
         if (!blacklist.isEmpty() && matchesMobList(blacklist, entityKey)) {
             event.setCanceled(true);
+            mob.discard();
         }
     }
 
