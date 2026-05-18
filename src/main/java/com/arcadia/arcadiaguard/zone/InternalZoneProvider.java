@@ -336,6 +336,7 @@ public final class InternalZoneProvider implements ZoneProvider {
         if (zone.isEmpty()) return false;
         zone.get().setParent(parentName);
         scheduleWrite(zone.get());
+        FlagMixinHelper.invalidateFlagCache(DimensionUtils.keyOf(level));
         return true;
     }
 
@@ -362,6 +363,7 @@ public final class InternalZoneProvider implements ZoneProvider {
         if (zone.isEmpty()) return false;
         zone.get().setInheritDimFlags(inherit);
         scheduleWrite(zone.get());
+        FlagMixinHelper.invalidateFlagCache(DimensionUtils.keyOf(level));
         return true;
     }
 
@@ -381,6 +383,7 @@ public final class InternalZoneProvider implements ZoneProvider {
         Object oldValue = zone.get().flagValues().get(flagId);
         zone.get().setFlag(flagId, value);
         scheduleWrite(zone.get());
+        FlagMixinHelper.invalidateFlagCache(DimensionUtils.keyOf(level));
         this.flagRegistry.get(flagId).ifPresent(flag ->
             NeoForge.EVENT_BUS.post(new FlagChangedEvent(zone.get(), flag, oldValue, value)));
         return true;
@@ -392,6 +395,7 @@ public final class InternalZoneProvider implements ZoneProvider {
         Object oldValue = zone.get().flagValues().get(flagId);
         zone.get().resetFlag(flagId);
         scheduleWrite(zone.get());
+        FlagMixinHelper.invalidateFlagCache(DimensionUtils.keyOf(level));
         this.flagRegistry.get(flagId).ifPresent(flag ->
             NeoForge.EVENT_BUS.post(new FlagChangedEvent(zone.get(), flag, oldValue, null)));
         return true;

@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.vehicle.AbstractMinecart;
@@ -245,6 +246,22 @@ public final class FlagEventHandler {
         }
     }
 
+    public void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.isCanceled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (guard.shouldBypass(player)) return;
+
+        Entity target = event.getTarget();
+        if (!(target instanceof ItemFrame)) return;
+        Level level = player.level();
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
+
+        if (deny(player, target.blockPosition(), BuiltinFlags.BLOCK_INTERACT, "block_interact")) {
+            event.setCanceled(true);
+            event.setCancellationResult(net.minecraft.world.InteractionResult.FAIL);
+        }
+    }
+
     // ── Attaque d'entités ───────────────────────────────────────────────────────
 
     public void onAttackEntity(AttackEntityEvent event) {
@@ -258,6 +275,9 @@ public final class FlagEventHandler {
 
         if (target instanceof Animal) { flag = BuiltinFlags.ATTACK_ANIMALS; action = "attack_animal"; }
         else if (target instanceof Monster) { flag = BuiltinFlags.ATTACK_MONSTERS; action = "attack_monster"; }
+        else if (target instanceof ItemFrame) {
+            flag = BuiltinFlags.BLOCK_BREAK; action = "block_break";
+        }
         else if (target instanceof Boat || target instanceof AbstractMinecart) {
             flag = BuiltinFlags.VEHICLE_DESTROY; action = "vehicle_destroy";
         }

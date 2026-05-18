@@ -23,10 +23,11 @@ public abstract class FlowingFluidMixin {
         at = @At("HEAD"), cancellable = true
     )
     private void arcadiaguard$blockFluidSpread(LevelAccessor level, BlockPos pos, BlockState state, Direction direction, FluidState fluidState, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
         if (((Object) this) instanceof LavaFluid) {
+            if (!FlagMixinHelper.mayDeny(level, BuiltinFlags.LAVA_SPREAD)) return;
             if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.LAVA_SPREAD)) ci.cancel();
         } else if (((Object) this) instanceof WaterFluid) {
+            if (!FlagMixinHelper.mayDeny(level, BuiltinFlags.WATER_SPREAD)) return;
             if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.WATER_SPREAD)) ci.cancel();
         }
     }

@@ -3,6 +3,7 @@ package com.arcadia.arcadiaguard.handler.handlers;
 import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.guard.GuardService;
+import com.arcadia.arcadiaguard.helper.CarryOnCompatHelper;
 import com.arcadia.arcadiaguard.util.ReflectionHelper;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
 import java.lang.reflect.Method;
@@ -11,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.ICancellableEvent;
@@ -24,6 +26,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  *
  * <p>Strategie multi-couches :
  * <ul>
+ *   <li><b>PickupHandler.tryPickupEntity</b> (mixin optionnel) : bloque le pickup
+ *       Carry On a la source pour les joueurs, animaux et autres entites.</li>
  *   <li><b>RightClickBlock</b> HIGHEST priority : si player sneak + empty hand + deny zone
  *       -> cancel l'event avant que Carry On ne le traite.</li>
  *   <li><b>EntityPickupEvent</b> (event custom Carry On, cancellable) : cancel via reflexion
@@ -100,16 +104,14 @@ public final class CarryOnHandler {
         if (!(event instanceof ICancellableEvent cancellable)) return;
         ServerPlayer player = (ServerPlayer) ReflectionHelper.field(event, "player").orElse(null);
         if (player == null) return;
-        if (guard.shouldBypass(player)) return;
-        BlockPos pos = player.blockPosition();
-        ProtectedZone zone = guard.zoneManager().findZoneContaining(player.level(), pos)
-            .map(z -> (ProtectedZone) z).orElse(null);
-        if (zone != null && guard.isZoneMember(player, zone)) return;
-        if (!guard.isZoneDenying(player.level(), pos, BuiltinFlags.CARRYON)) return;
-        cancellable.setCanceled(true);
-        sendDeny(player);
-        String zoneName = zone != null ? zone.name() : "(dimension)";
-        guard.auditDenied(player, zoneName, pos, BuiltinFlags.CARRYON, "carryon_entity");
+        Entity target = ReflectionHelper.field(event, "target")
+            .filter(Entity.class::isInstance)
+            .map(Entity.class::cast)
+            .orElse(null);
+        boolean denied = target != null
+            ? CarryOnCompatHelper.shouldBlockEntityPickup(player, target)
+            : CarryOnCompatHelper.shouldBlockAt(player, player.level(), player.blockPosition(), "carryon_entity");
+        if (denied) cancellable.setCanceled(true);
     }
 
     /** Force-drop si le joueur porte deja qqch en entrant dans une zone deny. Check toutes les 20 ticks. */

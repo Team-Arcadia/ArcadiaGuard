@@ -20,7 +20,7 @@ public abstract class GrowingPlantHeadBlockMixin {
     )
     private void arcadiaguard$blockPlantHeadGrowth(BlockState state, ServerLevel level, BlockPos pos,
             RandomSource rand, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
+        if (!FlagMixinHelper.mayDeny(level, BuiltinFlags.VINE_GROWTH)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.VINE_GROWTH)) ci.cancel();
     }
 }

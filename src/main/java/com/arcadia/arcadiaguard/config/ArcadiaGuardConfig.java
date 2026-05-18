@@ -83,7 +83,7 @@ public final class ArcadiaGuardConfig {
         MESSAGE_SPAWN_BOOK = builder.define("message_spawn_book", " Vous ne pouvez pas placer de livres en zone spawn ! | You cannot place books in the spawn area!");
         MESSAGE_LEAD = builder.define("message_lead", "Vous ne pouvez pas utiliser une laisse ici.");
         MESSAGE_SPAWN_EGG = builder.define("message_spawn_egg", "Vous ne pouvez pas utiliser un oeuf de spawn ici.");
-        MESSAGE_DYNAMIC_ITEM = builder.define("message_dynamic_item", "Vous ne pouvez pas utiliser cet objet ici.");
+        MESSAGE_DYNAMIC_ITEM = builder.define("message_dynamic_item", "arcadiaguard.message.dynamic_item");
         builder.pop();
 
         builder.push("async_writer");

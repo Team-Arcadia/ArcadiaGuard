@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ArcadiaGuard v1.5 — Tests manuels uniquement</title>
+<style>
+  :root {
+    --bg: #0f1117; --bg2: #181c26; --bg3: #1e2333; --bg4: #252b3d;
+    --border: #2e3650; --text: #d4d8e8; --text-dim: #7a82a0; --text-bright: #eef0f8;
+    --accent: #5b7cfa; --accent2: #7c5bfa;
+    --green: #3ecf6e; --green-bg: #0d2a1a;
+    --red: #f05555; --red-bg: #2a0d0d;
+    --yellow: #f5c842; --yellow-bg: #2a220a;
+    --mod-color: #a78bfa; --mod-bg: #1e1535;
+    --radius: 8px; --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  .page-header { background: linear-gradient(135deg, #1a1f35 0%, #0f1420 100%); border-bottom: 1px solid var(--border); padding: 24px 32px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .page-header h1 { font-size: 22px; font-weight: 700; color: var(--text-bright); margin-bottom: 4px; }
+  .page-header h1 span { color: var(--accent); }
+  .header-row { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; margin-top: 14px; }
+  .meta-fields { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; }
+  .meta-field { display: flex; flex-direction: column; gap: 4px; }
+  .meta-field label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .meta-field input { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-bright); padding: 6px 10px; font-size: 13px; width: 180px; outline: none; transition: border-color .2s; }
+  .meta-field input:focus { border-color: var(--accent); }
+  .progress-block { min-width: 280px; }
+  .progress-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-label strong { color: var(--text-bright); }
+  .progress-bar-outer { height: 8px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+  .progress-bar-inner { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); border-radius: 99px; transition: width .4s ease; }
+  .progress-counts { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; }
+  .cnt { display: flex; align-items: center; gap: 5px; }
+  .cnt .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 120px; }
+  .intro-box { background: var(--bg2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 28px; font-size: 13px; color: var(--text); line-height: 1.7; }
+  .intro-box strong { color: var(--text-bright); }
+  .intro-box code { background: var(--bg4); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: 12px; color: #93c5fd; }
+  .intro-box kbd { background: var(--bg4); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; font-family: 'Consolas', monospace; font-size: 11px; color: var(--text-bright); }
+  .section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .section-header { background: var(--bg3); padding: 14px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px; user-select: none; transition: background .15s; }
+  .section-header:hover { background: var(--bg4); }
+  .section-icon { font-size: 18px; }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .section-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; font-weight: 400; }
+  .section-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--bg4); border: 1px solid var(--border); color: var(--text-dim); white-space: nowrap; }
+  .chevron { color: var(--text-dim); transition: transform .2s; font-size: 13px; flex-shrink: 0; }
+  .section.open .chevron { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section.open .section-body { display: block; }
+  .test-card { border-top: 1px solid var(--border); padding: 16px 20px; background: var(--bg2); transition: background .15s; }
+  .test-card:hover { background: #181c28; }
+  .test-card.status-pass { border-left: 3px solid var(--green); }
+  .test-card.status-fail { border-left: 3px solid var(--red); }
+  .test-card.status-skip { border-left: 3px solid var(--text-dim); }
+  .test-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .test-number { font-size: 11px; color: var(--text-dim); background: var(--bg4); padding: 2px 6px; border-radius: 4px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .test-title { font-size: 14px; font-weight: 700; color: var(--text-bright); flex: 1; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 600; white-space: nowrap; margin-top: 2px; }
+  .tag-gui { background: rgba(62,207,110,.1); color: var(--green); border: 1px solid rgba(62,207,110,.3); }
+  .tag-mod { background: var(--mod-bg); color: var(--mod-color); border: 1px solid rgba(167,139,250,.3); }
+  .tag-vis { background: rgba(91,124,250,.15); color: var(--accent); border: 1px solid rgba(91,124,250,.3); }
+  .tag-cli { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(245,200,66,.3); }
+  .test-body { display: grid; grid-template-columns: 1fr 220px; gap: 12px; align-items: start; }
+  @media(max-width:700px) { .test-body { grid-template-columns: 1fr; } }
+  .test-steps { font-size: 13px; color: var(--text); background: var(--bg3); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); }
+  .test-steps strong { color: var(--text-bright); }
+  code { background: var(--bg4); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-family: 'Consolas', monospace; font-size: 12px; color: #93c5fd; }
+  .verdict-row { display: flex; flex-direction: column; gap: 6px; }
+  .radio-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .radio-btn { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--radius); border: 1px solid var(--border); cursor: pointer; font-size: 12px; font-weight: 600; transition: all .15s; user-select: none; }
+  .radio-btn input { display: none; }
+  .radio-btn.opt-pass { color: var(--green); }
+  .radio-btn.opt-pass:hover, .radio-btn.opt-pass.selected { background: var(--green-bg); border-color: var(--green); }
+  .radio-btn.opt-fail { color: var(--red); }
+  .radio-btn.opt-fail:hover, .radio-btn.opt-fail.selected { background: var(--red-bg); border-color: var(--red); }
+  .radio-btn.opt-skip { color: var(--text-dim); }
+  .radio-btn.opt-skip:hover, .radio-btn.opt-skip.selected { background: var(--bg4); border-color: var(--text-dim); }
+  .notes-area { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; font-family: inherit; padding: 6px 8px; resize: vertical; min-height: 40px; outline: none; transition: border-color .2s; }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-area::placeholder { color: var(--text-dim); }
+  .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,17,23,.95); backdrop-filter: blur(12px); border-top: 1px solid var(--border); padding: 14px 32px; display: flex; gap: 12px; align-items: center; justify-content: flex-end; z-index: 200; }
+  .btn { padding: 9px 20px; border-radius: var(--radius); font-size: 13px; font-weight: 700; cursor: pointer; border: none; transition: all .15s; display: flex; align-items: center; gap: 7px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4a6af0; transform: translateY(-1px); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg4); }
+  .footer-info { font-size: 12px; color: var(--text-dim); flex: 1; }
+  .footer-info strong { color: var(--text); }
+  .toast { position: fixed; bottom: 80px; right: 24px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; font-size: 13px; color: var(--text-bright); box-shadow: var(--shadow); z-index: 300; opacity: 0; transform: translateY(8px); transition: all .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>🛡️ <span>ArcadiaGuard</span> v1.5 — Tests manuels uniquement</h1>
+  <div class="header-row">
+    <div class="meta-fields">
+      <div class="meta-field"><label>Testeur</label><input type="text" id="meta-tester" placeholder="Pseudo"></div>
+      <div class="meta-field"><label>Date</label><input type="date" id="meta-date"></div>
+      <div class="meta-field"><label>Version mod</label><input type="text" id="meta-version" placeholder="1.5.0"></div>
+      <div class="meta-field"><label>Modpack</label><input type="text" id="meta-server" placeholder="Arcadia"></div>
+    </div>
+    <div class="progress-block">
+      <div class="progress-label"><span>Progression</span><strong id="prog-text">0 / 0</strong></div>
+      <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+      <div class="progress-counts">
+        <span class="cnt"><span class="dot" style="background:var(--green)"></span><span id="cnt-pass">0 succès</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--red)"></span><span id="cnt-fail">0 échecs</span></span>
+        <span class="cnt"><span class="dot" style="background:var(--text-dim)"></span><span id="cnt-skip">0 ignorés</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="intro-box">
+    <strong>📋 Tests strictement manuels</strong> — tout ce qui ne peut PAS être automatisé par JUnit, GameTest ou /ag selftest.<br><br>
+    <strong>✅ Déjà couvert automatiquement</strong> (à NE PAS retester ici) : flags pure logic (registry, set/get, hierarchy parent/dim), zone CRUD, payload codecs, persistence JSON, command parsing, smoke tests pour 86 flags + 16 mods. Lance <code>/ag selftest</code> in-game pour ces ~338 tests.<br><br>
+    <strong>🎯 Ici on teste UNIQUEMENT</strong> : interactions GUI réelles (clics, navigation, focus), rendering visuel (wand wireframe, HUD, EditBox centrage), client sync mixins (ParCool/Emote), et comportements end-to-end mods tiers (vrai cast spell, vrai pickup CarryOn) qui nécessitent un humain pour valider.<br><br>
+    <strong>Workflow</strong> : ouvre <code>/ag gui</code>, suit chaque test ; coche ✓ OK / ✗ KO / ⊘ Skip. Auto-save dans le navigateur + export JSON à la fin.
+  </div>
+  <div id="sections-root"></div>
+</main>
+
+<div class="sticky-footer">
+  <span class="footer-info">Sauvegarde auto navigateur. <strong>Exporter JSON avant fermeture.</strong></span>
+  <label class="btn btn-secondary" style="cursor:pointer">📂 Charger<input type="file" id="load-input" accept=".json" style="display:none"></label>
+  <button class="btn btn-primary" onclick="saveJSON()">💾 Sauvegarder JSON</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const T = { gui: t=>({c:'gui',t}), mod: t=>({c:'mod',t}), vis: t=>({c:'vis',t}), cli: t=>({c:'cli',t}) };
+
+const SECTIONS = [
+{
+  id:'gui-zonelist', icon:'📋', title:'GUI — ZoneListScreen (interactions)',
+  desc:'Clics, navigation, focus, états visuels',
+  tests:[
+    { n:1, title:'Recherche live + caractère F', tags:[T.gui('GUI'),T.cli('Client')], steps:'Ouvrir <code>/ag gui</code>. Cliquer la search box. Taper <code>foo bar fff</code>. <strong>La lettre F doit apparaître normalement</strong> (regression test, fix r6).' },
+    { n:2, title:'Sidebar dimensions scroll', tags:[T.gui('GUI')], steps:'Avoir 5+ dims avec zones. Scroll molette dans la sidebar gauche → liste défile, indicateur de scroll visible.' },
+    { n:3, title:'Sélection zone + boutons activés', tags:[T.gui('GUI')], steps:'Clic simple sur une row → ligne highlight + boutons Teleport/Détails/Delete s\'activent (passent de gris à colorés).' },
+    { n:4, title:'Double-clic ouvre détails', tags:[T.gui('GUI')], steps:'Double-clic rapide (<400ms) sur row zone → ouvre directement ZoneDetailScreen.' },
+    { n:5, title:'Téléport fonctionne', tags:[T.gui('GUI')], steps:'Sélectionner zone + Teleport → joueur TP au centre de la zone (animation + chunks chargent).' },
+    { n:6, title:'Overlay Delete avec nom long', tags:[T.gui('GUI')], steps:'Créer zone <code>nom_extremement_long_de_test_pour_overlay_qui_wrap_sur_plusieurs_lignes</code>. Cliquer Delete. <strong>Texte wrap sur 2+ lignes, box reste dans l\'écran</strong> (fix r6).' },
+    { n:7, title:'Delete confirm OK', tags:[T.gui('GUI')], steps:'Dans overlay → bouton OK rouge → zone supprimée + retour liste refreshée.' },
+    { n:8, title:'Delete cancel', tags:[T.gui('GUI')], steps:'Dans overlay → bouton Annuler → fermeture overlay, zone toujours présente.' },
+    { n:9, title:'Wand pos affichées GUI', tags:[T.gui('GUI'),T.vis('Visual')], steps:'Sélectionner pos1 + pos2 avec wand. Ouvrir GUI → coords affichées en bas (Pos1: X Y Z / Pos2: X Y Z).' },
+    { n:10, title:'Bouton Create activé', tags:[T.gui('GUI')], steps:'Sans wand pos → Create grisé. Avec 2 wand pos → Create activé.' },
+    { n:11, title:'Bouton DimFlags', tags:[T.gui('GUI')], steps:'Cliquer DimFlags → ouvre DimDetailScreen pour la dim courante.' },
+    { n:12, title:'Mode Debug toggle', tags:[T.gui('GUI'),T.cli('Client')], steps:'Footer → Debug → bandeau vert "Debug mode ACTIF" en header. Re-toggle → bandeau disparaît.' },
+    { n:13, title:'EditBox texte centré', tags:[T.gui('GUI'),T.vis('Visual')], steps:'Recherche box → texte saisi visuellement centré verticalement (pas collé en haut/bas).' },
+  ]
+},
+{
+  id:'gui-zonecreate', icon:'➕', title:'GUI — ZoneCreateScreen',
+  desc:'Création zone depuis wand',
+  tests:[
+    { n:20, title:'Saisie nom + centrage texte', tags:[T.gui('GUI'),T.vis('Visual')], steps:'2 wand pos + Create → écran. Taper nom → texte centré dans la box.' },
+    { n:21, title:'Vide rejeté', tags:[T.gui('GUI')], steps:'Vide + Create → erreur affichée, zone non créée.' },
+    { n:22, title:'Normalisation nom', tags:[T.gui('GUI')], steps:'Taper <code>Zone Test!! éàç</code> → message "normalisé en zone_test_eac" en chat.' },
+    { n:23, title:'Nom dupliqué', tags:[T.gui('GUI')], steps:'Taper nom déjà existant → erreur claire.' },
+    { n:24, title:'Cancel retour liste', tags:[T.gui('GUI')], steps:'Cancel → retour ZoneList sans création.' },
+    { n:25, title:'Create success + refresh', tags:[T.gui('GUI')], steps:'Nom valide + Create → zone créée + retour liste, nouvelle zone visible.' },
+    { n:26, title:'Coords wand affichées écran', tags:[T.vis('Visual')], steps:'Pos1/Pos2 affichées textuellement sur l\'écran de création.' },
+  ]
+},
+{
+  id:'gui-zonedetail', icon:'📝', title:'GUI — ZoneDetailScreen',
+  desc:'Onglets, flags, members, coords, items',
+  tests:[
+    { n:30, title:'Onglet INFO', tags:[T.gui('GUI')], steps:'Open zone → INFO → affiche nom, dim, coords min/max, parent, priority.' },
+    { n:31, title:'Onglet FLAGS', tags:[T.gui('GUI')], steps:'FLAGS → liste flags avec badges ON/OFF/INH (fix r6 INH pour hérités).' },
+    { n:32, title:'Onglet MEMBERS', tags:[T.gui('GUI')], steps:'MEMBERS → liste membres avec rôle + UUID court visible.' },
+    { n:33, title:'Onglet LOGS', tags:[T.gui('GUI')], steps:'LOGS → ouvre ZoneLogsScreen dédié.' },
+    { n:34, title:'Toggle boolean flag', tags:[T.gui('GUI')], steps:'Clic flag bool → cycle ON(vert) → OFF(rouge) → INHERIT(gris) ou disparaît.' },
+    { n:35, title:'Search bar persistante flags', tags:[T.gui('GUI')], steps:'Dans la liste des flags actifs, taper dans la searchbox au-dessus → liste filtrée live (fix r6).' },
+    { n:36, title:'Flags hérités visibles avec INH', tags:[T.gui('GUI')], steps:'Set un flag dim → dans zone (inherit=true) → flag apparaît dans liste avec badge "INH" gris + barre accent gauche (fix r6).' },
+    { n:37, title:'Toggle inherit-dim → flags DIM disparaissent', tags:[T.gui('GUI')], steps:'Toggle inherit-dim-flags off → flags source DIM disparaissent de la liste. Toggle on → réapparaissent (fix r6).' },
+    { n:38, title:'IntFlag config + bornes', tags:[T.gui('GUI')], steps:'Clic heal-amount → FlagConfigScreen INT. Saisir 999 → erreur "valeur entre 0 et 20" (fix r6).' },
+    { n:39, title:'IntFlag valeur position', tags:[T.gui('GUI'),T.vis('Visual')], steps:'IntFlag avec valeur 10 → preview "10" affiché à GAUCHE de la flèche ">", pas chevauché (fix r6).' },
+    { n:40, title:'ListFlag config', tags:[T.gui('GUI')], steps:'Clic ars-spell-blacklist → FlagConfigScreen LIST.' },
+    { n:41, title:'ListFlag autocomplete', tags:[T.gui('GUI'),T.mod('Ars/ISB')], steps:'Dans ListFlag ars/irons → taper "ars_" ou "iron_" → suggestions glyphs/spells affichées.' },
+    { n:42, title:'Add membre via +', tags:[T.gui('GUI')], steps:'MEMBERS → bouton + → popup whitelist input → pseudo + Enter → membre ajouté.' },
+    { n:43, title:'Add membre Enter confirm', tags:[T.gui('GUI')], steps:'Dans popup → Enter valide directement (sans cliquer Add).' },
+    { n:44, title:'Pseudo inconnu erreur claire', tags:[T.gui('GUI')], steps:'Taper pseudo inexistant Mojang → message "Player not found".' },
+    { n:45, title:'Remove membre online', tags:[T.gui('GUI')], steps:'Clic ✕ sur membre connecté → retiré de la liste immédiatement.' },
+    { n:46, title:'Remove membre offline', tags:[T.gui('GUI')], steps:'Clic ✕ sur joueur déconnecté → retiré (utilise UUID, pas pseudo) (fix r6).' },
+    { n:47, title:'Remove membre pseudo inconnu', tags:[T.gui('GUI')], steps:'Membre dont pseudo n\'existe plus côté Mojang → ✕ → retiré quand même (fix r6).' },
+    { n:48, title:'Set parent popup', tags:[T.gui('GUI')], steps:'Bouton Set Parent → popup → entrer nom zone → OK. Parent lié.' },
+    { n:49, title:'Clear parent', tags:[T.gui('GUI')], steps:'Re-cliquer parent + vider le nom → parent supprimé.' },
+    { n:50, title:'Edit coords popup', tags:[T.gui('GUI')], steps:'Edit coords → popup 6 EditBox X/Y/Z min+max. Labels Corner A/B avec écart ≥10px des champs (fix r6).' },
+    { n:51, title:'Save coords applique', tags:[T.gui('GUI')], steps:'Modifier coords + Save → zone update, INFO reflète nouveau bounds.' },
+    { n:52, title:'Item Blocks picker', tags:[T.gui('GUI')], steps:'Bouton Item Blocks → ouvre picker grid items.' },
+    { n:53, title:'Item bloqué ajout/retrait', tags:[T.gui('GUI')], steps:'Cliquer item dans picker → ajouté à la zone. Re-cliquer → retiré.' },
+    { n:54, title:'Back retour', tags:[T.gui('GUI')], steps:'Bouton Back → retour ZoneList.' },
+    { n:55, title:'Auto refresh sur change serveur', tags:[T.gui('GUI')], steps:'Modifier flag via <code>/ag zone flag testzone pvp deny</code> en parallèle → écran refresh automatique.' },
+    { n:56, title:'Tooltip flag au hover', tags:[T.gui('GUI')], steps:'Hover sur flag dans liste active → tooltip description en bas de colonne.' },
+    { n:57, title:'Tooltip dans popup d\'ajout', tags:[T.gui('GUI')], steps:'Cliquer + → popup ajout flag → hover sur flag → description visible dans encart en bas du popup (fix r6).' },
+    { n:58, title:'Item Blocks picker scroll/search', tags:[T.gui('GUI')], steps:'Picker → search "tnt" → filtre live. Scroll → grid défile.' },
+  ]
+},
+{
+  id:'gui-flagconfig', icon:'⚙️', title:'GUI — FlagConfigScreen',
+  desc:'IntFlag / ListFlag détaillé',
+  tests:[
+    { n:60, title:'IntFlag heal save', tags:[T.gui('GUI')], steps:'heal-amount → input 5 + Save → valeur persistée. Re-ouvrir détail → 5 affiché.' },
+    { n:61, title:'IntFlag bornes négatives', tags:[T.gui('GUI')], steps:'Saisir -3 → erreur affichée.' },
+    { n:62, title:'IntFlag bornes max', tags:[T.gui('GUI')], steps:'Saisir 999 → erreur affichée.' },
+    { n:63, title:'ListFlag add', tags:[T.gui('GUI')], steps:'Ars blacklist → entrer "glyph_projectile" + Add → entry ajoutée à la liste.' },
+    { n:64, title:'ListFlag remove', tags:[T.gui('GUI')], steps:'Cliquer ✕ sur entry → supprimée immédiatement.' },
+    { n:65, title:'Reset flag', tags:[T.gui('GUI')], steps:'Bouton Reset → flag revient à défaut + popup confirmation.' },
+    { n:66, title:'Save flag persiste', tags:[T.gui('GUI')], steps:'Save → flag sauvegardé serveur, visible après reload zone.' },
+    { n:67, title:'EditBox centrage input', tags:[T.gui('GUI'),T.vis('Visual')], steps:'Input texte centré verticalement dans la box.' },
+  ]
+},
+{
+  id:'gui-dimdetail', icon:'🌍', title:'GUI — DimDetailScreen',
+  desc:'Flags par dimension',
+  tests:[
+    { n:70, title:'Ouverture DimFlags', tags:[T.gui('GUI')], steps:'ZoneList → DimFlags → affiche flags dim.' },
+    { n:71, title:'Toggle flag dim impacte zones', tags:[T.gui('GUI')], steps:'Set dim flag pvp=deny → zones avec inherit=true voient pvp=INH automatiquement.' },
+    { n:72, title:'Search persistante DimDetail', tags:[T.gui('GUI')], steps:'Search bar au-dessus de la liste flags configurés → filtre live (fix r6).' },
+    { n:73, title:'Scroll flags', tags:[T.gui('GUI')], steps:'Scroll molette → liste défile sans lag.' },
+    { n:74, title:'Back', tags:[T.gui('GUI')], steps:'Back → retour ZoneList.' },
+  ]
+},
+{
+  id:'gui-zonelogs', icon:'📜', title:'GUI — ZoneLogsScreen',
+  desc:'Audit logs',
+  tests:[
+    { n:80, title:'Affichage logs', tags:[T.gui('GUI')], steps:'Onglet LOGS → tableau avec timestamp/player/action/pos.' },
+    { n:81, title:'Filtre player', tags:[T.gui('GUI')], steps:'Taper pseudo → seuls les logs de ce joueur affichés.' },
+    { n:82, title:'Filtre action', tags:[T.gui('GUI')], steps:'Taper "break" → seuls les logs block-break affichés.' },
+    { n:83, title:'Apply filter', tags:[T.gui('GUI')], steps:'Bouton Filter → filtres appliqués.' },
+    { n:84, title:'Reset filtres', tags:[T.gui('GUI')], steps:'Bouton Reset → tous filtres vidés, tous logs réaffichés.' },
+    { n:85, title:'Refresh nouveaux logs', tags:[T.gui('GUI')], steps:'Action déclenchée en parallèle (block-break en zone deny). Refresh → log apparait.' },
+  ]
+},
+{
+  id:'visual', icon:'🎨', title:'Visual rendering (wand + HUD)',
+  desc:'Wireframe 3D, overlays',
+  tests:[
+    { n:90, title:'Wand quartz wireframe', tags:[T.vis('Visual')], steps:'Wand editor en main + zone sélectionnée à proximité → lignes 3D quartz visibles englobant la zone.' },
+    { n:91, title:'Coins zone redstone', tags:[T.vis('Visual')], steps:'Zone sélectionnée → 8 coins du cube en accent redstone (rouge).' },
+    { n:92, title:'HUD wand overlay', tags:[T.vis('Visual')], steps:'Wand en main → HUD overlay coin écran avec Pos1/Pos2 actuelles.' },
+    { n:93, title:'Wand viewer read-only', tags:[T.vis('Visual')], steps:'<code>/ag wand give viewer</code> → ce wand affiche zones mais ne peut pas créer (clic = pas d\'effet).' },
+    { n:94, title:'Cross-dim refusé', tags:[T.cli('Client')], steps:'Pos1 overworld → TP nether → pos2 nether → tenter create → erreur "même dim requise".' },
+  ]
+},
+{
+  id:'client-sync', icon:'🔄', title:'Client sync (mixins ParCool/Emote)',
+  desc:'Comportements côté client',
+  tests:[
+    { n:100, title:'Parcool wall-jump bloqué', tags:[T.mod('ParCool'),T.cli('Client')], steps:'Zone parcool-actions=deny + Debug ON. Sprint vers mur + sauter → wall-jump bloqué + message chat (1 fois).' },
+    { n:101, title:'Parcool message pas spam', tags:[T.mod('ParCool'),T.cli('Client')], steps:'Rester 60s en zone deny en sprintant → message NE spam PAS (fix r6 doublon actionbar retiré).' },
+    { n:102, title:'Parcool actionbar clean', tags:[T.mod('ParCool'),T.cli('Client'),T.vis('Visual')], steps:'Au-dessus hotbar : aucun message permanent résiduel. Si message s\'affiche, doit disparaître après 1s (fix r6).' },
+    { n:103, title:'Emote bloqué', tags:[T.mod('Emotecraft'),T.cli('Client')], steps:'Zone emote-use=deny + Debug. Lancer emote → bloqué + message chat 1 fois.' },
+    { n:104, title:'Emote no spam', tags:[T.mod('Emotecraft'),T.cli('Client')], steps:'Multiple emotes consécutifs en zone deny → 1 message max par X secondes (throttle).' },
+  ]
+},
+{
+  id:'mods-real', icon:'🪄', title:'Mods tiers — comportements réels',
+  desc:'Vrais cast/use, pas juste flag presence',
+  tests:[
+    { n:110, title:'Ars spell cast bloqué', tags:[T.mod('Ars Nouveau')], steps:'Zone ars-spell-cast=deny + Debug. Caster un sort Ars → bloqué + message.' },
+    { n:111, title:'Ars blacklist par glyph', tags:[T.mod('Ars Nouveau')], steps:'Blacklist=["glyph_projectile"]. Caster sort avec projectile → bloqué. Sort sans projectile → autorisé.' },
+    { n:112, title:'Ars warp scroll bloqué', tags:[T.mod('Ars Nouveau')], steps:'Zone ars-warp-scroll=deny. Utiliser warp scroll → bloqué (indépendant de spell-cast).' },
+    { n:113, title:'Ars Additions scroll bloqué', tags:[T.mod('Ars Additions')], steps:'Zone ars-additions-scroll=deny. Utiliser scroll AA → bloqué.' },
+    { n:114, title:'Ars spell-movement bloqué', tags:[T.mod('Ars Nouveau')], steps:'Zone spell-movement=deny. Sort blink/leap → bloqué.' },
+    { n:115, title:'ISB spell cast bloqué', tags:[T.mod('ISB')], steps:'Zone irons-spell-cast=deny + Debug. Caster sort ISB → bloqué.' },
+    { n:116, title:'ISB blacklist spell ID', tags:[T.mod('ISB')], steps:'Blacklist=["iceblock"]. Cast iceblock → bloqué. Autre sort → autorisé.' },
+    { n:117, title:'CarryOn bloc ramassé bloqué', tags:[T.mod('Carry On')], steps:'Zone carryon=deny + Debug. Sneak + main vide sur bloc → pas ramassé + message.' },
+    { n:118, title:'CarryOn entité bloquée', tags:[T.mod('Carry On')], steps:'Sneak + main vide sur mob → pas ramassé.' },
+    { n:119, title:'CarryOn force-drop entrée', tags:[T.mod('Carry On')], steps:'Carry un bloc HORS zone, entrer dans zone deny → bloc drop forcé au sol.' },
+    { n:120, title:'Apotheosis charm bloqué', tags:[T.mod('Apotheosis')], steps:'Zone charm-use=deny + Debug. Activer charm Apotheosis → bloqué.' },
+    { n:121, title:'Apotheosis affixe vol', tags:[T.mod('Apotheosis')], steps:'Item avec affixe creative_flight + zone fly=deny → vol bloqué malgré affixe (attribute modifier).' },
+    { n:122, title:'Occultism gem âme bloqué', tags:[T.mod('Occultism')], steps:'Zone occultism-use=deny. Utiliser soul gem → bloqué.' },
+    { n:123, title:'Supplementaries brique', tags:[T.mod('Supplementaries')], steps:'Zone supplementaries-throw=deny. Lancer brique → bloqué.' },
+    { n:124, title:'Waystone activate bloqué', tags:[T.mod('Waystones')], steps:'Zone waystone-use=deny + Debug. Activer waystone → bloqué.' },
+    { n:125, title:'Rechiseled change style bloqué', tags:[T.mod('Rechiseled')], steps:'Zone rechiseled-use=deny. Changer style bloc Rechiseled → refusé.' },
+    { n:126, title:'Simply Swords ability', tags:[T.mod('Simply Swords')], steps:'Zone simplyswords-ability=deny. Activer capacité épée SS → refusée.' },
+    { n:127, title:'Twilight projectile boss', tags:[T.mod('Twilight Forest')], steps:'Zone tf-projectile=deny. Boss TF projectile touche joueur → dégâts bloqués.' },
+    { n:128, title:'Mutant Monsters spawn', tags:[T.mod('Mutant Monsters')], steps:'Zone mutant-mob-spawn=deny + nuit. Mutant ne spawn pas dans la zone.' },
+  ]
+},
+{
+  id:'multiplayer', icon:'👥', title:'Multi-joueur réel',
+  desc:'Comportements à 2+ joueurs',
+  tests:[
+    { n:140, title:'PvP entre 2 joueurs', tags:[T.cli('Client')], steps:'2 joueurs en zone pvp=deny. Joueur A frappe joueur B → aucun dégât. Sortir zone → dégâts OK.' },
+    { n:141, title:'Whitelist bypass entry', tags:[T.gui('GUI')], steps:'Zone entry=deny + joueur B whitelisté. B entre → autorisé. Joueur C non whitelisté → repoussé.' },
+    { n:142, title:'Rôle MEMBER permissions', tags:[T.gui('GUI')], steps:'Joueur B rôle MEMBER → peut voir infos zone via /ag, ne peut pas modifier flags.' },
+    { n:143, title:'Rôle MODERATOR', tags:[T.gui('GUI')], steps:'B en MOD → peut add/remove whitelist, pas modifier flags.' },
+    { n:144, title:'Rôle OWNER', tags:[T.gui('GUI')], steps:'B en OWNER → peut tout modifier sauf supprimer la zone.' },
+    { n:145, title:'LuckPerms bypass node', tags:[T.mod('LuckPerms'),T.cli('Client')], steps:'Donner node arcadiaguard.zone.bypass à B via LP → B bypass tous flags zone.' },
+    { n:146, title:'LuckPerms zone role node', tags:[T.mod('LuckPerms')], steps:'Node arcadiaguard.zone.testzone.owner → B reconnu OWNER de testzone.' },
+  ]
+},
+{
+  id:'realtime', icon:'⏱️', title:'Comportements temps-réel',
+  desc:'Heal/feed/chunkload tick',
+  tests:[
+    { n:150, title:'Heal-amount appliqué tick', tags:[T.cli('Client')], steps:'Zone heal-amount=10. Damage joueur à 1 HP. Rester en zone → HP régénère ~10/sec, atteint full HP en 2s.' },
+    { n:151, title:'Feed-amount appliqué', tags:[T.cli('Client')], steps:'Zone feed-amount=10. Vider faim joueur. Rester en zone → faim restaure rapidement.' },
+    { n:152, title:'Chunkload garde chunks', tags:[T.cli('Client')], steps:'Zone chunkload=true. Build une fermette redstone. S\'éloigner 1000 blocs. Revenir → fermette toujours active (items produits).' },
+    { n:153, title:'Chunkload OFF unload', tags:[T.cli('Client')], steps:'Toggle chunkload=false. S\'éloigner → chunks unload normal (items production stoppe).' },
+    { n:154, title:'Fly deny mayfly cut', tags:[T.cli('Client')], steps:'Joueur en survival avec attribute creative_flight (Apotheosis) + zone fly=deny → vol coupé immédiatement.' },
+    { n:155, title:'Fly deny créatif exempt', tags:[T.cli('Client')], steps:'Joueur en créatif + zone fly=deny → vol pas affecté (créatif exempt).' },
+    { n:156, title:'Invincible no knockback', tags:[T.cli('Client')], steps:'Zone invincible=allow + Debug. Demander à joueur B de vous attaquer → 0 damage + 0 knockback.' },
+    { n:157, title:'Animal-invincible animaux', tags:[T.cli('Client')], steps:'Zone animal-invincible=allow + animaux dans zone. Frapper vache → aucun dégât + pas de knockback.' },
+  ]
+},
+{
+  id:'migration', icon:'📥', title:'Migration YAWP',
+  desc:'Avec vraies régions YAWP',
+  tests:[
+    { n:160, title:'Migration détection YAWP', tags:[T.mod('YAWP')], steps:'YAWP installé avec ≥1 région cuboid. <code>/ag migrate yawp</code> → message "X régions détectées".' },
+    { n:161, title:'Conversion régions cuboid', tags:[T.mod('YAWP')], steps:'Régions YAWP cuboid → zones AG créées. <code>/ag zone list</code> les affiche.' },
+    { n:162, title:'Skip régions non-cuboid', tags:[T.mod('YAWP')], steps:'YAWP avec région poly/sphere → skip + warning explicite ("X skipées car non cuboid").' },
+    { n:163, title:'Idempotent', tags:[T.mod('YAWP')], steps:'Re-lancer <code>/ag migrate yawp</code> → ne duplique pas, message "déjà migrées".' },
+    { n:164, title:'GUI refresh post-migration', tags:[T.mod('YAWP'),T.gui('GUI')], steps:'Après migrate → <code>/ag gui</code> liste immédiatement à jour.' },
+  ]
+},
+{
+  id:'stability-realworld', icon:'⚡', title:'Stabilité monde réel',
+  desc:'Performance + edge cases prod',
+  tests:[
+    { n:170, title:'100 zones GUI fluide', tags:[T.gui('GUI')], steps:'Créer 100 zones via script. <code>/ag gui</code> → liste fluide, scroll OK, search fluide.' },
+    { n:171, title:'Heavy flags TPS stable', tags:[T.cli('Client')], steps:'Zone avec TOUS flags deny. Profiler TPS pendant activité (combat, build, mobs). TPS reste stable.' },
+    { n:172, title:'Mod absent graceful', tags:[T.cli('Client')], steps:'Retirer Carry On du mods/. Boot serveur → AG log warning "Carry On non détecté", pas de crash, autres mods OK.' },
+    { n:173, title:'/ag reload à chaud', tags:[T.cli('Client'),T.gui('GUI')], steps:'Modifier JSON zone à la main dans config/. <code>/ag reload</code> → changements pris en compte sans restart.' },
+    { n:174, title:'Boot serveur clean', tags:[T.cli('Client')], steps:'Démarrer serveur cold → log "ArcadiaGuard 1.5.0 loaded" + "X zones loaded" + "Y dim flags loaded".' },
+    { n:175, title:'Boot client clean', tags:[T.cli('Client')], steps:'Démarrer client cold → log "ArcadiaGuard client init OK".' },
+    { n:176, title:'Selftest in-game', tags:[T.cli('Client')], steps:'<code>/ag selftest</code> → résumé chat avec ≥80% pass. Ouvrir le JSON exporté pour vérifier.' },
+  ]
+},
+];
+
+// ═══════════════════════════════════════════════════════════════
+const STORE_KEY = 'arcadiaguard_tests_v15_manual_only';
+
+function loadState() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e) { return {}; } }
+function saveState(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch(e) {} }
+let state = loadState();
+
+function render() {
+  const root = document.getElementById('sections-root');
+  root.innerHTML = '';
+  SECTIONS.forEach((sec, si) => {
+    const s = document.createElement('div');
+    s.className = 'section' + (si < 2 ? ' open' : '');
+    s.id = 'sec-' + sec.id;
+    s.innerHTML = `
+      <div class="section-header" onclick="this.parentNode.classList.toggle('open')">
+        <span class="section-icon">${sec.icon}</span>
+        <div style="flex:1">
+          <div class="section-title">${sec.title}</div>
+          <div class="section-desc">${sec.desc}</div>
+        </div>
+        <span class="section-badge" id="badge-${sec.id}">${sec.tests.length} tests</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body" id="body-${sec.id}"></div>
+    `;
+    root.appendChild(s);
+    const body = s.querySelector('#body-' + sec.id);
+    sec.tests.forEach(t => {
+      const id = 't-' + t.n;
+      const saved = state[id] || {};
+      const card = document.createElement('div');
+      card.className = 'test-card' + (saved.status ? ' status-' + saved.status : '');
+      card.id = 'card-' + t.n;
+      const tagsHtml = (t.tags||[]).map(tag => `<span class="tag tag-${tag.c}">${tag.t}</span>`).join('');
+      card.innerHTML = `
+        <div class="test-header">
+          <span class="test-number">#${t.n}</span>
+          <div class="test-title">${t.title}</div>
+          ${tagsHtml}
+        </div>
+        <div class="test-body">
+          <div class="test-steps">${t.steps}</div>
+          <div class="verdict-row">
+            <div class="radio-group">
+              <label class="radio-btn opt-pass${saved.status==='pass'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="pass" ${saved.status==='pass'?'checked':''}>✓ OK
+              </label>
+              <label class="radio-btn opt-fail${saved.status==='fail'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="fail" ${saved.status==='fail'?'checked':''}>✗ KO
+              </label>
+              <label class="radio-btn opt-skip${saved.status==='skip'?' selected':''}">
+                <input type="radio" name="v-${t.n}" value="skip" ${saved.status==='skip'?'checked':''}>⊘ Skip
+              </label>
+            </div>
+            <textarea class="notes-area" data-id="${t.n}" placeholder="Notes (obligatoire si KO)">${saved.notes||''}</textarea>
+          </div>
+        </div>
+      `;
+      body.appendChild(card);
+    });
+  });
+  document.querySelectorAll('input[type=radio]').forEach(r => r.addEventListener('change', e => {
+    const n = e.target.name.substring(2);
+    const id = 't-' + n;
+    state[id] = state[id] || {};
+    state[id].status = e.target.value;
+    document.getElementById('card-' + n).className = 'test-card status-' + e.target.value;
+    e.target.closest('.radio-group').querySelectorAll('.radio-btn').forEach(b => b.classList.remove('selected'));
+    e.target.closest('.radio-btn').classList.add('selected');
+    saveState(state);
+    updateStats();
+  }));
+  document.querySelectorAll('.notes-area').forEach(ta => ta.addEventListener('input', e => {
+    const id = 't-' + e.target.dataset.id;
+    state[id] = state[id] || {};
+    state[id].notes = e.target.value;
+    saveState(state);
+  }));
+  updateStats();
+}
+
+function updateStats() {
+  let total = 0, pass = 0, fail = 0, skip = 0;
+  SECTIONS.forEach(sec => {
+    let sp = 0;
+    sec.tests.forEach(t => {
+      total++;
+      const st = state['t-'+t.n]?.status;
+      if (st==='pass') { pass++; sp++; }
+      else if (st==='fail') fail++;
+      else if (st==='skip') skip++;
+    });
+    const badge = document.getElementById('badge-' + sec.id);
+    if (badge) badge.textContent = `${sp}/${sec.tests.length}`;
+  });
+  const done = pass + fail + skip;
+  document.getElementById('prog-text').textContent = `${done} / ${total}`;
+  document.getElementById('prog-bar').style.width = (done*100/total) + '%';
+  document.getElementById('cnt-pass').textContent = pass + ' succès';
+  document.getElementById('cnt-fail').textContent = fail + ' échecs';
+  document.getElementById('cnt-skip').textContent = skip + ' ignorés';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function saveJSON() {
+  const meta = {
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    version: document.getElementById('meta-version').value,
+    server: document.getElementById('meta-server').value,
+    exportedAt: new Date().toISOString(),
+  };
+  const out = { meta, results: {} };
+  SECTIONS.forEach(sec => {
+    out.results[sec.id] = { title: sec.title, tests: {} };
+    sec.tests.forEach(t => {
+      const st = state['t-'+t.n] || {};
+      out.results[sec.id].tests[t.n] = { title: t.title, status: st.status || null, notes: st.notes || '' };
+    });
+  });
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const name = (meta.tester || 'anon').replace(/[^a-z0-9]+/gi,'_');
+  const d = (meta.date || new Date().toISOString().split('T')[0]);
+  a.href = url;
+  a.download = `arcadiaguard-tests-v1.5-manual_${name}_${d}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 Rapport exporté');
+}
+
+document.getElementById('load-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (data.meta) {
+        document.getElementById('meta-tester').value = data.meta.tester || '';
+        document.getElementById('meta-date').value = data.meta.date || '';
+        document.getElementById('meta-version').value = data.meta.version || '';
+        document.getElementById('meta-server').value = data.meta.server || '';
+      }
+      if (data.results) {
+        state = {};
+        for (const secId in data.results) {
+          for (const tn in data.results[secId].tests) {
+            const entry = data.results[secId].tests[tn];
+            state['t-' + tn] = { status: entry.status, notes: entry.notes };
+          }
+        }
+        saveState(state);
+        render();
+        toast('📂 Rapport chargé');
+      }
+    } catch (err) { toast('❌ Fichier invalide'); }
+  };
+  r.readAsText(f);
+});
+
+document.getElementById('meta-date').value = new Date().toISOString().split('T')[0];
+render();
+</script>
+</body>
+</html>

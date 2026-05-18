@@ -20,7 +20,7 @@ public abstract class IceBlockMixin {
         at = @At("HEAD"), cancellable = true
     )
     private void arcadiaguard$blockIceMelt(BlockState state, ServerLevel level, BlockPos pos, RandomSource rand, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
+        if (!FlagMixinHelper.mayDeny(level, BuiltinFlags.ICE_MELT)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.ICE_MELT)) ci.cancel();
     }
 }

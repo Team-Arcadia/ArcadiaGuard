@@ -1,5 +1,6 @@
 package com.arcadia.arcadiaguard.zone;
 
+import com.arcadia.arcadiaguard.helper.FlagMixinHelper;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,11 +16,13 @@ public final class DimensionFlagStore {
 
     public void setFlag(String dimKey, String flagId, Object value) {
         store.computeIfAbsent(dimKey, k -> new LinkedHashMap<>()).put(flagId, value);
+        FlagMixinHelper.invalidateFlagCache(dimKey);
     }
 
     public void resetFlag(String dimKey, String flagId) {
         Map<String, Object> flags = store.get(dimKey);
         if (flags != null) flags.remove(flagId);
+        FlagMixinHelper.invalidateFlagCache(dimKey);
     }
 
     public Map<String, Map<String, Object>> all() {
@@ -38,9 +41,11 @@ public final class DimensionFlagStore {
 
     public void clear() {
         store.clear();
+        FlagMixinHelper.invalidateAll();
     }
 
     public void putAll(Map<String, Map<String, Object>> data) {
         store.putAll(data);
+        FlagMixinHelper.invalidateAll();
     }
 }

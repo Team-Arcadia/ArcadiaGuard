@@ -30,6 +30,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 public final class ZoneItemHandler implements RightClickItemHandler, RightClickBlockHandler, EntityInteractHandler,
         com.arcadia.arcadiaguard.handler.HandlerRegistry.BlockBreakHandler {
 
+    private static final String DYNAMIC_ITEM_MESSAGE = "arcadiaguard.message.dynamic_item";
+
     private final GuardService guardService;
     private final DynamicItemBlockList dynamicList;
 
@@ -64,7 +66,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
             // H6: defer "item_use:" + itemId concat until we know it will be used (blockIfProtected checks zone inside)
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, pos, actionName, "dynamic_item",
-                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                    DYNAMIC_ITEM_MESSAGE).blocked()) {
                 event.setCanceled(true);
             }
         }
@@ -122,7 +124,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         if (isItemBlockedAt(sp, clicked, stack)) {
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, clicked, actionName, "dynamic_item",
-                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                    DYNAMIC_ITEM_MESSAGE).blocked()) {
                 event.setCanceled(true);
             }
         }
@@ -189,7 +191,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         if (isItemBlockedAt(sp, event.getPos(), stack)) {
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, event.getPos(), actionName, "dynamic_item",
-                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                    DYNAMIC_ITEM_MESSAGE).blocked()) {
                 event.setCanceled(true);
             }
         }
@@ -204,7 +206,7 @@ public final class ZoneItemHandler implements RightClickItemHandler, RightClickB
         if (isItemBlockedAt(sp, pos, stack)) {
             String actionName = "item_use:" + itemId(stack);
             if (guardService.blockIfProtected(sp, pos, actionName, "dynamic_item",
-                    ArcadiaGuardConfig.MESSAGE_DYNAMIC_ITEM.get()).blocked()) {
+                    DYNAMIC_ITEM_MESSAGE).blocked()) {
                 event.setCanceled(true);
             }
         }

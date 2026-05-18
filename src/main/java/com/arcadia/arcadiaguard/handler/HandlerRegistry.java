@@ -37,6 +37,7 @@ import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 import net.neoforged.neoforge.event.entity.player.BonemealEvent;
 import net.neoforged.neoforge.event.level.block.CropGrowEvent;
@@ -119,9 +120,11 @@ public final class HandlerRegistry {
             }
         }
         NeoForge.EVENT_BUS.addListener(this::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, true, PlayerInteractEvent.RightClickBlock.class, blockEventHandler::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(this::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, BlockEvent.BreakEvent.class, this::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, BlockDropsEvent.class, blockEventHandler::onBlockDrops);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, BlockEvent.EntityPlaceEvent.class, blockEventHandler::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, true, PlayerInteractEvent.LeftClickBlock.class, playerEventHandler::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(playerEventHandler::onDimensionChange);
@@ -158,6 +161,7 @@ public final class HandlerRegistry {
             simplySwordsHandlerRef::onUseItemStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickBlock.class, flagEventHandler::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, PlayerInteractEvent.RightClickItem.class, flagEventHandler::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, PlayerInteractEvent.EntityInteract.class, flagEventHandler::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, false, AttackEntityEvent.class, flagEventHandler::onAttackEntity);
         // Per-zone banned items : bloque aussi l'attaque (epee bannie dans la zone ne doit pas frapper)
         ZoneItemHandler zoneItems = this.handlers.stream()
