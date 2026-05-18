@@ -106,6 +106,39 @@ test {
     useJUnitPlatform()
 }
 
+def prodJarExcludes = [
+        'com/arcadia/arcadiaguard/selftest/**',
+        'com/arcadia/arcadiaguard/test/**',
+        'data/arcadiaguard/gametest/**',
+        'data/arcadiaguard/structure/**'
+]
+
+tasks.named('jar', Jar).configure {
+    exclude prodJarExcludes
+}
+
+tasks.register('testJar', Jar) {
+    group = 'build'
+    description = 'Builds a development/test jar with runtime selftests and GameTest classes/resources.'
+    dependsOn tasks.named('classes')
+    archiveBaseName.set(mod_id)
+    archiveVersion.set(mod_version)
+    archiveClassifier.set('test')
+    from(sourceSets.main.output)
+}
+
+tasks.register('prodJar') {
+    group = 'build'
+    description = 'Alias for the default production jar task.'
+    dependsOn tasks.named('jar')
+}
+
+tasks.register('buildProd') {
+    group = 'build'
+    description = 'Builds and checks the project, then emits the default production jar.'
+    dependsOn tasks.named('build')
+}
+
 // Workaround NeoGradle 7.1.21 : neoFormRecompile échoue silencieusement pour certaines
 // classes Minecraft (Entity, IEntityExtension). On ajoute les deux jars manquants au classpath.
 afterEvaluate {

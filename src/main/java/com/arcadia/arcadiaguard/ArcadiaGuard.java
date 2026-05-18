@@ -26,6 +26,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
+import java.lang.reflect.Method;
 
 @Mod(ArcadiaGuard.MOD_ID)
 public final class ArcadiaGuard {
@@ -34,6 +35,8 @@ public final class ArcadiaGuard {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     private static ServiceRegistry services;
+    private static volatile boolean testSetupTickResolved;
+    private static volatile Method testSetupTickMethod;
 
     public ArcadiaGuard(IEventBus modBus, ModContainer modContainer) {
         ArcadiaGuardPaths.migrateLegacyFiles();
@@ -55,12 +58,14 @@ public final class ArcadiaGuard {
 
         ModItems.register(modBus);
         PacketHandler.register(modBus);
-        com.arcadia.arcadiaguard.test.ArcadiaGuardTestRegistry.register(modBus);
-        com.arcadia.arcadiaguard.selftest.SelfTestCommand.registerBuiltinScenarios();
+        invokeOptionalStatic("com.arcadia.arcadiaguard.test.ArcadiaGuardTestRegistry", "register",
+            new Class<?>[] { IEventBus.class }, modBus);
+        invokeOptionalStatic("com.arcadia.arcadiaguard.selftest.SelfTestCommand", "registerBuiltinScenarios",
+            new Class<?>[0]);
         // Tick hook pour /ag testsetup all — depile les creations asynchrones tick par tick.
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
-                com.arcadia.arcadiaguard.selftest.TestSetupCommand.onServerTick());
+                onOptionalTestSetupTick());
 
         if (FMLEnvironment.dist == Dist.CLIENT) {
             // Indirect call via FQN string + reflection ensures the client class
@@ -91,7 +96,8 @@ public final class ArcadiaGuard {
         services.dynamicItemBlockList().load();
         // SelfTest : enregistre les scenarios smoke auto-generes (un par flag du registry).
         // Apres ServerStarting car a besoin que tous les mods soient charges + flags registres.
-        com.arcadia.arcadiaguard.selftest.SelfTestCommand.registerBuiltinScenariosAfterSetup();
+        invokeOptionalStatic("com.arcadia.arcadiaguard.selftest.SelfTestCommand", "registerBuiltinScenariosAfterSetup",
+            new Class<?>[0]);
         try { DimFlagSerializer.read(services.dimFlagStore(), ArcadiaGuardPaths.dimFlagsFile()); }
         catch (java.io.IOException e) { LOGGER.error("[ArcadiaGuard] Failed to load dimension flags", e); }
         services.auditLogger().onServerStarted(event.getServer());
@@ -131,4 +137,38 @@ public final class ArcadiaGuard {
     public static AsyncZoneWriter asyncZoneWriter()           { return services.asyncZoneWriter(); }
     public static DimensionFlagStore dimFlagStore()           { return services.dimFlagStore(); }
     public static ArcadiaGuardAuditLogger auditLogger()       { return services.auditLogger(); }
+
+    private static void invokeOptionalStatic(String className, String methodName, Class<?>[] types, Object... args) {
+        try {
+            Class<?> cls = Class.forName(className);
+            cls.getMethod(methodName, types).invoke(null, args);
+        } catch (ClassNotFoundException ignored) {
+            // Dev-only hooks are intentionally absent from prod jars.
+        } catch (ReflectiveOperationException e) {
+            LOGGER.warn("[ArcadiaGuard] Optional hook {}.{} failed: {}", className, methodName, e.toString());
+        }
+    }
+
+    private static void onOptionalTestSetupTick() {
+        if (!testSetupTickResolved) {
+            testSetupTickResolved = true;
+            try {
+                Class<?> cls = Class.forName("com.arcadia.arcadiaguard.selftest.TestSetupCommand");
+                testSetupTickMethod = cls.getMethod("onServerTick");
+            } catch (ClassNotFoundException ignored) {
+                testSetupTickMethod = null;
+            } catch (ReflectiveOperationException e) {
+                LOGGER.warn("[ArcadiaGuard] Optional testsetup tick hook failed to resolve: {}", e.toString());
+                testSetupTickMethod = null;
+            }
+        }
+        Method method = testSetupTickMethod;
+        if (method == null) return;
+        try {
+            method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            LOGGER.warn("[ArcadiaGuard] Optional testsetup tick hook failed: {}", e.toString());
+            testSetupTickMethod = null;
+        }
+    }
 }

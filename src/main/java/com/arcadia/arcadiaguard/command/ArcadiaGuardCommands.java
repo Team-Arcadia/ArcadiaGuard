@@ -13,6 +13,7 @@ import com.arcadia.arcadiaguard.command.sub.ZoneCommands;
 import com.arcadia.arcadiaguard.handler.GuiActionHandler;
 import com.arcadia.arcadiaguard.item.ModItems;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -40,10 +41,11 @@ public final class ArcadiaGuardCommands {
             .then(LogCommands.build())
             .then(MigrateCommands.build())
             .then(DebugCommands.build())
-            .then(DimFlagCommands.build())
-            .then(com.arcadia.arcadiaguard.selftest.SelfTestCommand.build())
-            .then(com.arcadia.arcadiaguard.selftest.TestSetupCommand.build())
-            .then(com.arcadia.arcadiaguard.selftest.DiagnosticCommand.build());
+            .then(DimFlagCommands.build());
+
+        addOptionalCommand(root, "com.arcadia.arcadiaguard.selftest.SelfTestCommand");
+        addOptionalCommand(root, "com.arcadia.arcadiaguard.selftest.TestSetupCommand");
+        addOptionalCommand(root, "com.arcadia.arcadiaguard.selftest.DiagnosticCommand");
 
         dispatcher.register(root);
         dispatcher.register(literal("ag")
@@ -147,5 +149,21 @@ public final class ArcadiaGuardCommands {
         com.arcadia.arcadiaguard.guard.GuardService.invalidateFrequencyCache();
         ctx.getSource().sendSuccess(() -> Component.translatable("arcadiaguard.command.reloaded"), true);
         return 1;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void addOptionalCommand(LiteralArgumentBuilder<CommandSourceStack> root, String className) {
+        try {
+            Class<?> cls = Class.forName(className);
+            Object built = cls.getMethod("build").invoke(null);
+            if (built instanceof LiteralArgumentBuilder<?> builder) {
+                root.then((LiteralArgumentBuilder<CommandSourceStack>) builder);
+            }
+        } catch (ClassNotFoundException ignored) {
+            // Dev-only commands are intentionally absent from prod jars.
+        } catch (ReflectiveOperationException e) {
+            ArcadiaGuard.LOGGER.warn("[ArcadiaGuard] Optional command {} failed to register: {}",
+                className, e.toString());
+        }
     }
 }
