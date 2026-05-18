@@ -19,7 +19,7 @@ public abstract class SculkSpreaderMixin {
         at = @At("HEAD"), cancellable = true
     )
     private void arcadiaguard$blockSculkSpread(LevelAccessor level, BlockPos pos, RandomSource rand, boolean p_222259_, CallbackInfo ci) {
-        if (!FlagMixinHelper.hasAnyRuleInDim(level)) return;
+        if (!FlagMixinHelper.mayDeny(level, BuiltinFlags.SCULK_SPREAD)) return;
         if (FlagMixinHelper.isDenied(level, pos, BuiltinFlags.SCULK_SPREAD)) ci.cancel();
     }
 }
