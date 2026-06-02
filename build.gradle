@@ -153,10 +153,10 @@ afterEvaluate {
 // Workaround NeoGradle 7.1.21 : StreamCodec absent du raw.jar généré par supplyRawJar.
 // On patche le jar après génération en injectant les classes depuis le jar recompilé intermédiaire.
 afterEvaluate {
-    def supplyTask = tasks.findByName("supplyRawJarForneoFormJoined1.21.1-20240808.144430")
-    if (supplyTask != null) {
-        // Capture au moment de la configuration (pas dans doLast)
-        def rawJarPath = layout.projectDirectory.dir(".gradle/configuration/neoForm/neoFormJoined1.21.1-20240808.144430").file("raw.jar").asFile.absolutePath
+    tasks.matching { it.name.startsWith("supplyRawJarForneoFormJoined") }.configureEach { supplyTask ->
+        def neoFormName = supplyTask.name - "supplyRawJarFor"
+        def rawJarPath = layout.projectDirectory.dir(".gradle/configuration/neoForm/${neoFormName}").file("raw.jar").asFile.absolutePath
+        def neoFormBuildDir = layout.buildDirectory.dir("neoForm/${neoFormName}/steps").get().asFile
         def gradleHome = gradle.gradleUserHomeDir.absolutePath
         supplyTask.doLast {
             def rawJar = new File(rawJarPath)
@@ -185,6 +185,12 @@ afterEvaluate {
             }
 
             if (nfJar == null && mcJar == null) { logger.warn("patchRawJar: aucun jar source trouvé"); return }
+            def localMcJar = new File(neoFormBuildDir, "recompile/outputs.jar")
+            if (!localMcJar.exists()) localMcJar = new File(neoFormBuildDir, "rename/outputs.jar")
+            if (localMcJar.exists()) {
+                nfJar = null
+                mcJar = localMcJar
+            }
             logger.lifecycle("patchRawJar: NF=${nfJar?.name}, MC=${mcJar?.name}")
 
             // Construire la map de classes à ajouter/remplacer depuis les sources
@@ -195,7 +201,9 @@ afterEvaluate {
                 try {
                     def zf = new java.util.zip.ZipFile(srcFile)
                     zf.entries().each { e ->
-                        if (e.name.endsWith(".class")) srcMap[e.name] = srcFile
+                        if (e.name.endsWith(".class") && (e.name.startsWith("net/minecraft/") || e.name.startsWith("com/mojang/"))) {
+                            srcMap[e.name] = srcFile
+                        }
                     }
                     zf.close()
                 } catch (ex) { /* skip */ }

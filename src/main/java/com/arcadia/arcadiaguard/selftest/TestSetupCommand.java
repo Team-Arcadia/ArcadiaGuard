@@ -311,7 +311,7 @@ public final class TestSetupCommand {
         double cx = (zone.minX() + zone.maxX()) / 2.0;
         double cy =  zone.maxY() + 1;
         double cz = (zone.minZ() + zone.maxZ()) / 2.0;
-        player.teleportTo(level, cx, cy, cz, player.getYRot(), player.getXRot());
+        player.teleportTo(level, cx, cy, cz, java.util.Set.of(), player.getYRot(), player.getXRot(), false);
 
         ctx.getSource().sendSuccess(() -> Component.literal(
             "📍 Téléportation → " + name)

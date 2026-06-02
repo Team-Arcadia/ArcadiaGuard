@@ -258,7 +258,7 @@ public final class GuiActionHandler {
                 .withStyle(ChatFormatting.YELLOW));
         }
         Level level = player.serverLevel();
-        int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight() - 1;
+        int minY = level.getMinY(), maxY = level.getMaxY() - 1;
         if (!validCoords(p.x1(), p.y1(), p.z1(), minY, maxY)
                 || !validCoords(p.x2(), p.y2(), p.z2(), minY, maxY)) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.coords_out_of_bounds").withStyle(ChatFormatting.RED));
@@ -471,7 +471,7 @@ public final class GuiActionHandler {
 
     private static void setZoneBounds(ServerPlayer player, GuiActionPayload p) {
         Level level = player.serverLevel();
-        int minY = level.getMinBuildHeight(), maxY = level.getMaxBuildHeight() - 1;
+        int minY = level.getMinY(), maxY = level.getMaxY() - 1;
         if (!validCoords(p.x1(), p.y1(), p.z1(), minY, maxY)
                 || !validCoords(p.x2(), p.y2(), p.z2(), minY, maxY)) {
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.coords_out_of_bounds").withStyle(ChatFormatting.RED));
@@ -516,7 +516,7 @@ public final class GuiActionHandler {
                     net.minecraft.core.registries.Registries.DIMENSION, dimLoc))
                 : null;
             if (targetLevel == null) targetLevel = player.serverLevel();
-            player.teleportTo(targetLevel, cx, cy, cz, player.getYRot(), player.getXRot());
+            player.teleportTo(targetLevel, cx, cy, cz, java.util.Set.of(), player.getYRot(), player.getXRot(), false);
             player.sendSystemMessage(Component.translatable("arcadiaguard.gui.action.teleported", zoneName).withStyle(ChatFormatting.GREEN));
         });
     }

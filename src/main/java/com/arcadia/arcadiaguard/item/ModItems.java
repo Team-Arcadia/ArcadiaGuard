@@ -7,18 +7,19 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModItems {
 
-    private static final DeferredRegister<Item> ITEMS =
-        DeferredRegister.create(Registries.ITEM, ArcadiaGuard.MOD_ID);
+    private static final DeferredRegister.Items ITEMS =
+        DeferredRegister.createItems(ArcadiaGuard.MOD_ID);
 
     private static final DeferredRegister<CreativeModeTab> TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ArcadiaGuard.MOD_ID);
 
-    public static final DeferredHolder<Item, WandItem> ZONE_EDITOR =
-        ITEMS.register("zone_editor", () -> new WandItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<WandItem> ZONE_EDITOR =
+        ITEMS.registerItem("zone_editor", WandItem::new, new Item.Properties().stacksTo(1));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB =
         TABS.register("arcadiaguard", () -> CreativeModeTab.builder()

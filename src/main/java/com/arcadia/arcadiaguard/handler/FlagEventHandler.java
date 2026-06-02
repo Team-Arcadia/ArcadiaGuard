@@ -18,11 +18,11 @@ import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BoatItem;
-import net.minecraft.world.item.ChorusFruitItem;
 import net.minecraft.world.item.EggItem;
 import net.minecraft.world.item.EnderpearlItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MinecartItem;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ProjectileItem;
 import net.minecraft.world.item.SnowballItem;
 import net.minecraft.world.item.ThrowablePotionItem;
@@ -220,7 +220,7 @@ public final class FlagEventHandler {
             event.setCanceled(true);
             return;
         }
-        if (stack.getItem() instanceof ChorusFruitItem
+        if (stack.is(Items.CHORUS_FRUIT)
                 && deny(player, pos, BuiltinFlags.CHORUS_FRUIT, "chorus_fruit")) {
             event.setCanceled(true);
             return;
@@ -328,7 +328,8 @@ public final class FlagEventHandler {
         }
     }
 
-    public void onChorusFruitTeleport(EntityTeleportEvent.ChorusFruit event) {
+    public void onChorusFruitTeleport(EntityTeleportEvent.ItemConsumption event) {
+        if (!event.getConsumedItem().is(Items.CHORUS_FRUIT)) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (guard.shouldBypass(player)) return;
         BlockPos dest = BlockPos.containing(event.getTargetX(), event.getTargetY(), event.getTargetZ());

@@ -146,6 +146,7 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawnEvent.class, entityEventHandler::onMobSpawn);
         // LOWEST : cancel le spawn si un autre mod a discard l'entite (anti-spam Hominid-like).
         NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, FinalizeSpawnEvent.class, entityEventHandler::onFinalizeSpawnDiscardCleanup);
+        NeoForge.EVENT_BUS.addListener(EventPriority.HIGHEST, false, ExplosionEvent.Start.class, entityEventHandler::onExplosionStart);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ExplosionEvent.Detonate.class, entityEventHandler::onExplosion);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, PlayerTickEvent.Post.class, playerEventHandler::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTickEvent.Post.class, entityEventHandler::onEntityTick);
@@ -173,7 +174,7 @@ public final class HandlerRegistry {
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, ItemEntityPickupEvent.Pre.class, flagEventHandler::onItemPickup);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, LivingExperienceDropEvent.class, flagEventHandler::onExpDrop);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTeleportEvent.EnderPearl.class, flagEventHandler::onEnderPearlTeleport);
-        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTeleportEvent.ChorusFruit.class, flagEventHandler::onChorusFruitTeleport);
+        NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, EntityTeleportEvent.ItemConsumption.class, flagEventHandler::onChorusFruitTeleport);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, CropGrowEvent.Pre.class, flagEventHandler::onCropGrow);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BonemealEvent.class, flagEventHandler::onBonemeal);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, BlockGrowFeatureEvent.class, flagEventHandler::onTreeGrow);

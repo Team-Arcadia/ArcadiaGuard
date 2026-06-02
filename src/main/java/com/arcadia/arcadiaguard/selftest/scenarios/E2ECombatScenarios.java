@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.selftest.Scenario;
 import com.arcadia.arcadiaguard.selftest.ScenarioResult;
 import com.arcadia.arcadiaguard.selftest.TestContext;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Zombie;
@@ -22,7 +23,7 @@ public final class E2ECombatScenarios {
             return ScenarioResult.skip(id, "player bypass actif (active Debug)");
         }
         ctx.setupZone(flagId, false, 8);
-        var mob = type.create(ctx.level());
+        var mob = type.create(ctx.level(), EntitySpawnReason.TRIGGERED);
         if (mob == null) return ScenarioResult.fail(id, "create() null", ms(s));
         Vec3 pos = ctx.player().position();
         mob.moveTo(pos.x + 2, pos.y, pos.z, 0, 0);
@@ -57,7 +58,7 @@ public final class E2ECombatScenarios {
                 return ScenarioResult.skip(id(), "player bypass actif");
             }
             ctx.setupZone(BuiltinFlags.MOB_DAMAGE.id(), false, 8);
-            Zombie zombie = EntityType.ZOMBIE.create(ctx.level());
+            Zombie zombie = EntityType.ZOMBIE.create(ctx.level(), EntitySpawnReason.TRIGGERED);
             if (zombie == null) return ScenarioResult.fail(id(), "create() null", ms(s));
             var pos = ctx.player().position();
             zombie.moveTo(pos.x + 1, pos.y, pos.z, 0, 0);

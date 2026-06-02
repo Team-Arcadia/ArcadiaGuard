@@ -5,8 +5,8 @@ import com.arcadia.arcadiaguard.selftest.Scenario;
 import com.arcadia.arcadiaguard.selftest.ScenarioResult;
 import com.arcadia.arcadiaguard.selftest.TestContext;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.block.Blocks;
@@ -31,7 +31,7 @@ public final class E2EScenarios {
             long start = System.nanoTime();
             ctx.setupZone(BuiltinFlags.MONSTER_SPAWN.id(), false, 8);
 
-            Zombie zombie = EntityType.ZOMBIE.create(ctx.level());
+            Zombie zombie = EntityType.ZOMBIE.create(ctx.level(), EntitySpawnReason.TRIGGERED);
             if (zombie == null) return ScenarioResult.fail(id(), "create() null", ms(start));
             BlockPos pos = ctx.player().blockPosition().offset(3, 0, 0);
             zombie.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
@@ -42,7 +42,7 @@ public final class E2EScenarios {
             // veto plus fort).
             var event = new net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent(
                 zombie, ctx.level(), pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                ctx.level().getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+                ctx.level().getCurrentDifficultyAt(pos), EntitySpawnReason.NATURAL, null, null);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
             if (event.isSpawnCancelled() || event.isCanceled()) {
                 return ScenarioResult.pass(id(), "spawn cancel par AG", ms(start));
@@ -59,14 +59,14 @@ public final class E2EScenarios {
             long start = System.nanoTime();
             ctx.setupZone(BuiltinFlags.ANIMAL_SPAWN.id(), false, 8);
 
-            Cow cow = EntityType.COW.create(ctx.level());
+            Cow cow = EntityType.COW.create(ctx.level(), EntitySpawnReason.TRIGGERED);
             if (cow == null) return ScenarioResult.fail(id(), "create() null", ms(start));
             BlockPos pos = ctx.player().blockPosition().offset(3, 0, 0);
             cow.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0, 0);
 
             var event = new net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent(
                 cow, ctx.level(), pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5,
-                ctx.level().getCurrentDifficultyAt(pos), MobSpawnType.NATURAL, null, null);
+                ctx.level().getCurrentDifficultyAt(pos), EntitySpawnReason.NATURAL, null, null);
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(event);
             if (event.isSpawnCancelled() || event.isCanceled()) {
                 return ScenarioResult.pass(id(), ms(start));

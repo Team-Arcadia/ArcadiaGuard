@@ -38,8 +38,8 @@ public final class TestContext {
     public void setupZone(String flagId, Object value, int radius) {
         this.zoneName = "selftest-" + UUID.randomUUID().toString().substring(0, 8);
         BlockPos center = player.blockPosition();
-        this.zoneMin = new BlockPos(center.getX() - radius, Math.max(level.getMinBuildHeight(), center.getY() - radius), center.getZ() - radius);
-        this.zoneMax = new BlockPos(center.getX() + radius, Math.min(level.getMaxBuildHeight(), center.getY() + radius), center.getZ() + radius);
+        this.zoneMin = new BlockPos(center.getX() - radius, Math.max(level.getMinY(), center.getY() - radius), center.getZ() - radius);
+        this.zoneMax = new BlockPos(center.getX() + radius, Math.min(level.getMaxY(), center.getY() + radius), center.getZ() + radius);
         ProtectedZone zone = new ProtectedZone(zoneName, level.dimension().location().toString(),
             zoneMin, zoneMax);
         zone.setFlag(flagId, value);
@@ -50,8 +50,8 @@ public final class TestContext {
     public void setupEmptyZone(int radius) {
         this.zoneName = "selftest-" + UUID.randomUUID().toString().substring(0, 8);
         BlockPos center = player.blockPosition();
-        this.zoneMin = new BlockPos(center.getX() - radius, Math.max(level.getMinBuildHeight(), center.getY() - radius), center.getZ() - radius);
-        this.zoneMax = new BlockPos(center.getX() + radius, Math.min(level.getMaxBuildHeight(), center.getY() + radius), center.getZ() + radius);
+        this.zoneMin = new BlockPos(center.getX() - radius, Math.max(level.getMinY(), center.getY() - radius), center.getZ() - radius);
+        this.zoneMax = new BlockPos(center.getX() + radius, Math.min(level.getMaxY(), center.getY() + radius), center.getZ() + radius);
         ProtectedZone zone = new ProtectedZone(zoneName, level.dimension().location().toString(),
             zoneMin, zoneMax);
         ArcadiaGuard.zoneManager().add(level, zone);

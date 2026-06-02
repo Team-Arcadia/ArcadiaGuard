@@ -259,10 +259,22 @@ public final class EntityEventHandler {
         return false;
     }
 
+    public void onExplosionStart(ExplosionEvent.Start event) {
+        Level level = event.getLevel();
+        if (level.isClientSide()) return;
+        if (!com.arcadia.arcadiaguard.helper.FlagMixinHelper.hasAnyRuleInDim(level)) return;
+
+        var explosion = event.getExplosion();
+        BlockPos originPos = BlockPos.containing(explosion.center());
+        if (guard.isZoneDenying(level, originPos, explosionFlagFor(explosion))) {
+            event.setCanceled(true);
+        }
+    }
+
     public void onExplosion(ExplosionEvent.Detonate event) {
         Level level = event.getLevel();
         if (level.isClientSide()) return;
-        var affected = event.getAffectedBlocks();
+        var affected = new java.util.ArrayList<BlockPos>();
         var affectedEntities = event.getAffectedEntities();
         if (affected.isEmpty() && affectedEntities.isEmpty()) return;
         // P3 : fast-path — explosions dans des dimensions sans zone passent vanilla
@@ -311,9 +323,29 @@ public final class EntityEventHandler {
             return;
         }
         // Slow-path : zones multiples ou explosion chevauchante.
-        affected.removeIf(pos -> guard.isZoneDenying(level, pos, finalFlag));
         affectedEntities.removeIf(entity ->
             guard.isZoneDenying(level, entity.blockPosition(), finalFlag));
+    }
+
+    private static BooleanFlag explosionFlagFor(net.minecraft.world.level.ServerExplosion explosion) {
+        Entity exploder = explosion.getDirectSourceEntity();
+        boolean isMutantCreeperLike = false;
+        if (exploder != null) {
+            var entType = net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(exploder.getType());
+            if (entType != null && "mutantmonsters".equals(entType.getNamespace())
+                    && entType.getPath().contains("creeper")) {
+                isMutantCreeperLike = true;
+            }
+        }
+        if (exploder instanceof Creeper || isMutantCreeperLike) {
+            return BuiltinFlags.CREEPER_EXPLOSION;
+        } else if (exploder instanceof PrimedTnt
+                || exploder instanceof MinecartTNT
+                || (exploder == null
+                    && "TNT".equals(explosion.getBlockInteraction().name()))) {
+            return BuiltinFlags.TNT_EXPLOSION;
+        }
+        return BuiltinFlags.BLOCK_EXPLOSION;
     }
 
     /** Renvoie true si tous les blocs+entites affectes sont contenus dans la bbox de la zone. */

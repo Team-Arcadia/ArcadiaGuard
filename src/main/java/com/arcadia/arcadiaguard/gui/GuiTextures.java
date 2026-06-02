@@ -2,6 +2,7 @@ package com.arcadia.arcadiaguard.gui;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -37,10 +38,10 @@ public final class GuiTextures {
         // fond
         g.fill(x + C, y + C, x + w - C, y + h - C, Colors.BG_1);
         // coins
-        g.blit(ATLAS, x,       y,       0,   0,   C, C, AW, AH);
-        g.blit(ATLAS, x+w-C,   y,       192, 0,   C, C, AW, AH);
-        g.blit(ATLAS, x,       y+h-C,   0,   192, C, C, AW, AH);
-        g.blit(ATLAS, x+w-C,   y+h-C,   192, 192, C, C, AW, AH);
+        g.blit(RenderType::guiTextured, ATLAS, x,       y,       0,   0,   C, C, AW, AH);
+        g.blit(RenderType::guiTextured, ATLAS, x+w-C,   y,       192, 0,   C, C, AW, AH);
+        g.blit(RenderType::guiTextured, ATLAS, x,       y+h-C,   0,   192, C, C, AW, AH);
+        g.blit(RenderType::guiTextured, ATLAS, x+w-C,   y+h-C,   192, 192, C, C, AW, AH);
         // bords (répétés, on utilise fill avec teinte lineBorder)
         g.fill(x+C, y,     x+w-C, y+1,     Colors.LINE_STRONG);
         g.fill(x+C, y+h-1, x+w-C, y+h,    Colors.LINE_STRONG);
@@ -60,12 +61,12 @@ public final class GuiTextures {
 
     /** Icône 16×16 depuis cartographia_icons.png. col/row = index grille. */
     public static void icon(GuiGraphics g, int col, int row, int x, int y) {
-        g.blit(ICONS, x, y, col * 16, row * 16, 16, 16, 128, 32);
+        g.blit(RenderType::guiTextured, ICONS, x, y, col * 16, row * 16, 16, 16, 128, 32);
     }
 
     /** Status dot 8×8. uOffset = 0(actif) 8(alerte) 16(inerte) 24(danger). */
     public static void statusDot(GuiGraphics g, int u, int x, int y) {
-        g.blit(STATUS, x, y, u, 0, 8, 8, 32, 8);
+        g.blit(RenderType::guiTextured, STATUS, x, y, u, 0, 8, 8, 32, 8);
     }
 
     // indices icônes ligne 0

@@ -145,7 +145,7 @@ public final class PlayerEventHandler
                         player.teleportTo(
                             player.serverLevel(),
                             safe.getX() + 0.5, safe.getY(), safe.getZ() + 0.5,
-                            player.getYRot(), player.getXRot());
+                            java.util.Set.of(), player.getYRot(), player.getXRot(), false);
                         player.displayClientMessage(
                             Component.translatable("arcadiaguard.message.entry"), true);
                         guard.auditDenied(player, zone.name(), pos, BuiltinFlags.ENTRY, "entry");
@@ -174,7 +174,7 @@ public final class PlayerEventHandler
                         double cz = (z.minZ() + z.maxZ()) / 2.0 + 0.5;
                         double cy = findSafeY(player.serverLevel(), (int) Math.floor(cx), z.minY(), z.maxY(), (int) Math.floor(cz));
                         player.teleportTo(player.serverLevel(), cx, cy, cz,
-                            player.getYRot(), player.getXRot());
+                            java.util.Set.of(), player.getYRot(), player.getXRot(), false);
                         player.displayClientMessage(
                             Component.translatable("arcadiaguard.message.exit"), true);
                         guard.auditDenied(player, z.name(), pos, BuiltinFlags.EXIT, "exit");
@@ -308,7 +308,7 @@ public final class PlayerEventHandler
         if (holder == null) {
             try {
                 var rl = net.minecraft.resources.ResourceLocation.parse("neoforge:creative_flight");
-                holder = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.getHolder(rl).orElse(null);
+                holder = net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.get(rl).orElse(null);
                 if (holder == null) { CREATIVE_FLIGHT_MISSING = true; return false; }
                 CREATIVE_FLIGHT_ATTR = holder;
             } catch (Throwable t) { CREATIVE_FLIGHT_MISSING = true; return false; }
@@ -349,8 +349,8 @@ public final class PlayerEventHandler
 
     /** Finds the lowest Y inside [minY, maxY] where two consecutive non-solid blocks sit above a solid one. */
     private static double findSafeY(ServerLevel level, int x, int minY, int maxY, int z) {
-        int start = Math.max(minY, level.getMinBuildHeight());
-        int end = Math.min(maxY - 1, level.getMaxBuildHeight() - 2);
+        int start = Math.max(minY, level.getMinY());
+        int end = Math.min(maxY - 1, level.getMaxY() - 2);
         for (int y = start; y < end; y++) {
             BlockState floor = level.getBlockState(new BlockPos(x, y, z));
             BlockState feet  = level.getBlockState(new BlockPos(x, y + 1, z));

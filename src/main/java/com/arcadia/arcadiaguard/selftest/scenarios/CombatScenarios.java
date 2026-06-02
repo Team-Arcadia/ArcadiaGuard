@@ -5,8 +5,9 @@ import com.arcadia.arcadiaguard.selftest.Scenario;
 import com.arcadia.arcadiaguard.selftest.ScenarioResult;
 import com.arcadia.arcadiaguard.selftest.TestContext;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.Pig;
 
 /** Scenarios combat : PvP, attack animals, invincible, player damage. */
 public final class CombatScenarios {
@@ -52,7 +53,7 @@ public final class CombatScenarios {
             }
             ctx.setupZone(BuiltinFlags.ATTACK_ANIMALS.id(), false, 8);
 
-            Pig pig = EntityType.PIG.create(ctx.level());
+            Pig pig = EntityType.PIG.create(ctx.level(), EntitySpawnReason.TRIGGERED);
             if (pig == null) return ScenarioResult.fail(id(), "pig.create null", 0);
             var pos = ctx.player().position();
             pig.moveTo(pos.x + 2, pos.y, pos.z, 0, 0);

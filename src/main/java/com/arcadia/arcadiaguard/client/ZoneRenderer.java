@@ -7,10 +7,10 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.List;
 import java.util.OptionalDouble;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShapeRenderer;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -84,7 +84,7 @@ public final class ZoneRenderer {
                 zone.minX() - cx,     zone.minY() - cy,     zone.minZ() - cz,
                 zone.maxX() + 1 - cx, zone.maxY() + 1 - cy, zone.maxZ() + 1 - cz
             );
-            LevelRenderer.renderLineBox(poseStack, consumerRoot, aabb, 1f, 1f, 1f, 0.8f);
+            ShapeRenderer.renderLineBox(poseStack, consumerRoot, aabb, 1f, 1f, 1f, 0.8f);
         }
         bufferSource.endBatch(AG_LINES_ROOT);
 
@@ -97,7 +97,7 @@ public final class ZoneRenderer {
                 zone.minX() - cx,     zone.minY() - cy,     zone.minZ() - cz,
                 zone.maxX() + 1 - cx, zone.maxY() + 1 - cy, zone.maxZ() + 1 - cz
             );
-            LevelRenderer.renderLineBox(poseStack, consumerSub, aabb, 0.7f, 0.3f, 1f, 0.8f);
+            ShapeRenderer.renderLineBox(poseStack, consumerSub, aabb, 0.7f, 0.3f, 1f, 0.8f);
         }
         bufferSource.endBatch(AG_LINES_SUB);
     }

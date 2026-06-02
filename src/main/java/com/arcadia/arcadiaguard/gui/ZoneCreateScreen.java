@@ -82,7 +82,7 @@ public final class ZoneCreateScreen extends Screen {
     }
 
     @Override
-    public void renderBlurredBackground(float partialTick) { /* désactivé */ }
+    protected void renderBlurredBackground() { /* désactivé */ }
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {

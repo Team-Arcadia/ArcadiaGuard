@@ -9,6 +9,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.block.Blocks;
@@ -70,7 +71,7 @@ public final class ArcadiaGuardWorldGameTests {
         BlockPos spawnPos = helper.absolutePos(BlockPos.ZERO.above(1));
         // Force un spawn via ServerLevel.addFreshEntity : s'il passe dans le event
         // FinalizeSpawn de notre handler, il doit etre annule ou despawned.
-        var zombie = EntityType.ZOMBIE.create(helper.getLevel());
+        var zombie = EntityType.ZOMBIE.create(helper.getLevel(), EntitySpawnReason.TRIGGERED);
         if (zombie == null) {
             cleanup(helper, zoneName);
             helper.fail("EntityType.ZOMBIE.create returned null");

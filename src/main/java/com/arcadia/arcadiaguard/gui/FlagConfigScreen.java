@@ -155,7 +155,7 @@ public final class FlagConfigScreen extends Screen {
     }
 
     @Override
-    public void renderBlurredBackground(float partialTick) {}
+    protected void renderBlurredBackground() {}
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float delta) {
