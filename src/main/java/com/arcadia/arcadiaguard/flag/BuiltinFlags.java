@@ -97,6 +97,7 @@ public final class BuiltinFlags {
     public static final BooleanFlag SUPPLEMENTARIES_THROW = new BooleanFlag("supplementaries-throw", false, "[Supplementaries] Autorise/refuse le lancer de briques dans la zone.",                "supplementaries");
     public static final BooleanFlag PARCOOL_ACTIONS     = new BooleanFlag("parcool-actions",    false, "[ParCool] Autorise/refuse les actions parkour dans la zone.",                               "parcool");
     public static final BooleanFlag EMOTE_USE           = new BooleanFlag("emote-use",          false, "[Emotecraft] Autorise/refuse les emotes dans la zone.",                                     "emotecraft");
+    public static final BooleanFlag JADE_OVERLAY        = new BooleanFlag("jade-overlay",       false, "[Jade] Autorise/refuse l'affichage de l'overlay Jade dans la zone.",                      "jade");
     public static final BooleanFlag MUTANT_MOB_SPAWN    = new BooleanFlag("mutant-mob-spawn",   false, "[Mutant Monsters] Autorise/refuse le spawn de monstres mutants dans la zone.",             "mutantmonsters");
     public static final BooleanFlag TF_PROJECTILE       = new BooleanFlag("tf-projectile",      false, "[Twilight Forest] Autorise/refuse les projectiles de boss TF dans la zone.",               "twilightforest");
     public static final BooleanFlag CHARM_USE           = new BooleanFlag("charm-use",          false, "[Apotheosis] Autorise/refuse l'activation des charmes Apotheosis dans la zone.",           "apotheosis");

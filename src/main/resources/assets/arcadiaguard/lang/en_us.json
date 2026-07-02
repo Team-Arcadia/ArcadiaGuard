@@ -438,6 +438,7 @@
   "arcadiaguard.flag.supplementaries-throw.description": "[Supplementaries] Allow/deny throwing bricks and bombs.",
   "arcadiaguard.flag.parcool-actions.description": "[ParCool] Allow/deny parkour actions in the zone.",
   "arcadiaguard.flag.emote-use.description": "[Emotecraft] Allow/deny emotes in the zone.",
+  "arcadiaguard.flag.jade-overlay.description": "[Jade] Allow/deny the Jade overlay in the zone.",
   "arcadiaguard.flag.mutant-mob-spawn.description": "[Mutant Monsters] Allow/deny spawning of mutant monsters.",
   "arcadiaguard.flag.tf-projectile.description": "[Twilight Forest] Allow/deny TF boss projectiles in the zone.",
   "arcadiaguard.flag.charm-use.description": "[Apotheosis] Allow/deny activation of Apotheosis charms.",

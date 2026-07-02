@@ -44,6 +44,23 @@ class DimFlagSerializerTest {
     }
 
     @Test
+    void writeAndRead_listFlag(@TempDir Path tempDir) throws IOException {
+        var store = new DimensionFlagStore();
+        store.setFlag("minecraft:overworld", "mob-spawn-allowlist",
+            java.util.List.of("minecraft:villager", "customnpcs:*"));
+
+        Path file = tempDir.resolve("dim-flags.json");
+        DimFlagSerializer.write(store, file);
+
+        var loaded = new DimensionFlagStore();
+        DimFlagSerializer.read(loaded, file);
+
+        assertEquals(java.util.List.of("minecraft:villager", "customnpcs:*"),
+            loaded.flags("minecraft:overworld").get("mob-spawn-allowlist"),
+            "les ListFlag de dimension doivent survivre a une sauvegarde/relecture");
+    }
+
+    @Test
     void read_missingFile_keepsStoreEmpty(@TempDir Path tempDir) throws IOException {
         var store = new DimensionFlagStore();
         DimFlagSerializer.read(store, tempDir.resolve("does-not-exist.json"));
@@ -67,6 +84,7 @@ class DimFlagSerializerTest {
         var dimMap = new LinkedHashMap<String, Object>();
         dimMap.put("pvp", false);
         dimMap.put("heal-amount", 5);
+        dimMap.put("mob-spawn-allowlist", java.util.List.of("minecraft:villager"));
         snapshot.put("minecraft:overworld", dimMap);
 
         Path file = tempDir.resolve("dim-flags.json");
@@ -77,6 +95,8 @@ class DimFlagSerializerTest {
 
         assertEquals(false, loaded.flags("minecraft:overworld").get("pvp"));
         assertEquals(5, loaded.flags("minecraft:overworld").get("heal-amount"));
+        assertEquals(java.util.List.of("minecraft:villager"),
+            loaded.flags("minecraft:overworld").get("mob-spawn-allowlist"));
     }
 
     @Test

@@ -25,6 +25,7 @@ public final class ArcadiaGuardClient {
         // (necessaire car le verifier server-side natif depend d'une config externe
         // validateEmote qui peut etre desactivee).
         ClientEmotecraftHook.register();
+        ClientJadeHook.register();
 
         // Injection des handlers S→C (lambdas dans cette classe @OnlyIn(CLIENT))
         PacketHandler.setClientHandlers(

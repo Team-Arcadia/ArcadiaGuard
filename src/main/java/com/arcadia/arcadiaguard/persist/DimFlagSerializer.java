@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.zone.DimensionFlagStore;
 import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -16,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class DimFlagSerializer {
@@ -40,6 +43,13 @@ public final class DimFlagSerializer {
                 Object val = flag.getValue();
                 if (val instanceof Boolean b) dimObj.addProperty(flag.getKey(), b);
                 else if (val instanceof Integer i) dimObj.addProperty(flag.getKey(), i);
+                else if (val instanceof List<?> list) {
+                    JsonArray arr = new JsonArray();
+                    for (Object item : list) {
+                        if (item != null) arr.add(String.valueOf(item));
+                    }
+                    dimObj.add(flag.getKey(), arr);
+                }
             }
             root.add(dimEntry.getKey(), dimObj);
         }
@@ -71,10 +81,20 @@ public final class DimFlagSerializer {
             if (!dimEntry.getValue().isJsonObject()) continue;
             for (Map.Entry<String, JsonElement> flag : dimEntry.getValue().getAsJsonObject().entrySet()) {
                 JsonElement val = flag.getValue();
-                if (!val.isJsonPrimitive()) continue;
-                JsonPrimitive prim = val.getAsJsonPrimitive();
-                if (prim.isBoolean()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsBoolean());
-                else if (prim.isNumber()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsInt());
+                if (val.isJsonPrimitive()) {
+                    JsonPrimitive prim = val.getAsJsonPrimitive();
+                    if (prim.isBoolean()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsBoolean());
+                    else if (prim.isNumber()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsInt());
+                } else if (val.isJsonArray()) {
+                    ArrayList<String> list = new ArrayList<>();
+                    for (JsonElement item : val.getAsJsonArray()) {
+                        if (item != null && item.isJsonPrimitive()) {
+                            JsonPrimitive prim = item.getAsJsonPrimitive();
+                            if (prim.isString()) list.add(prim.getAsString());
+                        }
+                    }
+                    store.setFlag(dimEntry.getKey(), flag.getKey(), list);
+                }
             }
         }
     }

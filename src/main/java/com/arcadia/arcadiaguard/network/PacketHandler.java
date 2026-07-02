@@ -3,6 +3,7 @@ package com.arcadia.arcadiaguard.network;
 import com.arcadia.arcadiaguard.handler.GuiActionHandler;
 import com.arcadia.arcadiaguard.network.gui.DimFlagsPayload;
 import com.arcadia.arcadiaguard.network.gui.GuiActionPayload;
+import com.arcadia.arcadiaguard.network.gui.JadeOverlayBlockedPayload;
 import com.arcadia.arcadiaguard.network.gui.OpenGuiPayload;
 import com.arcadia.arcadiaguard.network.gui.ParcoolBlockedPayload;
 import com.arcadia.arcadiaguard.network.gui.ZoneDetailPayload;
@@ -87,6 +88,10 @@ public final class PacketHandler {
         reg.playToClient(com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.TYPE,
             com.arcadia.arcadiaguard.network.gui.EmoteBlockedPayload.STREAM_CODEC,
             (p, c) -> com.arcadia.arcadiaguard.client.ClientEmoteBlockedState.setBlocked(p.blocked()));
+
+        // Jade : overlay blocked state S->C
+        reg.playToClient(JadeOverlayBlockedPayload.TYPE, JadeOverlayBlockedPayload.STREAM_CODEC,
+            (p, c) -> com.arcadia.arcadiaguard.client.ClientJadeOverlayState.setBlocked(p.blocked()));
 
         // Zone deleted S->C : purge du ClientZoneCache (rendu)
         reg.playToClient(ZoneRemovedPayload.TYPE, ZoneRemovedPayload.STREAM_CODEC,

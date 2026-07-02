@@ -42,6 +42,8 @@ public final class PlayerEventHandler
     private final Map<UUID, Boolean> playerParcoolBlocked = new ConcurrentHashMap<>();
     /** Dernier etat envoye au client pour emote_use (verifier client-side Emotecraft). */
     private final Map<UUID, Boolean> playerEmoteBlocked = new ConcurrentHashMap<>();
+    /** Dernier etat envoye au client pour jade_overlay (callback client-side Jade). */
+    private final Map<UUID, Boolean> playerJadeOverlayBlocked = new ConcurrentHashMap<>();
     /** Derniere valeur FLY pour message one-shot a la transition. */
     private final Map<UUID, Boolean> playerFlyBlocked = new ConcurrentHashMap<>();
     /** Derniere fois qu'on a affiche un message parcool/emote a ce joueur (throttle cooldown). */
@@ -97,6 +99,7 @@ public final class PlayerEventHandler
         lastSafePos.remove(id);
         playerParcoolBlocked.remove(id);
         playerEmoteBlocked.remove(id);
+        playerJadeOverlayBlocked.remove(id);
         playerFlyBlocked.remove(id);
         lastParcoolMsgAt.remove(id);
         lastEmoteMsgAt.remove(id);
@@ -244,6 +247,16 @@ public final class PlayerEventHandler
                     guard.auditDenied(player, flagSourceZoneName, pos, BuiltinFlags.EMOTE_USE, "emote_use");
                 }
             }
+        }
+
+        boolean jadeOverlayBlocked = !guard.shouldBypass(player) && !zoneMemberBypass
+            && guard.isZoneDenying(player.serverLevel(), pos, BuiltinFlags.JADE_OVERLAY);
+        Boolean wasJadeOverlayBlocked = playerJadeOverlayBlocked.get(id);
+        if (wasJadeOverlayBlocked == null || wasJadeOverlayBlocked != jadeOverlayBlocked) {
+            playerJadeOverlayBlocked.put(id, jadeOverlayBlocked);
+            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(
+                player,
+                new com.arcadia.arcadiaguard.network.gui.JadeOverlayBlockedPayload(jadeOverlayBlocked));
         }
 
         // FLY : bloque mayfly + attribut neoforge:creative_flight dans la zone ou la dimension.

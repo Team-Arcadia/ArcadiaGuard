@@ -1,13 +1,12 @@
 package com.arcadia.arcadiaguard.flag;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/**
- * Vérifie l'enregistrement et la cohérence des nouveaux flags 1.6.0 :
- * mob-attack-player et mob-spawn-allowlist.
- */
+/** Verifie l'enregistrement et la coherence des nouveaux flags. */
 class NewFlagsRegistrationTest {
 
     @Test
@@ -15,7 +14,7 @@ class NewFlagsRegistrationTest {
         var registry = new FlagRegistryImpl();
         registry.registerBuiltins();
         assertTrue(registry.get("mob-attack-player").isPresent(),
-            "mob-attack-player doit être enregistré");
+            "mob-attack-player doit etre enregistre");
     }
 
     @Test
@@ -23,15 +22,19 @@ class NewFlagsRegistrationTest {
         var registry = new FlagRegistryImpl();
         registry.registerBuiltins();
         assertTrue(registry.get("mob-spawn-allowlist").isPresent(),
-            "mob-spawn-allowlist doit être enregistré");
+            "mob-spawn-allowlist doit etre enregistre");
+    }
+
+    @Test
+    void jadeOverlay_isRegistered() {
+        var registry = new FlagRegistryImpl();
+        registry.registerBuiltins();
+        assertTrue(registry.get("jade-overlay").isPresent(),
+            "jade-overlay doit etre enregistre");
     }
 
     @Test
     void mobAttackPlayer_defaultIsAllow() {
-        // BooleanFlag.defaultValue=false (= ON green = protection active)
-        // mais on déclare false comme défaut, ce qui en sémantique GUI = OFF (rouge) = inactif.
-        // Sémantique inversée : "default value=false" = comportement par défaut = ne bloque pas.
-        // → Vérifie cohérence avec les autres flags de combat.
         assertEquals(false, BuiltinFlags.MOB_ATTACK_PLAYER.defaultValue());
     }
 
@@ -48,12 +51,11 @@ class NewFlagsRegistrationTest {
 
     @Test
     void allFlagDescriptionKeys_havei18nEntries() throws Exception {
-        // Sanity check : les nouvelles clés sont bien dans les fichiers lang.
         var en = java.nio.file.Files.readString(java.nio.file.Path.of(
             "src/main/resources/assets/arcadiaguard/lang/en_us.json"));
         var fr = java.nio.file.Files.readString(java.nio.file.Path.of(
             "src/main/resources/assets/arcadiaguard/lang/fr_fr.json"));
-        for (String flagId : new String[]{"mob-attack-player", "mob-spawn-allowlist"}) {
+        for (String flagId : new String[]{"mob-attack-player", "mob-spawn-allowlist", "jade-overlay"}) {
             String key = "arcadiaguard.flag." + flagId + ".description";
             assertTrue(en.contains(key), "EN doit contenir " + key);
             assertTrue(fr.contains(key), "FR doit contenir " + key);
