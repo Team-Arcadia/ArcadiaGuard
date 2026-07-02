@@ -508,7 +508,7 @@ public final class DiagnosticCommand {
                 String fqn = h.getClass().getSimpleName().toLowerCase(Locale.ROOT);
                 String modGuess = "";
                 for (String m : new String[]{"ars","irons","simply","occult","supplement","apotheos",
-                        "betterarch","carryon","parcool","waystone","emotecraft","rechisel",
+                        "betterarch","carryon","parcool","waystone","emotecraft",
                         "sophisticated","twilight","mutant"}) {
                     if (fqn.contains(m)) { modGuess = m; break; }
                 }

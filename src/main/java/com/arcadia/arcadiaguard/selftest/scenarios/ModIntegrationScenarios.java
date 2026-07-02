@@ -71,8 +71,6 @@ public final class ModIntegrationScenarios {
         BuiltinFlags.OCCULTISM_USE.id(), "mod-occultism");
     public static final Scenario SUPPLEMENTARIES = modFlag("supplementaries",
         BuiltinFlags.SUPPLEMENTARIES_THROW.id(), "mod-supplementaries");
-    public static final Scenario RECHISELED = modFlag("rechiseled",
-        BuiltinFlags.RECHISELED_USE.id(), "mod-rechiseled");
     public static final Scenario ARS_ADDITIONS = modFlag("ars_additions",
         BuiltinFlags.ARS_ADDITIONS_SCROLL.id(), "mod-ars-additions");
     public static final Scenario TWILIGHT_FOREST = modFlag("twilightforest",

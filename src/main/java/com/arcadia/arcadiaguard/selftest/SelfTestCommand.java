@@ -69,7 +69,6 @@ public final class SelfTestCommand {
             ModIntegrationScenarios.APOTHEOSIS,
             ModIntegrationScenarios.OCCULTISM,
             ModIntegrationScenarios.SUPPLEMENTARIES,
-            ModIntegrationScenarios.RECHISELED,
             ModIntegrationScenarios.ARS_ADDITIONS,
             ModIntegrationScenarios.TWILIGHT_FOREST,
             ModIntegrationScenarios.MUTANT_MONSTERS,

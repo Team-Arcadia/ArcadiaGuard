@@ -120,7 +120,6 @@ public final class FlagRegistryImpl implements FlagRegistry {
         register(BuiltinFlags.TF_PROJECTILE);
         register(BuiltinFlags.CHARM_USE);
         register(BuiltinFlags.WAYSTONE_USE);
-        register(BuiltinFlags.RECHISELED_USE);
         register(BuiltinFlags.ARS_ADDITIONS_SCROLL);
         register(BuiltinFlags.ARS_WARP_SCROLL);
         register(BuiltinFlags.CARRYON);

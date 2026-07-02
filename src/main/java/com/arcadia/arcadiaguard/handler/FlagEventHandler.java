@@ -196,13 +196,6 @@ public final class FlagEventHandler {
             event.setCanceled(true);
             return;
         }
-
-        // RECHISELED_USE : blocs rechiseled (interfaces de design de blocs)
-        if (blockId != null && "rechiseled".equals(blockId.getNamespace())
-                && deny(player, pos, BuiltinFlags.RECHISELED_USE, "rechiseled_use")) {
-            event.setCanceled(true);
-            return;
-        }
     }
 
     // ── RightClickItem : téléportations, throwables ─────────────────────────────

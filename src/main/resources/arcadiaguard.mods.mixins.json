@@ -5,8 +5,6 @@
   "refmap": "arcadiaguard.refmap.json",
   "minVersion": "0.8.5",
   "mixins": [
-    "PacketChiselBlocksMixin",
-    "PacketChiselAllMixin",
     "ReinforcedPressurePlateBlockMixin",
     "MagnetUpgradeWrapperMixin",
     "CarryOnPickupHandlerMixin"

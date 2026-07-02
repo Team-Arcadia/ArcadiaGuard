@@ -98,7 +98,6 @@ Chaque integration est independante et n'est chargee que si le mod tiers est pre
 | [Sophisticated Storage](https://www.curseforge.com/minecraft/mc-mods/sophisticated-storage) | Coffres custom + minecarts a coffre |
 | [Twilight Forest](https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest) | Projectiles speciaux |
 | [Mutant Monsters](https://www.curseforge.com/minecraft/mc-mods/mutant-monsters) | Spawn de mutants |
-| [Rechiseled](https://www.curseforge.com/minecraft/mc-mods/rechiseled) | Utilisation des blocs Rechiseled |
 
 ---
 
@@ -114,7 +113,7 @@ Chaque integration est independante et n'est chargee que si le mod tiers est pre
 - **Mouvement** : entry, exit, fly, use-elytra, use-portal
 - **Chat & commandes** : send-chat, exec-command (+ blacklist par liste), npc-interact
 - **Economies de temps** : crop-growth, tree-growth, farmland-trample, snow/ice-melt, till-farmland, strip-wood, shovel-path, scoop/place-fluids
-- **Mods compat** : ars/irons/simplyswords/occultism/supplementaries/parcool/emote/charm/waystone/rechiseled…
+- **Mods compat** : ars/irons/simplyswords/occultism/supplementaries/parcool/emote/charm/waystone…
 - **Chunkload** : force les chunks de la zone a rester charges
 
 Types supportes : **booleen** (allow/deny), **entier** (seuils comme heal-amount), **liste** (blacklists/whitelists).
