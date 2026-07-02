@@ -41,6 +41,9 @@ _bmad-output/
 # Claude Code
 .claude/
 
+# Codex local workspace
+.codex/
+
 # Dev tools & misc
 toolstexture_model/
 description.md
@@ -50,3 +53,7 @@ description.md
 
 # Patchnotes (locaux uniquement, publies via GitHub Releases)
 PATCHNOTES-*.md
+
+# Local documentation exports
+docs/ArcadiaGuard-Guide-Utilisateur-1.21.1.docx
+docs/ArcadiaGuard-Guide-Utilisateur-1.21.1.pdf
