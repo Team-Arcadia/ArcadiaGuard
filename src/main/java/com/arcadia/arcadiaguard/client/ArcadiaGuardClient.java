@@ -25,7 +25,7 @@ public final class ArcadiaGuardClient {
         // (necessaire car le verifier server-side natif depend d'une config externe
         // validateEmote qui peut etre desactivee).
         ClientEmotecraftHook.register();
-        ClientJadeHook.register();
+        NeoForge.EVENT_BUS.addListener(ClientJadeHook::onClientTick);
 
         // Injection des handlers S→C (lambdas dans cette classe @OnlyIn(CLIENT))
         PacketHandler.setClientHandlers(

@@ -5,6 +5,7 @@ import java.lang.reflect.Proxy;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 @OnlyIn(Dist.CLIENT)
 public final class ClientJadeHook {
@@ -12,6 +13,10 @@ public final class ClientJadeHook {
     private static boolean registered = false;
 
     private ClientJadeHook() {}
+
+    public static void onClientTick(ClientTickEvent.Post event) {
+        register();
+    }
 
     public static void register() {
         if (registered || !ModList.get().isLoaded("jade")) return;

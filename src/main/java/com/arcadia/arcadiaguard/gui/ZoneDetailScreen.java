@@ -308,14 +308,12 @@ public final class ZoneDetailScreen extends Screen {
         }
         renderFooter(g, mx, my);
 
-        if (!(popup instanceof PopupState.CoordsEditor)) for (EditBox b : coordBoxes) b.setVisible(false);
+        prepareWidgetVisibilityForBaseRender();
 
         // H-U5: draw focus ring for non-bordered EditBoxes
         drawFocusRingIfFocused(g, whitelistBox);
         drawFocusRingIfFocused(g, parentBox);
-        drawFocusRingIfFocused(g, flagSearchBox);
-        drawFocusRingIfFocused(g, itemSearchBox);
-        if (coordBoxes != null) for (EditBox cb : coordBoxes) drawFocusRingIfFocused(g, cb);
+        drawFocusRingIfFocused(g, activeFlagSearchBox);
 
         super.render(g, mx, my, delta);
 
@@ -323,6 +321,46 @@ public final class ZoneDetailScreen extends Screen {
         if (popup instanceof PopupState.ItemBlocksPicker) renderItemBlocksPicker(g, mx, my);
         if (popup instanceof PopupState.ConfirmDelete) renderConfirmPopup(g, mx, my);
         if (popup instanceof PopupState.CoordsEditor)  renderCoordsEditor(g, mx, my);
+        renderPopupWidgets(g, mx, my, delta);
+    }
+
+    private boolean hasModalPopup() {
+        return popup instanceof PopupState.FlagPicker
+            || popup instanceof PopupState.ItemBlocksPicker
+            || popup instanceof PopupState.ConfirmDelete
+            || popup instanceof PopupState.CoordsEditor;
+    }
+
+    private void prepareWidgetVisibilityForBaseRender() {
+        if (hasModalPopup()) {
+            if (whitelistBox != null) whitelistBox.setVisible(false);
+            if (parentBox != null) parentBox.setVisible(false);
+            if (activeFlagSearchBox != null) activeFlagSearchBox.setVisible(false);
+            if (flagSearchBox != null) flagSearchBox.setVisible(false);
+            if (itemSearchBox != null) itemSearchBox.setVisible(false);
+            if (coordBoxes != null) for (EditBox b : coordBoxes) b.setVisible(false);
+            return;
+        }
+        if (flagSearchBox != null) flagSearchBox.setVisible(false);
+        if (itemSearchBox != null) itemSearchBox.setVisible(false);
+        if (coordBoxes != null) for (EditBox b : coordBoxes) b.setVisible(false);
+    }
+
+    private void renderPopupWidgets(GuiGraphics g, int mx, int my, float delta) {
+        if (popup instanceof PopupState.FlagPicker && flagSearchBox != null && flagSearchBox.isVisible()) {
+            flagSearchBox.render(g, mx, my, delta);
+            drawFocusRingIfFocused(g, flagSearchBox);
+        } else if (popup instanceof PopupState.ItemBlocksPicker && itemSearchBox != null && itemSearchBox.isVisible()) {
+            itemSearchBox.render(g, mx, my, delta);
+            drawFocusRingIfFocused(g, itemSearchBox);
+        } else if (popup instanceof PopupState.CoordsEditor && coordBoxes != null) {
+            for (EditBox cb : coordBoxes) {
+                if (cb.isVisible()) {
+                    cb.render(g, mx, my, delta);
+                    drawFocusRingIfFocused(g, cb);
+                }
+            }
+        }
     }
 
     // ── Éditeur de coordonnées (popup) ────────────────────────────────────────────

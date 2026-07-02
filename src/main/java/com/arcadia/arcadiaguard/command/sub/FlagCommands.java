@@ -10,6 +10,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.util.SpellRegistryHelper;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -39,10 +40,25 @@ public final class FlagCommands {
                             .executes(FlagCommands::setInt)))
                     .then(literal("add")
                         .then(argument("entry", StringArgumentType.greedyString())
+                            .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                                SpellRegistryHelper.suggestionsFor(StringArgumentType.getString(ctx, "flag"), ctx.getSource()), b))
                             .executes(FlagCommands::listAdd)))
                     .then(literal("remove")
                         .then(argument("entry", StringArgumentType.greedyString())
+                            .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                                currentListEntries(ctx), b))
                             .executes(FlagCommands::listRemove)))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> currentListEntries(CommandContext<CommandSourceStack> ctx) {
+        String name = StringArgumentType.getString(ctx, "name");
+        String flagId = StringArgumentType.getString(ctx, "flag");
+        var zoneOpt = ArcadiaGuard.zoneManager().get(ctx.getSource().getLevel(), name);
+        if (zoneOpt.isEmpty()) return List.of();
+        Object raw = ((ProtectedZone) zoneOpt.get()).flagValues().getOrDefault(flagId, List.of());
+        if (!(raw instanceof List<?> list)) return List.of();
+        return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();
     }
 
     private static int setBoolean(CommandContext<CommandSourceStack> ctx, boolean allow) {
