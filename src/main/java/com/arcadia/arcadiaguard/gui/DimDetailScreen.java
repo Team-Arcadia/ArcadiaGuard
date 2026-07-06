@@ -206,8 +206,10 @@ public final class DimDetailScreen extends Screen {
                 g.fill(bx, iy + 4, bx + 30, iy + 5, badgeColor);
                 g.drawCenteredString(font, protOn ? "ON" : "OFF", bx + 15, iy + 8, badgeColor);
             } else {
-                String preview = f.type() == FlagInfo.TYPE_INT ? f.stringValue()
+                String preview = f.type() == FlagInfo.TYPE_STRING ? stringPreview(f.id(), f.stringValue())
+                    : f.type() == FlagInfo.TYPE_INT ? f.stringValue()
                     : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
+                if (preview.length() > 24) preview = preview.substring(0, 21) + "...";
                 g.drawString(font, preview, bx + 17 - font.width(preview), iy + 8, Colors.TEXT_MUTE, false);
                 if (!viewOnly) {
                     boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
@@ -277,6 +279,13 @@ public final class DimDetailScreen extends Screen {
             .toList();
     }
 
+    private static String stringPreview(String flagId, String raw) {
+        if (!"greeting".equals(flagId) && !"farewell".equals(flagId)) return raw;
+        int sep = raw.indexOf('|');
+        if (sep <= 0) return raw;
+        return "[" + raw.substring(0, sep) + "] " + raw.substring(sep + 1);
+    }
+
     private void renderPicker(GuiGraphics g, int mx, int my) {
         g.fill(gx, gy, gx + GUI_W, gy + GUI_H, 0x90000000);
 
@@ -325,6 +334,7 @@ public final class DimDetailScreen extends Screen {
 
             String typeTag = f.type() == FlagInfo.TYPE_BOOL ? "bool"
                           : f.type() == FlagInfo.TYPE_INT  ? "int"
+                          : f.type() == FlagInfo.TYPE_STRING ? "text"
                           : "list";
             g.drawString(font, typeTag, px + pw - 8 - font.width(typeTag), iy + 7, Colors.TEXT_MUTE, false);
             GuiTextures.dividerH(g, px + 4, iy + PICKER_FLAG_H - 1, pw - 8);
@@ -419,7 +429,10 @@ public final class DimDetailScreen extends Screen {
                     } else {
                         closePicker();
                         FlagConfigScreen.FlagType t = f.type() == FlagInfo.TYPE_INT
-                            ? FlagConfigScreen.FlagType.INT : FlagConfigScreen.FlagType.LIST;
+                            ? FlagConfigScreen.FlagType.INT
+                            : f.type() == FlagInfo.TYPE_STRING
+                            ? FlagConfigScreen.FlagType.STRING
+                            : FlagConfigScreen.FlagType.LIST;
                         minecraft.setScreen(new FlagConfigScreen(
                             this, t, FlagConfigScreen.Target.DIM,
                             data.dimKey(), f.id(), f.label(), f.description(), f.stringValue()));
@@ -475,7 +488,10 @@ public final class DimDetailScreen extends Screen {
                 } else {
                     if (imx >= bx + 20 && imx < bx + 34) {
                         FlagConfigScreen.FlagType t = f.type() == FlagInfo.TYPE_INT
-                            ? FlagConfigScreen.FlagType.INT : FlagConfigScreen.FlagType.LIST;
+                            ? FlagConfigScreen.FlagType.INT
+                            : f.type() == FlagInfo.TYPE_STRING
+                            ? FlagConfigScreen.FlagType.STRING
+                            : FlagConfigScreen.FlagType.LIST;
                         minecraft.setScreen(new FlagConfigScreen(
                             this, t, FlagConfigScreen.Target.DIM,
                             data.dimKey(), f.id(), f.label(), f.description(), f.stringValue()));

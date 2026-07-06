@@ -757,8 +757,10 @@ public final class ZoneDetailScreen extends Screen {
                     editHit(bx, iy + 4, 30, FLAG_H - 8, () ->
                         PacketDistributor.sendToServer(GuiActionPayload.setFlag(detail.name(), ff.id(), !ff.value())));
                 } else {
-                    String preview = f.type() == FlagEntry.TYPE_INT ? f.stringValue()
+                    String preview = f.type() == FlagEntry.TYPE_STRING ? stringPreview(f.id(), f.stringValue())
+                        : f.type() == FlagEntry.TYPE_INT ? f.stringValue()
                         : "[" + (f.stringValue().isEmpty() ? 0 : f.stringValue().split(",").length) + "]";
+                    if (preview.length() > 24) preview = preview.substring(0, 21) + "...";
                     // Aligné à droite, se terminant 4px avant le reset ✕ (bx-18..bx-4)
                     g.drawString(font, preview, bx - 22 - font.width(preview), iy + 7, Colors.TEXT_MUTE, false);
                     boolean hovArrow = mx >= bx + 20 && mx < bx + 34 && my >= iy + 4 && my < iy + FLAG_H - 4;
@@ -768,7 +770,10 @@ public final class ZoneDetailScreen extends Screen {
                         hovArrow ? Colors.ACCENT_HI : Colors.ACCENT);
                     editHit(bx + 20, iy + 4, 14, FLAG_H - 8, () -> {
                         FlagConfigScreen.FlagType t = ff.type() == FlagEntry.TYPE_INT
-                            ? FlagConfigScreen.FlagType.INT : FlagConfigScreen.FlagType.LIST;
+                            ? FlagConfigScreen.FlagType.INT
+                            : ff.type() == FlagEntry.TYPE_STRING
+                            ? FlagConfigScreen.FlagType.STRING
+                            : FlagConfigScreen.FlagType.LIST;
                         minecraft.setScreen(new FlagConfigScreen(
                             ZoneDetailScreen.this, t, FlagConfigScreen.Target.ZONE,
                             detail.name(), ff.id(), ff.label(), ff.description(), ff.stringValue()));
@@ -820,6 +825,13 @@ public final class ZoneDetailScreen extends Screen {
                 || f.label().toLowerCase().contains(search)
                 || f.id().toLowerCase().contains(search))
             .toList();
+    }
+
+    private static String stringPreview(String flagId, String raw) {
+        if (!"greeting".equals(flagId) && !"farewell".equals(flagId)) return raw;
+        int sep = raw.indexOf('|');
+        if (sep <= 0) return raw;
+        return "[" + raw.substring(0, sep) + "] " + raw.substring(sep + 1);
     }
 
     // ── Flag Picker (modal overlay) ───────────────────────────────────────────────
@@ -895,6 +907,8 @@ public final class ZoneDetailScreen extends Screen {
                 ? Component.translatable("arcadiaguard.gui.zonedetail.flag_type.bool").getString()
                 : f.type() == FlagEntry.TYPE_INT
                 ? Component.translatable("arcadiaguard.gui.zonedetail.flag_type.int").getString()
+                : f.type() == FlagEntry.TYPE_STRING
+                ? Component.translatable("arcadiaguard.gui.zonedetail.flag_type.string").getString()
                 : Component.translatable("arcadiaguard.gui.zonedetail.flag_type.list").getString();
             g.drawString(font, typeTag, px + pw - 8 - font.width(typeTag), iy + 7, Colors.TEXT_MUTE, false);
             GuiTextures.dividerH(g, px + 4, iy + PICKER_FLAG_H - 1, pw - 8);
@@ -1345,7 +1359,10 @@ public final class ZoneDetailScreen extends Screen {
                 } else {
                     closePicker();
                     FlagConfigScreen.FlagType t = f.type() == FlagEntry.TYPE_INT
-                        ? FlagConfigScreen.FlagType.INT : FlagConfigScreen.FlagType.LIST;
+                        ? FlagConfigScreen.FlagType.INT
+                        : f.type() == FlagEntry.TYPE_STRING
+                        ? FlagConfigScreen.FlagType.STRING
+                        : FlagConfigScreen.FlagType.LIST;
                     minecraft.setScreen(new FlagConfigScreen(
                         this, t, FlagConfigScreen.Target.ZONE,
                         detail.name(), f.id(), f.label(), f.description(), f.stringValue()));

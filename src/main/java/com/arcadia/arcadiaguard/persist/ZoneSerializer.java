@@ -5,6 +5,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
 import com.arcadia.arcadiaguard.zone.ZoneRole;
 import com.google.gson.Gson;
@@ -61,6 +62,7 @@ public final class ZoneSerializer {
             Object val = entry.getValue();
             if (val instanceof Boolean b) flagsJson.addProperty(entry.getKey(), b);
             else if (val instanceof Integer i) flagsJson.addProperty(entry.getKey(), i);
+            else if (val instanceof String s) flagsJson.addProperty(entry.getKey(), s);
             else if (val instanceof List<?> list) {
                 JsonArray arr = new JsonArray();
                 for (Object item : list) { if (item != null) arr.add(item.toString()); }
@@ -230,6 +232,11 @@ public final class ZoneSerializer {
                 out.put(flag.id(), element.getAsBoolean());
             } else if (flag instanceof IntFlag) {
                 out.put(flag.id(), element.getAsInt());
+            } else if (flag instanceof StringFlag sf) {
+                String value = element.getAsString();
+                if (value.length() > sf.maxLength()) value = value.substring(0, sf.maxLength());
+                if (!sf.allowedValues().isEmpty() && !sf.allowedValues().contains(value)) return;
+                out.put(flag.id(), value);
             } else if (flag instanceof ListFlag && element.isJsonArray()) {
                 List<String> list = new ArrayList<>();
                 for (var el : element.getAsJsonArray()) list.add(el.getAsString());

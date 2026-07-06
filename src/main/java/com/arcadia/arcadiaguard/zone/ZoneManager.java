@@ -6,6 +6,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.api.zone.IZone;
 import com.arcadia.arcadiaguard.api.zone.ZoneCheckResult;
 import com.arcadia.arcadiaguard.event.ZoneLifecycleEvent;
@@ -116,6 +117,13 @@ public final class ZoneManager implements IZoneManager {
                         ? (List<String>) dl : List.of());
                 String joined = String.join(",", v);
                 strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
+            } else if (flag instanceof StringFlag sf) {
+                type = FlagEntry.TYPE_STRING;
+                String v;
+                if (raw instanceof String s) v = s;
+                else if (source == FlagEntry.SOURCE_DIM && dimFlags.get(flag.id()) instanceof String ds) v = ds;
+                else v = FlagResolver.resolve(zone, sf, parentLookup);
+                strVal = v.length() > 30_000 ? v.substring(0, 29_990) + "..." : v;
             } else { continue; }
             // i18n: on envoie la CLE de traduction, le client traduira via
             // Component.translatable() avec sa locale.

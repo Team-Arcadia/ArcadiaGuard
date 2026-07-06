@@ -13,10 +13,10 @@ import net.minecraft.resources.ResourceLocation;
 /** S→C : flags configurés sur une dimension spécifique. */
 public record DimFlagsPayload(String dimKey, List<FlagInfo> flags, boolean viewOnly) implements CustomPacketPayload {
 
-    /** type: 0=BOOL, 1=INT, 2=LIST. stringValue contient la valeur brute. */
+    /** type: 0=BOOL, 1=INT, 2=LIST, 3=STRING. stringValue contient la valeur brute. */
     public record FlagInfo(String id, String label, boolean value, boolean configured,
                            String description, byte type, String stringValue) {
-        public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2;
+        public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2, TYPE_STRING = 3;
 
         private static final StreamCodec<ByteBuf, String> ID_C    = ByteBufCodecs.stringUtf8(64);
         private static final StreamCodec<ByteBuf, String> LABEL_C = ByteBufCodecs.stringUtf8(128);

@@ -43,6 +43,7 @@ public final class DimFlagSerializer {
                 Object val = flag.getValue();
                 if (val instanceof Boolean b) dimObj.addProperty(flag.getKey(), b);
                 else if (val instanceof Integer i) dimObj.addProperty(flag.getKey(), i);
+                else if (val instanceof String s) dimObj.addProperty(flag.getKey(), s);
                 else if (val instanceof List<?> list) {
                     JsonArray arr = new JsonArray();
                     for (Object item : list) {
@@ -85,6 +86,7 @@ public final class DimFlagSerializer {
                     JsonPrimitive prim = val.getAsJsonPrimitive();
                     if (prim.isBoolean()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsBoolean());
                     else if (prim.isNumber()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsInt());
+                    else if (prim.isString()) store.setFlag(dimEntry.getKey(), flag.getKey(), prim.getAsString());
                 } else if (val.isJsonArray()) {
                     ArrayList<String> list = new ArrayList<>();
                     for (JsonElement item : val.getAsJsonArray()) {

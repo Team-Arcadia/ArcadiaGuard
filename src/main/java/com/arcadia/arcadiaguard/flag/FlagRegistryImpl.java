@@ -99,6 +99,9 @@ public final class FlagRegistryImpl implements FlagRegistry {
         // Entry / Exit
         register(BuiltinFlags.ENTRY);
         register(BuiltinFlags.EXIT);
+        register(BuiltinFlags.GREETING);
+        register(BuiltinFlags.FAREWELL);
+        register(BuiltinFlags.GAME_MODE);
         // Magic mods
         register(BuiltinFlags.ARS_SPELL_CAST);
         register(BuiltinFlags.ARS_SPELL_BLACKLIST);

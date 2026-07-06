@@ -4,6 +4,8 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.FlagFrequency;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
+import java.util.List;
 
 /**
  * Declares all ~60 built-in flags shipped with ArcadiaGuard.
@@ -78,6 +80,9 @@ public final class BuiltinFlags {
     // --- Entry / Exit ---
     public static final BooleanFlag ENTRY              = new BooleanFlag("entry",              false, "Autorise/refuse l'entrée dans la zone pour les joueurs.");
     public static final BooleanFlag EXIT               = new BooleanFlag("exit",               false, "Autorise/refuse la sortie de la zone pour les joueurs.");
+    public static final StringFlag  GREETING           = new StringFlag("greeting",            "", 640, "Message affiche quand un joueur entre dans la zone. Le GUI permet de choisir chat, actionbar ou title. Supporte {player}, {zone}, les codes couleur & et \\n pour les titres.");
+    public static final StringFlag  FAREWELL           = new StringFlag("farewell",            "", 640, "Message affiche quand un joueur quitte la zone. Le GUI permet de choisir chat, actionbar ou title. Supporte {player}, {zone}, les codes couleur & et \\n pour les titres.");
+    public static final StringFlag  GAME_MODE          = new StringFlag("game-mode",           "", 16, List.of("survival", "creative", "adventure", "spectator"), "Change le gamemode du joueur en entrant dans la zone, puis restaure son gamemode precedent a la sortie.");
 
     // --- Magic mods (global on/off + blacklist/whitelist) ---
     public static final BooleanFlag ARS_SPELL_CAST      = new BooleanFlag("ars-spell-cast",      false, "[Ars Nouveau] Autorise/refuse le lancement de sorts dans la zone.",            "ars_nouveau");

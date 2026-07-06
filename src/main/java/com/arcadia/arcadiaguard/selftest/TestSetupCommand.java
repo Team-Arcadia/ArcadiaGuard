@@ -8,6 +8,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.item.ModItems;
 import com.arcadia.arcadiaguard.zone.ProtectedZone;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -359,6 +360,7 @@ public final class TestSetupCommand {
         if (flag instanceof BooleanFlag) return false;            // interdit l'action
         if (flag instanceof IntFlag) return 1;                    // valeur non-defaut triviale
         if (flag instanceof ListFlag) return List.of("demo");     // liste non vide
+        if (flag instanceof StringFlag sf) return sf.allowedValues().isEmpty() ? "demo" : sf.allowedValues().get(0);
         return null;
     }
 

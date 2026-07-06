@@ -14,14 +14,14 @@ import net.minecraft.resources.ResourceLocation;
 public record ZoneDetailPayload(Detail detail, boolean viewOnly) implements CustomPacketPayload {
 
     /**
-     * type: 0=BOOL, 1=INT, 2=LIST. stringValue contient la valeur brute (ex: "42" ou "a,b,c").
+     * type: 0=BOOL, 1=INT, 2=LIST, 3=STRING. stringValue contient la valeur brute (ex: "42" ou "a,b,c").
      * source : origine de la valeur resolue. NONE=flag non configure nulle part (defaut),
      * ZONE_OWN=override local de la zone, PARENT=herite d'une zone parente,
      * DIM=herite des flags de dimension (uniquement si inheritDimFlags=true sur la zone).
      */
     public record FlagEntry(String id, String label, boolean value, boolean inherited,
                             String description, byte type, String stringValue, byte source) {
-        public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2;
+        public static final byte TYPE_BOOL = 0, TYPE_INT = 1, TYPE_LIST = 2, TYPE_STRING = 3;
         public static final byte SOURCE_NONE = 0, SOURCE_ZONE_OWN = 1, SOURCE_PARENT = 2, SOURCE_DIM = 3;
 
         // DoS-safe string codecs (size-capped)

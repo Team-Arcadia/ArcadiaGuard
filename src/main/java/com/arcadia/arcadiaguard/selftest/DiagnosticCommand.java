@@ -8,6 +8,7 @@ import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.compat.luckperms.LuckPermsCompat;
 import com.arcadia.arcadiaguard.compat.luckperms.LuckPermsPermissionChecker;
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
@@ -202,16 +203,18 @@ public final class DiagnosticCommand {
 
         // Flags stats
         JsonObject flagStats = new JsonObject();
-        int flagTotal = 0, flagBool = 0, flagInt = 0, flagList = 0;
+        int flagTotal = 0, flagBool = 0, flagInt = 0, flagList = 0, flagString = 0;
         for (Flag<?> f : ArcadiaGuard.flagRegistry().all()) {
             flagTotal++;
             if (f instanceof BooleanFlag) flagBool++;
             else if (f instanceof IntFlag) flagInt++;
             else if (f instanceof ListFlag) flagList++;
+            else if (f instanceof StringFlag) flagString++;
         }
         flagStats.addProperty("total", flagTotal);
         flagStats.addProperty("boolean", flagBool);
         flagStats.addProperty("int", flagInt);
+        flagStats.addProperty("string", flagString);
         flagStats.addProperty("list", flagList);
         root.add("flag_registry", flagStats);
 
@@ -663,6 +666,7 @@ public final class DiagnosticCommand {
                     if (f instanceof BooleanFlag) { expectedType = "Boolean"; ok = v instanceof Boolean; }
                     else if (f instanceof IntFlag) { expectedType = "Integer"; ok = v instanceof Integer; }
                     else if (f instanceof ListFlag) { expectedType = "List"; ok = v instanceof List<?>; }
+                    else if (f instanceof StringFlag) { expectedType = "String"; ok = v instanceof String; }
                     else { expectedType = f.getClass().getSimpleName(); ok = true; }
                     if (!ok) {
                         JsonObject m = new JsonObject();
@@ -762,6 +766,7 @@ public final class DiagnosticCommand {
         if (f instanceof BooleanFlag) return "boolean";
         if (f instanceof IntFlag)     return "int";
         if (f instanceof ListFlag)    return "list";
+        if (f instanceof StringFlag)  return "string";
         return f.getClass().getSimpleName();
     }
 

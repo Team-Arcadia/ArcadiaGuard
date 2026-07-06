@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.IntFlag;
 import com.arcadia.arcadiaguard.api.flag.ListFlag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.flag.BuiltinFlags;
 import com.arcadia.arcadiaguard.selftest.Scenario;
 import com.arcadia.arcadiaguard.selftest.ScenarioResult;
@@ -38,6 +39,7 @@ public final class AllFlagsSmokeScenarios {
             if (flag instanceof BooleanFlag) value = false;
             else if (flag instanceof IntFlag) value = 0;
             else if (flag instanceof ListFlag) value = List.of("test_entry");
+            else if (flag instanceof StringFlag sf) value = sf.allowedValues().isEmpty() ? "test" : sf.allowedValues().get(0);
             else continue; // skip unknown flag types
 
             final String flagId = flag.id();

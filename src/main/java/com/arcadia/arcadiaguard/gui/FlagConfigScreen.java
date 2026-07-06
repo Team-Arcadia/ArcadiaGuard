@@ -17,7 +17,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 @OnlyIn(Dist.CLIENT)
 public final class FlagConfigScreen extends Screen {
 
-    public enum FlagType { INT, LIST }
+    public enum FlagType { INT, LIST, STRING }
     public enum Target { ZONE, DIM }
 
     private int GUI_W, GUI_H;
@@ -36,6 +36,7 @@ public final class FlagConfigScreen extends Screen {
     private EditBox listAddBox;
     private int listScroll = 0;
     private String errorMsg = "";
+    private String selectedStringDisplay = "actionbar";
 
     /** Autocomplete (S-H22) : suggestions pour les ListFlag ars/irons spell. */
     private List<String> allSuggestions = List.of();
@@ -69,7 +70,13 @@ public final class FlagConfigScreen extends Screen {
         }
         this.input = null;
         this.listAddBox = null;
-        this.initialIntValue = currentValue;
+        if (isTransitionMessageFlag() && currentValue != null) {
+            ParsedTransitionValue parsed = parseTransitionValue(currentValue);
+            this.selectedStringDisplay = parsed.display();
+            this.initialIntValue = parsed.message();
+        } else {
+            this.initialIntValue = currentValue;
+        }
     }
 
     private final String initialIntValue;
@@ -91,6 +98,36 @@ public final class FlagConfigScreen extends Screen {
             input.setValue(initialIntValue == null ? "0" : initialIntValue);
             addRenderableWidget(input);
             setFocused(input);
+        } else if (flagType == FlagType.STRING) {
+            input = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 16, gy + 74, GUI_W - 32, 18, Component.translatable("arcadiaguard.gui.flag_config.value_hint"));
+            input.setMaxLength(stringMaxLength());
+            input.setBordered(false);
+            input.setTextColor(Colors.TEXT);
+            input.setHint(Component.translatable("arcadiaguard.gui.flagconfig.string.hint")
+                .withStyle(s -> s.withColor(Colors.TEXT_MUTE)));
+            input.setValue(initialIntValue == null ? "" : initialIntValue);
+            addRenderableWidget(input);
+            setFocused(input);
+
+            List<String> choices = stringChoices();
+            if (!choices.isEmpty()) {
+                ArrayList<CartographiaButton> buttons = new ArrayList<>();
+                int bw = Math.max(74, (GUI_W - 40) / Math.max(1, choices.size()));
+                int x = gx + 16;
+                int y = gy + 108;
+                for (String choice : choices) {
+                    CartographiaButton btn = CartographiaButton.neutral(
+                        x, y, Math.min(bw - 4, 92), 18,
+                        Component.literal(choice),
+                        b -> {
+                            if (isTransitionMessageFlag()) selectedStringDisplay = choice;
+                            else input.setValue(choice);
+                        });
+                    buttons.add(btn);
+                    addRenderableWidget(btn);
+                    x += bw;
+                }
+            }
         } else {
             listAddBox = new com.arcadia.arcadiaguard.gui.widget.CenteredEditBox(font, gx + 16, gy + GUI_H - 58, GUI_W - 80, 18, Component.translatable("arcadiaguard.gui.flag_config.add_hint"));
             listAddBox.setMaxLength(64);
@@ -189,6 +226,7 @@ public final class FlagConfigScreen extends Screen {
         }
 
         if (flagType == FlagType.INT) renderInt(g, mx, my);
+        else if (flagType == FlagType.STRING) renderString(g, mx, my);
         else                          renderList(g, mx, my);
 
         // Error message
@@ -212,6 +250,20 @@ public final class FlagConfigScreen extends Screen {
     }
 
     private static final int LIST_ROW_H = 18;
+
+    private void renderString(GuiGraphics g, int mx, int my) {
+        g.drawString(font,
+            Component.translatable("arcadiaguard.gui.flagconfig.string_label").getString(),
+            gx + 16, gy + 62, Colors.TEXT, false);
+        g.fill(gx + 14, gy + 72, gx + GUI_W - 14, gy + 94, Colors.BG_1);
+        g.fill(gx + 14, gy + 72, gx + GUI_W - 14, gy + 73, Colors.ACCENT_LO);
+        g.fill(gx + 14, gy + 93, gx + GUI_W - 14, gy + 94, Colors.ACCENT_LO);
+        if (!stringChoices().isEmpty()) {
+            g.drawString(font,
+                Component.translatable("arcadiaguard.gui.flagconfig.display_label").getString(),
+                gx + 16, gy + 98, Colors.TEXT_MUTE, false);
+        }
+    }
 
     private void renderList(GuiGraphics g, int mx, int my) {
         g.drawString(font,
@@ -406,6 +458,17 @@ public final class FlagConfigScreen extends Screen {
                     return false;
                 }
             }
+        } else if (flagType == FlagType.STRING) {
+            value = input.getValue().trim();
+            if (isTransitionMessageFlag()) {
+                value = selectedStringDisplay + "|" + value;
+            }
+            var flagOpt = com.arcadia.arcadiaguard.api.ArcadiaGuardAPI.get().flagRegistry().get(flagId);
+            if (flagOpt.isPresent() && flagOpt.get() instanceof com.arcadia.arcadiaguard.api.flag.StringFlag sf
+                    && !sf.allowedValues().isEmpty() && !sf.allowedValues().contains(value)) {
+                errorMsg = Component.translatable("arcadiaguard.gui.flagconfig.error.invalid_choice").getString();
+                return false;
+            }
         } else {
             value = String.join(",", listEntries);
         }
@@ -424,6 +487,40 @@ public final class FlagConfigScreen extends Screen {
             PacketDistributor.sendToServer(GuiActionPayload.resetDimFlag(targetName, flagId));
         }
     }
+
+    private int stringMaxLength() {
+        if (isTransitionMessageFlag()) return 512;
+        var flagOpt = com.arcadia.arcadiaguard.api.ArcadiaGuardAPI.get().flagRegistry().get(flagId);
+        if (flagOpt.isPresent() && flagOpt.get() instanceof com.arcadia.arcadiaguard.api.flag.StringFlag sf) {
+            return sf.maxLength();
+        }
+        return 512;
+    }
+
+    private List<String> stringChoices() {
+        if (isTransitionMessageFlag()) return List.of("chat", "actionbar", "title");
+        var flagOpt = com.arcadia.arcadiaguard.api.ArcadiaGuardAPI.get().flagRegistry().get(flagId);
+        if (flagOpt.isPresent() && flagOpt.get() instanceof com.arcadia.arcadiaguard.api.flag.StringFlag sf) {
+            return sf.allowedValues();
+        }
+        return List.of();
+    }
+
+    private boolean isTransitionMessageFlag() {
+        return "greeting".equals(flagId) || "farewell".equals(flagId);
+    }
+
+    private static ParsedTransitionValue parseTransitionValue(String raw) {
+        int sep = raw.indexOf('|');
+        if (sep <= 0) return new ParsedTransitionValue("actionbar", raw);
+        String display = raw.substring(0, sep).trim().toLowerCase(java.util.Locale.ROOT);
+        if (!"chat".equals(display) && !"actionbar".equals(display) && !"title".equals(display)) {
+            display = "actionbar";
+        }
+        return new ParsedTransitionValue(display, raw.substring(sep + 1));
+    }
+
+    private record ParsedTransitionValue(String display, String message) {}
 
     @Override
     public boolean isPauseScreen() { return false; }

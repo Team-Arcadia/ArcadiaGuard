@@ -4,6 +4,7 @@ import com.arcadia.arcadiaguard.ArcadiaGuard;
 import com.arcadia.arcadiaguard.ArcadiaGuardPaths;
 import com.arcadia.arcadiaguard.api.flag.BooleanFlag;
 import com.arcadia.arcadiaguard.api.flag.Flag;
+import com.arcadia.arcadiaguard.api.flag.StringFlag;
 import com.arcadia.arcadiaguard.command.ZonePermission;
 import com.arcadia.arcadiaguard.config.ArcadiaGuardConfig;
 import com.arcadia.arcadiaguard.util.FlagUtils;
@@ -601,6 +602,10 @@ public final class GuiActionHandler {
                 List<String> v = raw instanceof List<?> l ? (List<String>) l : List.of();
                 String joined = String.join(",", v);
                 strVal = joined.length() > 30_000 ? joined.substring(0, 29_990) + ",…" : joined;
+            } else if (flag instanceof StringFlag sf) {
+                type = FlagInfo.TYPE_STRING;
+                String v = raw instanceof String s ? s : sf.defaultValue();
+                strVal = v.length() > 30_000 ? v.substring(0, 29_990) + "..." : v;
             } else { continue; }
             // i18n : envoie la cle de traduction, le client traduira.
             String desc = "arcadiaguard.flag." + flag.id() + ".description";
@@ -638,6 +643,12 @@ public final class GuiActionHandler {
                 ArrayList<String> out = new ArrayList<>();
                 for (String s : raw.split(",")) { String t = s.trim(); if (!t.isEmpty()) out.add(t); }
                 return out;
+            }
+            if (flag instanceof StringFlag sf) {
+                String value = raw == null ? "" : raw.trim();
+                if (value.length() > sf.maxLength()) value = value.substring(0, sf.maxLength());
+                if (!sf.allowedValues().isEmpty() && !sf.allowedValues().contains(value)) return null;
+                return value;
             }
             if (flag instanceof BooleanFlag) return Boolean.parseBoolean(raw);
         } catch (NumberFormatException ignored) {}
